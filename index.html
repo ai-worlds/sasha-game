@@ -318,7 +318,7 @@
             throttle: 0,
             fuel: 1000,
             maxFuel: 1000,
-            thrust: 50000,
+            thrust: 500000,
             mass: 10000,
             landed: true,
             destroyed: false,
@@ -347,7 +347,7 @@
         function initShip() {
             const kerth = bodies.kerth;
             ship.x = kerth.x;
-            ship.y = kerth.y - kerth.radius - 100;
+            ship.y = kerth.y - kerth.radius - 1000;
             ship.vx = kerth.vx;
             ship.vy = kerth.vy;
             ship.angle = -Math.PI/2;
@@ -462,6 +462,22 @@
 
             updateBodies(dt);
 
+            // Keep ship attached when landed
+            if (ship.landed) {
+                const body = bodies[ship.currentBody];
+                if (body) {
+                    // Calculate angle from body center to ship
+                    const dx = ship.x - body.x;
+                    const dy = ship.y - body.y;
+                    const angle = Math.atan2(dy, dx);
+                    // Keep ship on surface
+                    ship.x = body.x + Math.cos(angle) * (body.radius + 1000);
+                    ship.y = body.y + Math.sin(angle) * (body.radius + 1000);
+                    ship.vx = body.vx;
+                    ship.vy = body.vy;
+                }
+            }
+
             // Ship physics
             if (!ship.landed) {
                 const gravity = getGravity(ship.x, ship.y);
@@ -509,8 +525,8 @@
                             ship.vx = body.vx;
                             ship.vy = body.vy;
                             const angle = Math.atan2(dy, dx);
-                            ship.x = body.x + Math.cos(angle) * (body.radius + 100);
-                            ship.y = body.y + Math.sin(angle) * (body.radius + 100);
+                            ship.x = body.x + Math.cos(angle) * (body.radius + 1000);
+                            ship.y = body.y + Math.sin(angle) * (body.radius + 1000);
                             ship.angle = angle - Math.PI/2;
                             if (key !== 'kerth') {
                                 showMessage("LANDED ON " + body.name.toUpperCase() + "!", 5000);
