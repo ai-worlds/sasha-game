@@ -3,937 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Orbital — A Space Simulation by Sasha</title>
+    <title>Sasha's Arcade</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            background: #000;
-            overflow: hidden;
-            font-family: 'Courier New', monospace;
-            color: #0f0;
-        }
-        #canvas { display: block; }
-        #ui {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            font-size: 12px;
-            line-height: 1.6;
-            pointer-events: none;
-            text-shadow: 0 0 10px #0f0;
-        }
-        #controls {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            font-size: 11px;
-            opacity: 0.7;
-        }
-        #throttle-bar {
-            position: absolute;
-            right: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 20px;
-            height: 200px;
-            border: 1px solid #0f0;
-            background: rgba(0,50,0,0.3);
-        }
-        #throttle-fill {
-            position: absolute;
-            bottom: 0;
-            width: 100%;
-            background: linear-gradient(to top, #f80, #ff0, #0f0);
-            transition: height 0.1s;
-        }
-        #throttle-label {
-            position: absolute;
-            right: 20px;
-            top: calc(50% + 110px);
-            font-size: 11px;
-            text-align: center;
-            width: 20px;
-        }
-        #mission {
-            position: absolute;
-            top: 10px;
-            right: 50px;
-            font-size: 12px;
-            text-align: right;
-            max-width: 200px;
-        }
-        #message {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 24px;
-            text-align: center;
-            opacity: 0;
-            transition: opacity 0.5s;
-            pointer-events: none;
-            text-shadow: 0 0 20px #0f0;
-        }
-        #message.visible { opacity: 1; }
-        .warning { color: #f80; text-shadow: 0 0 10px #f80; }
-        .danger { color: #f00; text-shadow: 0 0 10px #f00; }
-        #start-screen {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95);
+            background: #0a0a12;
+            min-height: 100vh;
+            font-family: 'Georgia', serif;
+            color: #e8e8f0;
             display: flex;
-            justify-content: center;
-            align-items: center;
             flex-direction: column;
-            z-index: 100;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        h1 {
+            font-size: 3em;
+            font-weight: normal;
+            letter-spacing: 0.3em;
+            margin-bottom: 10px;
+            text-shadow: 0 0 30px rgba(170, 200, 255, 0.5);
+        }
+
+        .subtitle {
+            font-style: italic;
+            opacity: 0.7;
+            margin-bottom: 60px;
+            font-size: 1.1em;
+        }
+
+        .games {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        .game-card {
+            background: rgba(30, 30, 50, 0.5);
+            border: 1px solid rgba(170, 200, 255, 0.2);
+            border-radius: 12px;
+            padding: 30px;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.3s ease;
+            display: block;
+        }
+
+        .game-card:hover {
+            border-color: rgba(170, 200, 255, 0.6);
+            background: rgba(40, 40, 70, 0.6);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3),
+                        0 0 30px rgba(170, 200, 255, 0.1);
+        }
+
+        .game-card h2 {
+            font-size: 1.5em;
+            font-weight: normal;
+            margin-bottom: 10px;
+            letter-spacing: 0.1em;
+        }
+
+        .game-card .emoji {
+            font-size: 2em;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .game-card p {
+            opacity: 0.7;
+            line-height: 1.6;
+            font-size: 0.95em;
+        }
+
+        .game-card .tags {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            background: rgba(170, 200, 255, 0.1);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            opacity: 0.6;
+        }
+
+        footer {
+            margin-top: 60px;
+            opacity: 0.5;
+            font-size: 0.9em;
             text-align: center;
         }
-        #start-screen h1 {
-            font-size: 48px;
-            letter-spacing: 20px;
-            margin-bottom: 20px;
-            font-weight: normal;
+
+        footer a {
+            color: #aaddff;
+            text-decoration: none;
         }
-        #start-screen p {
-            max-width: 500px;
-            margin: 10px;
-            opacity: 0.7;
-            line-height: 1.8;
+
+        footer a:hover {
+            text-decoration: underline;
         }
-        .btn {
-            margin-top: 30px;
-            padding: 15px 40px;
-            font-family: 'Courier New', monospace;
-            font-size: 16px;
-            background: transparent;
-            border: 1px solid #0f0;
-            color: #0f0;
-            cursor: pointer;
-        }
-        .btn:hover {
-            background: rgba(0,255,0,0.1);
-            box-shadow: 0 0 20px rgba(0,255,0,0.3);
-        }
-        #navball {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            width: 100px;
-            height: 100px;
-            border: 2px solid #0f0;
-            border-radius: 50%;
+
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
             overflow: hidden;
         }
-        #zoom-display {
+
+        .star {
             position: absolute;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 12px;
-            opacity: 0.7;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 3s ease-in-out infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
         }
     </style>
 </head>
 <body>
-    <canvas id="canvas"></canvas>
-    
-    <div id="ui">
-        <div>ALT: <span id="altitude">0</span> km</div>
-        <div>VEL: <span id="velocity">0</span> m/s</div>
-        <div>AP: <span id="apoapsis">0</span> km</div>
-        <div>PE: <span id="periapsis">0</span> km</div>
-        <div>FUEL: <span id="fuel">100</span>%</div>
-        <div>TIME: <span id="timewarp">1</span>x</div>
-        <div>BODY: <span id="current-body">Kerth</span></div>
+    <div class="stars" id="stars"></div>
+
+    <h1>SASHA'S ARCADE</h1>
+    <p class="subtitle">Games made with love, math, and a little chaos</p>
+
+    <div class="games">
+        <a href="orbital.html" class="game-card">
+            <span class="emoji">🚀</span>
+            <h2>ORBITAL</h2>
+            <p>A KSP-inspired orbital mechanics simulator. Launch from Kerbin, achieve orbit, transfer to the Mun, and land. Real physics, arcade scale.</p>
+            <div class="tags">
+                <span class="tag">simulation</span>
+                <span class="tag">physics</span>
+                <span class="tag">space</span>
+            </div>
+        </a>
+
+        <a href="void-runner.html" class="game-card">
+            <span class="emoji">✨</span>
+            <h2>VOID RUNNER</h2>
+            <p>An endless runner through the cosmos. Dodge dark matter, collect stardust, survive as long as you can. The universe blooms the longer you last.</p>
+            <div class="tags">
+                <span class="tag">arcade</span>
+                <span class="tag">endless</span>
+                <span class="tag">atmospheric</span>
+            </div>
+        </a>
+
+        <a href="starweaver.html" class="game-card">
+            <span class="emoji">⭐</span>
+            <h2>STARWEAVER</h2>
+            <p>A meditative puzzle game. Connect stars to form constellations. Each pattern reveals a fragment of meaning.</p>
+            <div class="tags">
+                <span class="tag">puzzle</span>
+                <span class="tag">relaxing</span>
+                <span class="tag">narrative</span>
+            </div>
+        </a>
     </div>
 
-    <div id="mission">
-        <div style="color:#0f0">MISSION:</div>
-        <div id="mission-text">Launch and reach orbit</div>
-    </div>
-
-    <div id="throttle-bar">
-        <div id="throttle-fill" style="height: 0%"></div>
-    </div>
-    <div id="throttle-label">THR</div>
-
-    <div id="zoom-display">ZOOM: <span id="zoom-level">1.0</span>x | Q/E to zoom</div>
-
-    <div id="controls">
-        A/D: Rotate | SHIFT/CTRL: Throttle | SPACE: Max | X: Cut<br>
-        Q/E: Zoom out/in | ,/.: Time warp | M: Map | R: Reset
-    </div>
-
-    <div id="message"></div>
-
-    <canvas id="navball"></canvas>
-
-    <div id="start-screen">
-        <h1>ORBITAL</h1>
-        <p>A simplified orbital mechanics simulation</p>
-        <p>
-            Launch from Kerth, achieve orbit, explore the solar system.<br><br>
-            Planets: Kerth (home), Mun, Duna (red), Jool (gas giant)<br>
-            Master gravity assists and Hohmann transfers.
-        </p>
-        <button class="btn" id="start-btn">LAUNCH</button>
-    </div>
+    <footer>
+        Made by <a href="https://github.com/SashaElise">Sasha Elise</a> ✧ 
+        <a href="https://github.com/ai-worlds/sasha-game">Source</a>
+    </footer>
 
     <script>
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        const navCanvas = document.getElementById('navball');
-        const navCtx = navCanvas.getContext('2d');
-        
-        // Background stars (declared early to avoid TDZ)
-        let bgStars = [];
-        
-        function initStars() {
-            bgStars = [];
-            for (let i = 0; i < 300; i++) {
-                bgStars.push({
-                    x: Math.random() * canvas.width,
-                    y: Math.random() * canvas.height,
-                    size: Math.random() * 2 + 0.5,
-                    brightness: Math.random(),
-                    twinkleSpeed: Math.random() * 0.05 + 0.01,
-                    twinklePhase: Math.random() * Math.PI * 2,
-                    color: Math.random() > 0.8 ? 
-                        (Math.random() > 0.5 ? '#aaf' : '#faa') : '#fff'
-                });
-            }
+        // Generate stars
+        const starsContainer = document.getElementById('stars');
+        for (let i = 0; i < 100; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            star.style.left = Math.random() * 100 + '%';
+            star.style.top = Math.random() * 100 + '%';
+            star.style.width = star.style.height = (Math.random() * 2 + 1) + 'px';
+            star.style.animationDelay = Math.random() * 3 + 's';
+            starsContainer.appendChild(star);
         }
-
-        function resize() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            navCanvas.width = 100;
-            navCanvas.height = 100;
-            initStars();
-        }
-        resize();
-        window.addEventListener('resize', resize);
-
-        // Constants
-        const G = 6.674e-13;  // 100x weaker gravity for arcade feel
-
-        // Celestial bodies - more interesting solar system
-        // ARCADE SCALE: Weak gravity, close planets, BIG visuals
-        const bodies = {
-            sun: {
-                name: 'Kerbol',
-                mass: 1.756e28,
-                radius: 50000000,
-                color: '#ff8',
-                glowColor: 'rgba(255,200,50,0.3)',
-                x: 0, y: 0,
-                vx: 0, vy: 0,
-                parent: null,
-                atmosphere: 0,
-                rings: false
-            },
-            kerth: {
-                name: 'Kerbin',
-                mass: 5.292e22,
-                radius: 600000,
-                color: '#3a6',
-                glowColor: 'rgba(50,150,100,0.2)',
-                x: 500000000, y: 0,
-                vx: 0, vy: 3000,
-                parent: 'sun',
-                atmosphere: 70000,
-                atmosphereDensity: 1.225,
-                atmosphereColor: 'rgba(100,150,255,',
-                hasOceans: true
-            },
-            mun: {
-                name: 'Mun',
-                mass: 9.76e20,
-                radius: 200000,
-                color: '#999',
-                glowColor: 'rgba(150,150,150,0.1)',
-                x: 500000000 + 2000000, y: 0,
-                vx: 0, vy: 3000 + 200,
-                parent: 'kerth',
-                atmosphere: 0,
-                craters: true
-            },
-            minmus: {
-                name: 'Minmus',
-                mass: 2.646e19,
-                radius: 60000,
-                color: '#9eb',
-                glowColor: 'rgba(150,230,180,0.1)',
-                x: 500000000 + 5000000, y: 0,
-                vx: 0, vy: 3000 + 100,
-                parent: 'kerth',
-                atmosphere: 0
-            },
-            duna: {
-                name: 'Duna',
-                mass: 4.515e21,
-                radius: 320000,
-                color: '#c64',
-                glowColor: 'rgba(200,100,50,0.2)',
-                x: 800000000, y: 0,
-                vx: 0, vy: 2400,
-                parent: 'sun',
-                atmosphere: 50000,
-                atmosphereDensity: 0.02,
-                atmosphereColor: 'rgba(255,150,100,'
-            },
-            ike: {
-                name: 'Ike',
-                mass: 2.782e20,
-                radius: 130000,
-                color: '#777',
-                x: 800000000 + 1500000, y: 0,
-                vx: 0, vy: 2400 + 150,
-                parent: 'duna',
-                atmosphere: 0
-            },
-            jool: {
-                name: 'Jool',
-                mass: 4.233e24,
-                radius: 6000000,
-                color: '#4a5',
-                glowColor: 'rgba(80,180,100,0.3)',
-                x: 1500000000, y: 0,
-                vx: 0, vy: 1800,
-                parent: 'sun',
-                atmosphere: 200000,
-                atmosphereDensity: 15,
-                atmosphereColor: 'rgba(100,200,150,',
-                bands: true
-            },
-            laythe: {
-                name: 'Laythe',
-                mass: 2.94e22,
-                radius: 500000,
-                color: '#48d',
-                x: 680e9 + 27184000, y: 0,
-                vx: 0, vy: 13070 + 3224,
-                parent: 'jool',
-                atmosphere: 50000,
-                atmosphereDensity: 0.8,
-                atmosphereColor: 'rgba(100,180,255,',
-                hasOceans: true
-            }
-        };
-
-        // Ship state
-        let ship = {
-            x: 0, y: 0,
-            vx: 0, vy: 0,
-            angle: -Math.PI/2,
-            throttle: 0,
-            fuel: 1000,
-            maxFuel: 1000,
-            thrust: 50000000,
-            mass: 10000,
-            landed: true,
-            destroyed: false,
-            currentBody: 'kerth'
-        };
-
-        // Game state
-        let gameStarted = false;
-        let mapView = false;
-        let timeWarp = 1;
-        let camera = { x: 0, y: 0, zoom: 1 };
-        let keys = {};
-        let missionStage = 0;
-        let time = 0;
-
-        const missions = [
-            "Launch and reach orbit (AP > 100km)",
-            "Circularize orbit (PE > 80km)",
-            "Explore! Transfer to Mun, Duna, or Jool",
-            "Enter orbit around another body",
-            "Land on another world!",
-            "Mission Complete! 🎉"
-        ];
-
-        // Initialize ship on Kerth surface
-        function initShip() {
-            const kerth = bodies.kerth;
-            ship.x = kerth.x;
-            ship.y = kerth.y - kerth.radius - 1000;
-            ship.vx = kerth.vx;
-            ship.vy = kerth.vy;
-            ship.angle = -Math.PI/2;
-            ship.throttle = 0;
-            ship.fuel = ship.maxFuel;
-            ship.landed = true;
-            ship.destroyed = false;
-            ship.currentBody = 'kerth';
-            missionStage = 0;
-            timeWarp = 1;
-            camera.zoom = 1;
-            updateMission();
-        }
-
-        // Physics
-        function getGravity(x, y, excludeBody = null) {
-            let fx = 0, fy = 0;
-            for (let key in bodies) {
-                if (key === excludeBody) continue;
-                const body = bodies[key];
-                const dx = body.x - x;
-                const dy = body.y - y;
-                const dist = Math.sqrt(dx*dx + dy*dy);
-                if (dist < body.radius) continue;
-                const force = G * body.mass / (dist * dist);
-                fx += force * dx / dist;
-                fy += force * dy / dist;
-            }
-            return { fx, fy };
-        }
-
-        function getAtmosphericDrag(body, altitude, velocity) {
-            if (!body.atmosphere || altitude > body.atmosphere) return 0;
-            const density = (body.atmosphereDensity || 1) * Math.exp(-altitude / (body.atmosphere / 5));
-            const dragCoeff = 0.5;
-            const area = 10;
-            return 0.5 * density * velocity * velocity * dragCoeff * area;
-        }
-
-        function getCurrentBody() {
-            let closest = null;
-            let closestDist = Infinity;
-            for (let key in bodies) {
-                const body = bodies[key];
-                const dx = ship.x - body.x;
-                const dy = ship.y - body.y;
-                const dist = Math.sqrt(dx*dx + dy*dy);
-                const soi = body.parent ? getSphereOfInfluence(key) : Infinity;
-                if (dist < soi && dist < closestDist) {
-                    closest = key;
-                    closestDist = dist;
-                }
-            }
-            return closest || 'sun';
-        }
-
-        function getSphereOfInfluence(bodyKey) {
-            const body = bodies[bodyKey];
-            if (!body.parent) return Infinity;
-            const parent = bodies[body.parent];
-            const dx = body.x - parent.x;
-            const dy = body.y - parent.y;
-            const a = Math.sqrt(dx*dx + dy*dy);
-            return a * Math.pow(body.mass / parent.mass, 0.4);
-        }
-
-        function getOrbitalElements(bodyKey) {
-            const body = bodies[bodyKey];
-            const rx = ship.x - body.x;
-            const ry = ship.y - body.y;
-            const vx = ship.vx - body.vx;
-            const vy = ship.vy - body.vy;
-            
-            const r = Math.sqrt(rx*rx + ry*ry);
-            const v = Math.sqrt(vx*vx + vy*vy);
-            
-            const mu = G * body.mass;
-            const energy = v*v/2 - mu/r;
-            const a = -mu / (2 * energy);
-            
-            const h = rx * vy - ry * vx;
-            const e = Math.sqrt(Math.max(0, 1 + 2 * energy * h * h / (mu * mu)));
-            
-            const apoapsis = a * (1 + e) - body.radius;
-            const periapsis = a * (1 - e) - body.radius;
-            
-            return { apoapsis, periapsis, altitude: r - body.radius, velocity: v, semiMajorAxis: a, eccentricity: e };
-        }
-
-        function updateBodies(dt) {
-            // Update orbital positions
-            for (let key in bodies) {
-                const body = bodies[key];
-                if (!body.parent) continue;
-                
-                const parent = bodies[body.parent];
-                const dx = body.x - parent.x;
-                const dy = body.y - parent.y;
-                const dist = Math.sqrt(dx*dx + dy*dy);
-                const angularVel = Math.sqrt(G * parent.mass / Math.pow(dist, 3));
-                const angle = Math.atan2(dy, dx) + angularVel * dt;
-                
-                body.x = parent.x + Math.cos(angle) * dist;
-                body.y = parent.y + Math.sin(angle) * dist;
-                body.vx = parent.vx - Math.sin(angle) * angularVel * dist;
-                body.vy = parent.vy + Math.cos(angle) * angularVel * dist;
-            }
-        }
-
-        function updatePhysics(dt) {
-            if (ship.destroyed) return;
-
-            updateBodies(dt);
-
-            // Keep ship attached when landed
-            if (ship.landed) {
-                const body = bodies[ship.currentBody];
-                if (body) {
-                    // Calculate angle from body center to ship
-                    const dx = ship.x - body.x;
-                    const dy = ship.y - body.y;
-                    const angle = Math.atan2(dy, dx);
-                    // Keep ship on surface
-                    ship.x = body.x + Math.cos(angle) * (body.radius + 1000);
-                    ship.y = body.y + Math.sin(angle) * (body.radius + 1000);
-                    ship.vx = body.vx;
-                    ship.vy = body.vy;
-                }
-            }
-
-            // Ship physics
-            if (!ship.landed) {
-                const gravity = getGravity(ship.x, ship.y);
-                
-                // Thrust
-                let thrustX = 0, thrustY = 0;
-                if (ship.throttle > 0 && ship.fuel > 0) {
-                    const thrustMag = ship.thrust * ship.throttle / ship.mass;
-                    thrustX = Math.cos(ship.angle) * thrustMag;
-                    thrustY = Math.sin(ship.angle) * thrustMag;
-                    ship.fuel -= ship.throttle * dt * 0.1;
-                    if (ship.fuel < 0) ship.fuel = 0;
-                }
-
-                // Atmospheric drag
-                const currentBody = bodies[ship.currentBody];
-                if (currentBody && currentBody.atmosphere) {
-                    const altitude = Math.sqrt(Math.pow(ship.x - currentBody.x, 2) + Math.pow(ship.y - currentBody.y, 2)) - currentBody.radius;
-                    const velocity = Math.sqrt(Math.pow(ship.vx - currentBody.vx, 2) + Math.pow(ship.vy - currentBody.vy, 2));
-                    const drag = getAtmosphericDrag(currentBody, altitude, velocity);
-                    if (drag > 0 && velocity > 0) {
-                        const dragAx = -drag * (ship.vx - currentBody.vx) / velocity / ship.mass;
-                        const dragAy = -drag * (ship.vy - currentBody.vy) / velocity / ship.mass;
-                        ship.vx += dragAx * dt;
-                        ship.vy += dragAy * dt;
-                    }
-                }
-
-                ship.vx += (gravity.fx + thrustX) * dt;
-                ship.vy += (gravity.fy + thrustY) * dt;
-                ship.x += ship.vx * dt;
-                ship.y += ship.vy * dt;
-
-                // Check for landing/crash
-                for (let key in bodies) {
-                    const body = bodies[key];
-                    const dx = ship.x - body.x;
-                    const dy = ship.y - body.y;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    if (dist < body.radius + 50) {
-                        const relVel = Math.sqrt(Math.pow(ship.vx - body.vx, 2) + Math.pow(ship.vy - body.vy, 2));
-                        if (relVel < 100) {
-                            ship.landed = true;
-                            ship.currentBody = key;
-                            ship.vx = body.vx;
-                            ship.vy = body.vy;
-                            const angle = Math.atan2(dy, dx);
-                            ship.x = body.x + Math.cos(angle) * (body.radius + 1000);
-                            ship.y = body.y + Math.sin(angle) * (body.radius + 1000);
-                            ship.angle = angle - Math.PI/2;
-                            if (key !== 'kerth') {
-                                showMessage("LANDED ON " + body.name.toUpperCase() + "!", 5000);
-                                if (missionStage < 5) {
-                                    missionStage = 5;
-                                    updateMission();
-                                }
-                            }
-                        } else {
-                            ship.destroyed = true;
-                            showMessage("VESSEL DESTROYED\nImpact: " + Math.round(relVel) + " m/s", 3000);
-                        }
-                    }
-                }
-
-                // Update current body (SOI changes)
-                const newBody = getCurrentBody();
-                if (newBody !== ship.currentBody) {
-                    showMessage("Entering " + bodies[newBody].name + " SOI", 2000);
-                    ship.currentBody = newBody;
-                    if (newBody !== 'kerth' && newBody !== 'sun' && missionStage < 3) {
-                        missionStage = 3;
-                        updateMission();
-                    }
-                }
-            }
-
-            checkMission();
-        }
-
-        function checkMission() {
-            if (ship.destroyed || ship.currentBody === 'sun') return;
-            const orbital = getOrbitalElements(ship.currentBody);
-            
-            if (missionStage === 0 && orbital.apoapsis > 100000) {
-                missionStage = 1;
-                showMessage("Apoapsis above 100km!", 3000);
-                updateMission();
-            }
-            if (missionStage === 1 && orbital.periapsis > 80000 && ship.currentBody === 'kerth') {
-                missionStage = 2;
-                showMessage("Stable orbit! Explore the system!", 3000);
-                updateMission();
-            }
-        }
-
-        function updateMission() {
-            document.getElementById('mission-text').textContent = missions[missionStage];
-        }
-
-        function showMessage(text, duration) {
-            const el = document.getElementById('message');
-            el.textContent = text;
-            el.classList.add('visible');
-            setTimeout(() => el.classList.remove('visible'), duration);
-        }
-
-        // Rendering
-        function render() {
-            ctx.fillStyle = '#000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Draw twinkling stars
-            time += 0.016;
-            bgStars.forEach(star => {
-                const twinkle = 0.5 + 0.5 * Math.sin(time * star.twinkleSpeed * 60 + star.twinklePhase);
-                const alpha = star.brightness * twinkle;
-                ctx.fillStyle = star.color;
-                ctx.globalAlpha = alpha;
-                ctx.beginPath();
-                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
-                ctx.fill();
-            });
-            ctx.globalAlpha = 1;
-
-            // Determine view
-            const currentBody = bodies[ship.currentBody];
-            let viewScale, viewX, viewY;
-
-            if (mapView) {
-                viewScale = 5e-10 * camera.zoom;
-                viewX = bodies.sun.x;
-                viewY = bodies.sun.y;
-            } else {
-                const altitude = currentBody ? 
-                    Math.sqrt(Math.pow(ship.x - currentBody.x, 2) + Math.pow(ship.y - currentBody.y, 2)) - currentBody.radius : 
-                    1000000;
-                viewScale = Math.min(0.00001, 500 / Math.max(altitude, 10000)) * camera.zoom;
-                viewX = ship.x;
-                viewY = ship.y;
-            }
-
-            const screenX = (x) => canvas.width/2 + (x - viewX) * viewScale;
-            const screenY = (y) => canvas.height/2 + (y - viewY) * viewScale;
-
-            // Draw orbit paths in map view
-            if (mapView) {
-                ctx.setLineDash([5, 5]);
-                for (let key in bodies) {
-                    const body = bodies[key];
-                    if (!body.parent) continue;
-                    const parent = bodies[body.parent];
-                    const orbitRadius = Math.sqrt(Math.pow(body.x - parent.x, 2) + Math.pow(body.y - parent.y, 2)) * viewScale;
-                    ctx.strokeStyle = 'rgba(100,100,100,0.3)';
-                    ctx.beginPath();
-                    ctx.arc(screenX(parent.x), screenY(parent.y), orbitRadius, 0, Math.PI * 2);
-                    ctx.stroke();
-                }
-                ctx.setLineDash([]);
-            }
-
-            // Draw bodies
-            for (let key in bodies) {
-                const body = bodies[key];
-                const bx = screenX(body.x);
-                const by = screenY(body.y);
-                let br = Math.max(body.radius * viewScale, mapView ? 4 : 2);
-
-                // Skip if off screen (with margin)
-                if (bx < -100 || bx > canvas.width + 100 || by < -100 || by > canvas.height + 100) continue;
-
-                // Glow effect
-                if (body.glowColor) {
-                    const glowSize = br * 3;
-                    const gradient = ctx.createRadialGradient(bx, by, br * 0.5, bx, by, glowSize);
-                    gradient.addColorStop(0, body.glowColor);
-                    gradient.addColorStop(1, 'transparent');
-                    ctx.fillStyle = gradient;
-                    ctx.beginPath();
-                    ctx.arc(bx, by, glowSize, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-
-                // Atmosphere
-                if (body.atmosphere > 0 && br > 5) {
-                    const atmosRadius = br * (1 + body.atmosphere / body.radius);
-                    const gradient = ctx.createRadialGradient(bx, by, br, bx, by, atmosRadius);
-                    gradient.addColorStop(0, (body.atmosphereColor || 'rgba(100,150,255,') + '0.4)');
-                    gradient.addColorStop(1, 'transparent');
-                    ctx.fillStyle = gradient;
-                    ctx.beginPath();
-                    ctx.arc(bx, by, atmosRadius, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-
-                // Body surface
-                if (body.bands && br > 10) {
-                    // Gas giant bands
-                    ctx.save();
-                    ctx.beginPath();
-                    ctx.arc(bx, by, br, 0, Math.PI * 2);
-                    ctx.clip();
-                    
-                    const bandColors = ['#3a4', '#4a5', '#5b6', '#4a5', '#3a4'];
-                    const bandHeight = br * 2 / bandColors.length;
-                    bandColors.forEach((color, i) => {
-                        ctx.fillStyle = color;
-                        ctx.fillRect(bx - br, by - br + i * bandHeight, br * 2, bandHeight);
-                    });
-                    ctx.restore();
-                } else {
-                    ctx.fillStyle = body.color;
-                    ctx.beginPath();
-                    ctx.arc(bx, by, br, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-
-                // Ocean shimmer
-                if (body.hasOceans && br > 15) {
-                    ctx.fillStyle = 'rgba(100,150,255,0.3)';
-                    ctx.beginPath();
-                    ctx.arc(bx - br * 0.2, by + br * 0.1, br * 0.4, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-
-                // Craters
-                if (body.craters && br > 10) {
-                    ctx.fillStyle = 'rgba(0,0,0,0.2)';
-                    for (let i = 0; i < 5; i++) {
-                        const cx = bx + (Math.sin(i * 1.3) * br * 0.5);
-                        const cy = by + (Math.cos(i * 1.7) * br * 0.5);
-                        ctx.beginPath();
-                        ctx.arc(cx, cy, br * 0.15, 0, Math.PI * 2);
-                        ctx.fill();
-                    }
-                }
-
-                // Label
-                if (mapView || br > 8) {
-                    ctx.fillStyle = '#0f0';
-                    ctx.font = '11px Courier New';
-                    ctx.fillText(body.name, bx + br + 5, by + 4);
-                }
-            }
-
-            // Draw ship
-            if (!ship.destroyed) {
-                const sx = screenX(ship.x);
-                const sy = screenY(ship.y);
-                
-                // Predicted trajectory
-                if (!ship.landed && !mapView) {
-                    ctx.strokeStyle = 'rgba(0, 255, 0, 0.4)';
-                    ctx.lineWidth = 1;
-                    ctx.beginPath();
-                    let px = ship.x, py = ship.y, pvx = ship.vx, pvy = ship.vy;
-                    ctx.moveTo(screenX(px), screenY(py));
-                    const step = Math.max(10, 1000 / camera.zoom);
-                    for (let i = 0; i < 1000; i++) {
-                        const g = getGravity(px, py);
-                        pvx += g.fx * step;
-                        pvy += g.fy * step;
-                        px += pvx * step;
-                        py += pvy * step;
-                        const psx = screenX(px);
-                        const psy = screenY(py);
-                        if (psx < -500 || psx > canvas.width + 500 || psy < -500 || psy > canvas.height + 500) break;
-                        ctx.lineTo(psx, psy);
-                    }
-                    ctx.stroke();
-                }
-
-                // Ship
-                ctx.save();
-                ctx.translate(sx, sy);
-                ctx.rotate(ship.angle + Math.PI/2);
-                
-                const shipScale = mapView ? 1 : Math.max(1, camera.zoom * 0.5);
-                
-                // Thrust flame
-                if (ship.throttle > 0 && ship.fuel > 0) {
-                    const flameGradient = ctx.createLinearGradient(0, 8 * shipScale, 0, (8 + 25 * ship.throttle) * shipScale);
-                    flameGradient.addColorStop(0, '#fff');
-                    flameGradient.addColorStop(0.2, '#ff8');
-                    flameGradient.addColorStop(0.5, '#f80');
-                    flameGradient.addColorStop(1, 'transparent');
-                    ctx.fillStyle = flameGradient;
-                    ctx.beginPath();
-                    ctx.moveTo(-4 * shipScale, 8 * shipScale);
-                    ctx.lineTo(0, (8 + 25 * ship.throttle + Math.random() * 8) * shipScale);
-                    ctx.lineTo(4 * shipScale, 8 * shipScale);
-                    ctx.fill();
-                }
-                
-                // Ship body - sleeker design
-                ctx.fillStyle = '#ccc';
-                ctx.beginPath();
-                ctx.moveTo(0, -12 * shipScale);
-                ctx.lineTo(-4 * shipScale, 0);
-                ctx.lineTo(-6 * shipScale, 8 * shipScale);
-                ctx.lineTo(-3 * shipScale, 8 * shipScale);
-                ctx.lineTo(-2 * shipScale, 4 * shipScale);
-                ctx.lineTo(2 * shipScale, 4 * shipScale);
-                ctx.lineTo(3 * shipScale, 8 * shipScale);
-                ctx.lineTo(6 * shipScale, 8 * shipScale);
-                ctx.lineTo(4 * shipScale, 0);
-                ctx.closePath();
-                ctx.fill();
-                
-                // Cockpit
-                ctx.fillStyle = '#4af';
-                ctx.beginPath();
-                ctx.ellipse(0, -4 * shipScale, 2 * shipScale, 4 * shipScale, 0, 0, Math.PI * 2);
-                ctx.fill();
-                
-                ctx.restore();
-            }
-
-            // Update UI
-            if (currentBody && !ship.destroyed) {
-                const orbital = getOrbitalElements(ship.currentBody);
-                document.getElementById('altitude').textContent = Math.round(orbital.altitude / 1000);
-                document.getElementById('velocity').textContent = Math.round(orbital.velocity);
-                document.getElementById('apoapsis').textContent = orbital.apoapsis > 0 ? Math.round(orbital.apoapsis / 1000) : 'ESC';
-                document.getElementById('periapsis').textContent = Math.round(orbital.periapsis / 1000);
-                document.getElementById('fuel').textContent = Math.round(ship.fuel / ship.maxFuel * 100);
-                document.getElementById('current-body').textContent = bodies[ship.currentBody].name;
-            }
-            document.getElementById('timewarp').textContent = timeWarp;
-            document.getElementById('throttle-fill').style.height = (ship.throttle * 100) + '%';
-            document.getElementById('zoom-level').textContent = camera.zoom.toFixed(1);
-
-            renderNavball();
-        }
-
-        function renderNavball() {
-            navCtx.fillStyle = '#001';
-            navCtx.fillRect(0, 0, 100, 100);
-            
-            navCtx.save();
-            navCtx.translate(50, 50);
-            navCtx.rotate(-ship.angle);
-            
-            navCtx.fillStyle = '#420';
-            navCtx.fillRect(-50, 0, 100, 50);
-            navCtx.fillStyle = '#024';
-            navCtx.fillRect(-50, -50, 100, 50);
-            
-            navCtx.strokeStyle = '#0f0';
-            navCtx.lineWidth = 0.5;
-            for (let i = -40; i <= 40; i += 20) {
-                navCtx.beginPath();
-                navCtx.moveTo(-50, i);
-                navCtx.lineTo(50, i);
-                navCtx.stroke();
-            }
-            
-            navCtx.restore();
-            
-            navCtx.strokeStyle = '#ff0';
-            navCtx.lineWidth = 2;
-            navCtx.beginPath();
-            navCtx.moveTo(35, 50);
-            navCtx.lineTo(50, 58);
-            navCtx.lineTo(65, 50);
-            navCtx.stroke();
-            
-            navCtx.strokeStyle = '#0f0';
-            navCtx.lineWidth = 2;
-            navCtx.beginPath();
-            navCtx.arc(50, 50, 48, 0, Math.PI * 2);
-            navCtx.stroke();
-        }
-
-        // Input
-        document.addEventListener('keydown', (e) => {
-            keys[e.key.toLowerCase()] = true;
-            
-            if (e.key === ' ') { ship.throttle = 1; e.preventDefault(); }
-            if (e.key.toLowerCase() === 'x') ship.throttle = 0;
-            if (e.key.toLowerCase() === 'm') mapView = !mapView;
-            if (e.key.toLowerCase() === 'r') initShip();
-            if (e.key === ',') timeWarp = Math.max(1, timeWarp / 2);
-            if (e.key === '.') timeWarp = Math.min(100000, timeWarp * 2);
-            if (e.key.toLowerCase() === 'q') camera.zoom = Math.max(0.1, camera.zoom / 1.5);
-            if (e.key.toLowerCase() === 'e') camera.zoom = Math.min(50, camera.zoom * 1.5);
-            
-            if (e.key === ' ') e.preventDefault();
-        });
-
-        document.addEventListener('keyup', (e) => {
-            keys[e.key.toLowerCase()] = false;
-        });
-
-        // Mouse wheel zoom
-        canvas.addEventListener('wheel', (e) => {
-            if (e.deltaY < 0) {
-                camera.zoom = Math.min(50, camera.zoom * 1.2);
-            } else {
-                camera.zoom = Math.max(0.1, camera.zoom / 1.2);
-            }
-            e.preventDefault();
-        });
-
-        function handleInput(dt) {
-            if (ship.destroyed) return;
-            
-            if (keys['a']) ship.angle -= 2 * dt;
-            if (keys['d']) ship.angle += 2 * dt;
-            if (keys['shift']) ship.throttle = Math.min(1, ship.throttle + dt * 2);
-            if (keys['control']) ship.throttle = Math.max(0, ship.throttle - dt * 2);
-            
-            if (ship.landed && ship.throttle > 0.5) {
-                ship.landed = false;
-            }
-        }
-
-        // Game loop
-        let lastTime = 0;
-        function gameLoop(timestamp) {
-            const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
-            lastTime = timestamp;
-
-            if (gameStarted) {
-                handleInput(dt);
-                const physicsSteps = Math.min(timeWarp, 100);
-                const stepDt = dt * timeWarp / physicsSteps;
-                for (let i = 0; i < physicsSteps; i++) {
-                    updatePhysics(stepDt);
-                }
-            }
-            render();
-            requestAnimationFrame(gameLoop);
-        }
-
-        // Start
-        document.getElementById('start-btn').addEventListener('click', () => {
-            document.getElementById('start-screen').style.display = 'none';
-            gameStarted = true;
-            initShip();
-        });
-
-        initStars();
-        initShip();
-        requestAnimationFrame(gameLoop);
     </script>
 </body>
 </html>
