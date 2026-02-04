@@ -216,15 +216,15 @@
         window.addEventListener('resize', resize);
 
         // Constants
-        const G = 6.674e-11;
+        const G = 6.674e-13;  // 100x weaker gravity for arcade feel
 
         // Celestial bodies - more interesting solar system
-        // KSP-SCALE: Everything ~10x smaller for faster gameplay
+        // ARCADE SCALE: Weak gravity, close planets, BIG visuals
         const bodies = {
             sun: {
                 name: 'Kerbol',
                 mass: 1.756e28,
-                radius: 261600000,
+                radius: 50000000,
                 color: '#ff8',
                 glowColor: 'rgba(255,200,50,0.3)',
                 x: 0, y: 0,
@@ -239,8 +239,8 @@
                 radius: 600000,
                 color: '#3a6',
                 glowColor: 'rgba(50,150,100,0.2)',
-                x: 13599840256, y: 0,
-                vx: 0, vy: 9285,
+                x: 500000000, y: 0,
+                vx: 0, vy: 3000,
                 parent: 'sun',
                 atmosphere: 70000,
                 atmosphereDensity: 1.225,
@@ -253,8 +253,8 @@
                 radius: 200000,
                 color: '#999',
                 glowColor: 'rgba(150,150,150,0.1)',
-                x: 13599840256 + 12000000, y: 0,
-                vx: 0, vy: 9285 + 543,
+                x: 500000000 + 2000000, y: 0,
+                vx: 0, vy: 3000 + 200,
                 parent: 'kerth',
                 atmosphere: 0,
                 craters: true
@@ -265,8 +265,8 @@
                 radius: 60000,
                 color: '#9eb',
                 glowColor: 'rgba(150,230,180,0.1)',
-                x: 13599840256 + 47000000, y: 0,
-                vx: 0, vy: 9285 + 274,
+                x: 500000000 + 5000000, y: 0,
+                vx: 0, vy: 3000 + 100,
                 parent: 'kerth',
                 atmosphere: 0
             },
@@ -276,8 +276,8 @@
                 radius: 320000,
                 color: '#c64',
                 glowColor: 'rgba(200,100,50,0.2)',
-                x: 20726155264, y: 0,
-                vx: 0, vy: 7530,
+                x: 800000000, y: 0,
+                vx: 0, vy: 2400,
                 parent: 'sun',
                 atmosphere: 50000,
                 atmosphereDensity: 0.02,
@@ -288,8 +288,8 @@
                 mass: 2.782e20,
                 radius: 130000,
                 color: '#777',
-                x: 20726155264 + 3200000, y: 0,
-                vx: 0, vy: 7530 + 325,
+                x: 800000000 + 1500000, y: 0,
+                vx: 0, vy: 2400 + 150,
                 parent: 'duna',
                 atmosphere: 0
             },
@@ -299,8 +299,8 @@
                 radius: 6000000,
                 color: '#4a5',
                 glowColor: 'rgba(80,180,100,0.3)',
-                x: 68773560320, y: 0,
-                vx: 0, vy: 4407,
+                x: 1500000000, y: 0,
+                vx: 0, vy: 1800,
                 parent: 'sun',
                 atmosphere: 200000,
                 atmosphereDensity: 15,
