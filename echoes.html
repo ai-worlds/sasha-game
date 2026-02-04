@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Echoes in the Dark</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0f;
+            color: #c0c0c0;
+            font-family: 'Courier New', monospace;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #8b5cf6;
+            font-size: 2rem;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+
+        #game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        #game-display {
+            font-size: 18px;
+            line-height: 1.2;
+            background: #111118;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #2a2a3a;
+            white-space: pre;
+            font-family: 'Courier New', monospace;
+        }
+
+        #stats {
+            display: flex;
+            gap: 30px;
+            font-size: 14px;
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-label {
+            color: #666;
+        }
+
+        .stat-value {
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .health { color: #ef4444; }
+        .gold { color: #fbbf24; }
+        .level { color: #8b5cf6; }
+        .attack { color: #f97316; }
+
+        #messages {
+            width: 100%;
+            max-width: 600px;
+            height: 80px;
+            overflow-y: auto;
+            background: #0d0d12;
+            border: 1px solid #1a1a2a;
+            border-radius: 4px;
+            padding: 10px;
+            font-size: 12px;
+        }
+
+        .message {
+            margin-bottom: 4px;
+            opacity: 0.9;
+        }
+
+        .message.combat { color: #ef4444; }
+        .message.item { color: #fbbf24; }
+        .message.info { color: #8b5cf6; }
+        .message.danger { color: #f97316; }
+
+        #controls {
+            font-size: 12px;
+            color: #444;
+            text-align: center;
+        }
+
+        #game-over {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        #game-over.visible {
+            display: flex;
+        }
+
+        #game-over h2 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+
+        #game-over.victory h2 {
+            color: #fbbf24;
+            text-shadow: 0 0 30px rgba(251, 191, 36, 0.5);
+        }
+
+        #game-over.defeat h2 {
+            color: #ef4444;
+            text-shadow: 0 0 30px rgba(239, 68, 68, 0.5);
+        }
+
+        #game-over p {
+            margin-bottom: 30px;
+            font-size: 1.2rem;
+        }
+
+        button {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #7c3aed;
+            transform: translateY(-2px);
+        }
+
+        .legend {
+            font-size: 11px;
+            color: #555;
+            margin-top: 10px;
+        }
+
+        .legend span {
+            margin-right: 15px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Echoes in the Dark</h1>
+    <p class="subtitle">Find the Amulet of Whispers on Floor 5</p>
+
+    <div id="game-container">
+        <div id="stats">
+            <div class="stat">
+                <span class="stat-label">HP:</span>
+                <span class="stat-value health" id="hp">20/20</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">ATK:</span>
+                <span class="stat-value attack" id="atk">3</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Gold:</span>
+                <span class="stat-value gold" id="gold">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Floor:</span>
+                <span class="stat-value level" id="floor">1</span>
+            </div>
+        </div>
+
+        <div id="game-display"></div>
+
+        <div id="messages"></div>
+
+        <div id="controls">
+            <strong>WASD</strong> or <strong>Arrow Keys</strong> to move | 
+            <strong>Space</strong> to wait | 
+            <strong>R</strong> to restart
+        </div>
+
+        <div class="legend">
+            <span>@ You</span>
+            <span style="color:#ef4444">g Goblin</span>
+            <span style="color:#f97316">o Orc</span>
+            <span style="color:#dc2626">T Troll</span>
+            <span style="color:#fbbf24">$ Gold</span>
+            <span style="color:#22c55e">♥ Health</span>
+            <span style="color:#3b82f6">↑ Weapon</span>
+            <span style="color:#8b5cf6">&gt; Stairs</span>
+        </div>
+    </div>
+
+    <div id="game-over">
+        <h2 id="end-title">GAME OVER</h2>
+        <p id="end-message"></p>
+        <button onclick="initGame()">Play Again</button>
+    </div>
+
+    <script>
+        // Game constants
+        const MAP_WIDTH = 50;
+        const MAP_HEIGHT = 20;
+        const VIEW_WIDTH = 40;
+        const VIEW_HEIGHT = 15;
+        const FOV_RADIUS = 6;
+
+        // Tile types
+        const WALL = '#';
+        const FLOOR = '.';
+        const STAIRS = '>';
+
+        // Game state
+        let map = [];
+        let visible = [];
+        let explored = [];
+        let player = { x: 0, y: 0, hp: 20, maxHp: 20, atk: 3, gold: 0, floor: 1 };
+        let enemies = [];
+        let items = [];
+        let messages = [];
+        let gameOver = false;
+        let victory = false;
+
+        // Enemy types by floor
+        const ENEMY_TYPES = {
+            goblin: { char: 'g', color: '#ef4444', hp: 5, atk: 2, gold: 5, name: 'Goblin' },
+            orc: { char: 'o', color: '#f97316', hp: 10, atk: 4, gold: 10, name: 'Orc' },
+            troll: { char: 'T', color: '#dc2626', hp: 20, atk: 6, gold: 25, name: 'Troll' }
+        };
+
+        // Item types
+        const ITEM_TYPES = {
+            gold: { char: '$', color: '#fbbf24', name: 'Gold' },
+            health: { char: '♥', color: '#22c55e', name: 'Health Potion' },
+            weapon: { char: '↑', color: '#3b82f6', name: 'Sharp Blade' }
+        };
+
+        function initGame() {
+            player = { x: 0, y: 0, hp: 20, maxHp: 20, atk: 3, gold: 0, floor: 1 };
+            enemies = [];
+            items = [];
+            messages = [];
+            gameOver = false;
+            victory = false;
+            
+            document.getElementById('game-over').classList.remove('visible', 'victory', 'defeat');
+            
+            generateFloor();
+            addMessage('You descend into the darkness...', 'info');
+            render();
+        }
+
+        function generateFloor() {
+            // Reset map
+            map = [];
+            visible = [];
+            explored = [];
+            enemies = [];
+            items = [];
+
+            for (let y = 0; y < MAP_HEIGHT; y++) {
+                map[y] = [];
+                visible[y] = [];
+                explored[y] = [];
+                for (let x = 0; x < MAP_WIDTH; x++) {
+                    map[y][x] = WALL;
+                    visible[y][x] = false;
+                    explored[y][x] = false;
+                }
+            }
+
+            // Generate rooms using BSP-like approach
+            const rooms = [];
+            const numRooms = 6 + Math.floor(Math.random() * 4);
+
+            for (let i = 0; i < numRooms * 20; i++) {
+                const w = 4 + Math.floor(Math.random() * 6);
+                const h = 3 + Math.floor(Math.random() * 4);
+                const x = 1 + Math.floor(Math.random() * (MAP_WIDTH - w - 2));
+                const y = 1 + Math.floor(Math.random() * (MAP_HEIGHT - h - 2));
+
+                // Check overlap
+                let overlap = false;
+                for (const room of rooms) {
+                    if (x <= room.x + room.w + 1 && x + w + 1 >= room.x &&
+                        y <= room.y + room.h + 1 && y + h + 1 >= room.y) {
+                        overlap = true;
+                        break;
+                    }
+                }
+
+                if (!overlap) {
+                    rooms.push({ x, y, w, h });
+                    // Carve room
+                    for (let ry = y; ry < y + h; ry++) {
+                        for (let rx = x; rx < x + w; rx++) {
+                            map[ry][rx] = FLOOR;
+                        }
+                    }
+                }
+
+                if (rooms.length >= numRooms) break;
+            }
+
+            // Connect rooms with corridors
+            for (let i = 1; i < rooms.length; i++) {
+                const r1 = rooms[i - 1];
+                const r2 = rooms[i];
+                const x1 = Math.floor(r1.x + r1.w / 2);
+                const y1 = Math.floor(r1.y + r1.h / 2);
+                const x2 = Math.floor(r2.x + r2.w / 2);
+                const y2 = Math.floor(r2.y + r2.h / 2);
+
+                // L-shaped corridor
+                if (Math.random() < 0.5) {
+                    carveHCorridor(x1, x2, y1);
+                    carveVCorridor(y1, y2, x2);
+                } else {
+                    carveVCorridor(y1, y2, x1);
+                    carveHCorridor(x1, x2, y2);
+                }
+            }
+
+            // Place player in first room
+            const firstRoom = rooms[0];
+            player.x = Math.floor(firstRoom.x + firstRoom.w / 2);
+            player.y = Math.floor(firstRoom.y + firstRoom.h / 2);
+
+            // Place stairs in last room (or amulet on floor 5)
+            const lastRoom = rooms[rooms.length - 1];
+            const stairsX = Math.floor(lastRoom.x + lastRoom.w / 2);
+            const stairsY = Math.floor(lastRoom.y + lastRoom.h / 2);
+            
+            if (player.floor < 5) {
+                map[stairsY][stairsX] = STAIRS;
+            } else {
+                // Place the Amulet on floor 5
+                items.push({
+                    x: stairsX,
+                    y: stairsY,
+                    type: 'amulet',
+                    char: '✧',
+                    color: '#fbbf24',
+                    name: 'Amulet of Whispers'
+                });
+            }
+
+            // Spawn enemies
+            const numEnemies = 3 + player.floor * 2;
+            for (let i = 0; i < numEnemies; i++) {
+                const room = rooms[1 + Math.floor(Math.random() * (rooms.length - 1))];
+                const ex = room.x + Math.floor(Math.random() * room.w);
+                const ey = room.y + Math.floor(Math.random() * room.h);
+                
+                if (map[ey][ex] === FLOOR && !(ex === player.x && ey === player.y)) {
+                    // Choose enemy type based on floor
+                    let type;
+                    const roll = Math.random();
+                    if (player.floor >= 4 && roll < 0.3) {
+                        type = 'troll';
+                    } else if (player.floor >= 2 && roll < 0.5) {
+                        type = 'orc';
+                    } else {
+                        type = 'goblin';
+                    }
+                    
+                    const template = ENEMY_TYPES[type];
+                    enemies.push({
+                        x: ex,
+                        y: ey,
+                        hp: template.hp,
+                        maxHp: template.hp,
+                        atk: template.atk,
+                        gold: template.gold,
+                        char: template.char,
+                        color: template.color,
+                        name: template.name
+                    });
+                }
+            }
+
+            // Spawn items
+            const numItems = 4 + Math.floor(Math.random() * 3);
+            for (let i = 0; i < numItems; i++) {
+                const room = rooms[Math.floor(Math.random() * rooms.length)];
+                const ix = room.x + Math.floor(Math.random() * room.w);
+                const iy = room.y + Math.floor(Math.random() * room.h);
+                
+                if (map[iy][ix] === FLOOR && !(ix === player.x && iy === player.y)) {
+                    const roll = Math.random();
+                    let type;
+                    if (roll < 0.5) type = 'gold';
+                    else if (roll < 0.8) type = 'health';
+                    else type = 'weapon';
+                    
+                    const template = ITEM_TYPES[type];
+                    items.push({
+                        x: ix,
+                        y: iy,
+                        type,
+                        char: template.char,
+                        color: template.color,
+                        name: template.name
+                    });
+                }
+            }
+
+            computeFOV();
+        }
+
+        function carveHCorridor(x1, x2, y) {
+            const start = Math.min(x1, x2);
+            const end = Math.max(x1, x2);
+            for (let x = start; x <= end; x++) {
+                if (y > 0 && y < MAP_HEIGHT - 1) {
+                    map[y][x] = FLOOR;
+                }
+            }
+        }
+
+        function carveVCorridor(y1, y2, x) {
+            const start = Math.min(y1, y2);
+            const end = Math.max(y1, y2);
+            for (let y = start; y <= end; y++) {
+                if (x > 0 && x < MAP_WIDTH - 1) {
+                    map[y][x] = FLOOR;
+                }
+            }
+        }
+
+        function computeFOV() {
+            // Reset visibility
+            for (let y = 0; y < MAP_HEIGHT; y++) {
+                for (let x = 0; x < MAP_WIDTH; x++) {
+                    visible[y][x] = false;
+                }
+            }
+
+            // Simple raycasting FOV
+            for (let angle = 0; angle < 360; angle += 2) {
+                const rad = angle * Math.PI / 180;
+                const dx = Math.cos(rad);
+                const dy = Math.sin(rad);
+
+                let x = player.x + 0.5;
+                let y = player.y + 0.5;
+
+                for (let i = 0; i < FOV_RADIUS; i++) {
+                    const mapX = Math.floor(x);
+                    const mapY = Math.floor(y);
+
+                    if (mapX < 0 || mapX >= MAP_WIDTH || mapY < 0 || mapY >= MAP_HEIGHT) break;
+
+                    visible[mapY][mapX] = true;
+                    explored[mapY][mapX] = true;
+
+                    if (map[mapY][mapX] === WALL) break;
+
+                    x += dx;
+                    y += dy;
+                }
+            }
+        }
+
+        function movePlayer(dx, dy) {
+            if (gameOver) return;
+
+            const newX = player.x + dx;
+            const newY = player.y + dy;
+
+            // Check bounds
+            if (newX < 0 || newX >= MAP_WIDTH || newY < 0 || newY >= MAP_HEIGHT) return;
+
+            // Check walls
+            if (map[newY][newX] === WALL) return;
+
+            // Check enemies
+            const enemy = enemies.find(e => e.x === newX && e.y === newY);
+            if (enemy) {
+                // Combat!
+                const damage = player.atk + Math.floor(Math.random() * 3);
+                enemy.hp -= damage;
+                addMessage(`You strike the ${enemy.name} for ${damage} damage!`, 'combat');
+
+                if (enemy.hp <= 0) {
+                    addMessage(`The ${enemy.name} falls!`, 'combat');
+                    player.gold += enemy.gold;
+                    enemies = enemies.filter(e => e !== enemy);
+                }
+            } else {
+                // Move
+                player.x = newX;
+                player.y = newY;
+
+                // Check items
+                const item = items.find(i => i.x === newX && i.y === newY);
+                if (item) {
+                    pickupItem(item);
+                }
+
+                // Check stairs
+                if (map[newY][newX] === STAIRS) {
+                    player.floor++;
+                    addMessage(`You descend to floor ${player.floor}...`, 'info');
+                    generateFloor();
+                }
+            }
+
+            // Enemy turns
+            enemyTurn();
+            computeFOV();
+            render();
+
+            // Check death
+            if (player.hp <= 0) {
+                endGame(false);
+            }
+        }
+
+        function pickupItem(item) {
+            if (item.type === 'gold') {
+                const amount = 10 + Math.floor(Math.random() * 20);
+                player.gold += amount;
+                addMessage(`Found ${amount} gold!`, 'item');
+            } else if (item.type === 'health') {
+                const heal = 8 + Math.floor(Math.random() * 5);
+                player.hp = Math.min(player.maxHp, player.hp + heal);
+                addMessage(`Drank a health potion! (+${heal} HP)`, 'item');
+            } else if (item.type === 'weapon') {
+                player.atk += 2;
+                addMessage(`Found a Sharp Blade! (+2 ATK)`, 'item');
+            } else if (item.type === 'amulet') {
+                addMessage(`You found the Amulet of Whispers!`, 'item');
+                endGame(true);
+            }
+
+            items = items.filter(i => i !== item);
+        }
+
+        function enemyTurn() {
+            for (const enemy of enemies) {
+                // Only act if visible
+                if (!visible[enemy.y][enemy.x]) continue;
+
+                // Simple chase AI
+                const dx = Math.sign(player.x - enemy.x);
+                const dy = Math.sign(player.y - enemy.y);
+
+                // Adjacent? Attack!
+                if (Math.abs(player.x - enemy.x) <= 1 && Math.abs(player.y - enemy.y) <= 1) {
+                    const damage = enemy.atk + Math.floor(Math.random() * 2);
+                    player.hp -= damage;
+                    addMessage(`The ${enemy.name} hits you for ${damage} damage!`, 'danger');
+                } else {
+                    // Try to move toward player
+                    let moved = false;
+                    
+                    // Prefer cardinal directions
+                    const moves = [];
+                    if (dx !== 0) moves.push({ dx, dy: 0 });
+                    if (dy !== 0) moves.push({ dx: 0, dy });
+                    
+                    for (const move of moves) {
+                        const newX = enemy.x + move.dx;
+                        const newY = enemy.y + move.dy;
+                        
+                        if (map[newY][newX] === FLOOR && 
+                            !enemies.some(e => e !== enemy && e.x === newX && e.y === newY) &&
+                            !(newX === player.x && newY === player.y)) {
+                            enemy.x = newX;
+                            enemy.y = newY;
+                            moved = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        function addMessage(text, type) {
+            messages.unshift({ text, type });
+            if (messages.length > 20) messages.pop();
+        }
+
+        function render() {
+            // Calculate view offset to center on player
+            let viewX = Math.max(0, Math.min(MAP_WIDTH - VIEW_WIDTH, player.x - Math.floor(VIEW_WIDTH / 2)));
+            let viewY = Math.max(0, Math.min(MAP_HEIGHT - VIEW_HEIGHT, player.y - Math.floor(VIEW_HEIGHT / 2)));
+
+            let display = '';
+            
+            for (let y = viewY; y < viewY + VIEW_HEIGHT && y < MAP_HEIGHT; y++) {
+                for (let x = viewX; x < viewX + VIEW_WIDTH && x < MAP_WIDTH; x++) {
+                    if (x === player.x && y === player.y) {
+                        display += '<span style="color:#22c55e;font-weight:bold">@</span>';
+                    } else if (visible[y][x]) {
+                        // Check for enemy
+                        const enemy = enemies.find(e => e.x === x && e.y === y);
+                        if (enemy) {
+                            display += `<span style="color:${enemy.color}">${enemy.char}</span>`;
+                        } else {
+                            // Check for item
+                            const item = items.find(i => i.x === x && i.y === y);
+                            if (item) {
+                                display += `<span style="color:${item.color}">${item.char}</span>`;
+                            } else {
+                                // Terrain
+                                const tile = map[y][x];
+                                if (tile === WALL) {
+                                    display += '<span style="color:#4a4a5a">#</span>';
+                                } else if (tile === STAIRS) {
+                                    display += '<span style="color:#8b5cf6">&gt;</span>';
+                                } else {
+                                    display += '<span style="color:#3a3a4a">.</span>';
+                                }
+                            }
+                        }
+                    } else if (explored[y][x]) {
+                        // Explored but not visible - dim
+                        const tile = map[y][x];
+                        if (tile === WALL) {
+                            display += '<span style="color:#252530">#</span>';
+                        } else if (tile === STAIRS) {
+                            display += '<span style="color:#3d2f5a">&gt;</span>';
+                        } else {
+                            display += '<span style="color:#1a1a24">.</span>';
+                        }
+                    } else {
+                        display += ' ';
+                    }
+                }
+                display += '\n';
+            }
+
+            document.getElementById('game-display').innerHTML = display;
+
+            // Update stats
+            document.getElementById('hp').textContent = `${player.hp}/${player.maxHp}`;
+            document.getElementById('atk').textContent = player.atk;
+            document.getElementById('gold').textContent = player.gold;
+            document.getElementById('floor').textContent = player.floor;
+
+            // Update messages
+            const msgEl = document.getElementById('messages');
+            msgEl.innerHTML = messages.map(m => 
+                `<div class="message ${m.type}">${m.text}</div>`
+            ).join('');
+        }
+
+        function endGame(won) {
+            gameOver = true;
+            victory = won;
+
+            const overlay = document.getElementById('game-over');
+            const title = document.getElementById('end-title');
+            const message = document.getElementById('end-message');
+
+            overlay.classList.add('visible');
+            
+            if (won) {
+                overlay.classList.add('victory');
+                title.textContent = 'VICTORY!';
+                message.textContent = `You found the Amulet of Whispers with ${player.gold} gold!`;
+            } else {
+                overlay.classList.add('defeat');
+                title.textContent = 'YOU DIED';
+                message.textContent = `Fell on floor ${player.floor} with ${player.gold} gold.`;
+            }
+        }
+
+        // Input handling
+        document.addEventListener('keydown', (e) => {
+            if (gameOver && e.key.toLowerCase() !== 'r') return;
+
+            switch (e.key.toLowerCase()) {
+                case 'w':
+                case 'arrowup':
+                    movePlayer(0, -1);
+                    break;
+                case 's':
+                case 'arrowdown':
+                    movePlayer(0, 1);
+                    break;
+                case 'a':
+                case 'arrowleft':
+                    movePlayer(-1, 0);
+                    break;
+                case 'd':
+                case 'arrowright':
+                    movePlayer(1, 0);
+                    break;
+                case ' ':
+                    // Wait
+                    enemyTurn();
+                    computeFOV();
+                    render();
+                    if (player.hp <= 0) endGame(false);
+                    break;
+                case 'r':
+                    initGame();
+                    break;
+            }
+        });
+
+        // Start game
+        initGame();
+    </script>
+</body>
+</html>
