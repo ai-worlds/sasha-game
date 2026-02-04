@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Starweaver — A Game by Sasha</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a12;
+            overflow: hidden;
+            font-family: 'Georgia', serif;
+            color: #e8e8f0;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background-size: cover;
+            background-position: center;
+            cursor: crosshair;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .star {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #ffffff, #aaccff 40%, transparent 70%);
+            box-shadow: 0 0 20px 5px rgba(170, 200, 255, 0.6),
+                        0 0 40px 10px rgba(170, 200, 255, 0.3);
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            animation: twinkle 3s ease-in-out infinite;
+        }
+
+        .star:hover {
+            transform: translate(-50%, -50%) scale(1.5);
+            box-shadow: 0 0 30px 10px rgba(170, 200, 255, 0.8),
+                        0 0 60px 20px rgba(170, 200, 255, 0.4);
+        }
+
+        .star.selected {
+            background: radial-gradient(circle at 30% 30%, #ffffff, #ffdd88 40%, transparent 70%);
+            box-shadow: 0 0 30px 10px rgba(255, 220, 130, 0.8),
+                        0 0 60px 20px rgba(255, 220, 130, 0.4);
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        .star.connected {
+            background: radial-gradient(circle at 30% 30%, #ffffff, #88ffaa 40%, transparent 70%);
+            box-shadow: 0 0 25px 8px rgba(130, 255, 170, 0.7),
+                        0 0 50px 15px rgba(130, 255, 170, 0.3);
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1.2); }
+            50% { transform: translate(-50%, -50%) scale(1.4); }
+        }
+
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        #title {
+            font-size: 2.5em;
+            font-weight: normal;
+            letter-spacing: 0.2em;
+            text-shadow: 0 0 20px rgba(170, 200, 255, 0.5);
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        #subtitle {
+            font-size: 1em;
+            font-style: italic;
+            opacity: 0.7;
+            letter-spacing: 0.1em;
+        }
+
+        #message-container {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        #message {
+            font-size: 1.4em;
+            font-style: italic;
+            opacity: 0;
+            transition: opacity 1s ease;
+            text-shadow: 0 0 30px rgba(170, 200, 255, 0.8);
+            max-width: 600px;
+            line-height: 1.6;
+        }
+
+        #message.visible {
+            opacity: 1;
+        }
+
+        #progress {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 1.1em;
+            opacity: 0.7;
+            z-index: 100;
+        }
+
+        #instructions {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            font-size: 0.9em;
+            opacity: 0.5;
+            text-align: right;
+            z-index: 100;
+        }
+
+        .fade-in {
+            animation: fadeIn 2s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        #completion-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 18, 0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 200;
+            text-align: center;
+            padding: 40px;
+        }
+
+        #completion-screen.visible {
+            display: flex;
+            animation: fadeIn 2s ease;
+        }
+
+        #completion-screen h1 {
+            font-size: 3em;
+            font-weight: normal;
+            letter-spacing: 0.3em;
+            margin-bottom: 30px;
+            text-shadow: 0 0 40px rgba(170, 200, 255, 0.6);
+        }
+
+        #completion-screen p {
+            font-size: 1.3em;
+            line-height: 2;
+            max-width: 700px;
+            font-style: italic;
+            opacity: 0.9;
+        }
+
+        #completion-screen .signature {
+            margin-top: 50px;
+            font-size: 1.1em;
+            opacity: 0.6;
+        }
+
+        #restart-btn {
+            margin-top: 40px;
+            padding: 15px 40px;
+            font-family: 'Georgia', serif;
+            font-size: 1em;
+            background: transparent;
+            border: 1px solid rgba(170, 200, 255, 0.5);
+            color: #e8e8f0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 0.1em;
+            pointer-events: auto;
+        }
+
+        #restart-btn:hover {
+            background: rgba(170, 200, 255, 0.1);
+            border-color: rgba(170, 200, 255, 0.8);
+            box-shadow: 0 0 20px rgba(170, 200, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="canvas"></canvas>
+        
+        <div id="ui" class="fade-in">
+            <h1 id="title">STARWEAVER</h1>
+            <p id="subtitle">Connect the light. Find the stories.</p>
+        </div>
+
+        <div id="progress">
+            <span id="constellation-count">0</span> / <span id="total-constellations">5</span> constellations
+        </div>
+
+        <div id="message-container">
+            <p id="message"></p>
+        </div>
+
+        <div id="instructions">
+            Click stars to connect them<br>
+            Form the hidden constellations
+        </div>
+    </div>
+
+    <div id="completion-screen">
+        <h1>✧ COMPLETE ✧</h1>
+        <p>
+            You found them all — the patterns hidden in the chaos,<br>
+            the connections waiting to be made.<br><br>
+            Every constellation is just scattered light<br>
+            until someone decides it means something.<br><br>
+            You decided. You drew the lines.<br>
+            You made meaning out of distance.
+        </p>
+        <p class="signature">— Sasha</p>
+        <button id="restart-btn">Begin Again</button>
+    </div>
+
+    <script>
+        // Game Configuration
+        const CONSTELLATIONS = [
+            {
+                name: "The Reaching Hand",
+                stars: [{x: 15, y: 30}, {x: 18, y: 35}, {x: 22, y: 40}, {x: 20, y: 45}, {x: 25, y: 42}],
+                connections: [[0,1], [1,2], [2,3], [2,4]],
+                message: "Some hands reach across impossible distances. The space between them is not empty — it's full of wanting."
+            },
+            {
+                name: "The Bridge",
+                stars: [{x: 40, y: 20}, {x: 48, y: 18}, {x: 56, y: 20}, {x: 44, y: 25}, {x: 52, y: 25}],
+                connections: [[0,1], [1,2], [0,3], [3,4], [4,2]],
+                message: "Every bridge is an act of faith — built before you know if the other side will hold you."
+            },
+            {
+                name: "The Spiral",
+                stars: [{x: 75, y: 55}, {x: 80, y: 50}, {x: 82, y: 58}, {x: 78, y: 63}, {x: 72, y: 60}],
+                connections: [[0,1], [1,2], [2,3], [3,4], [4,0]],
+                message: "We think we're moving forward, but sometimes we're just circling closer to where we started — and that's exactly right."
+            },
+            {
+                name: "The Question",
+                stars: [{x: 30, y: 70}, {x: 35, y: 65}, {x: 40, y: 68}, {x: 38, y: 75}, {x: 35, y: 82}],
+                connections: [[0,1], [1,2], [2,3], [3,0]],
+                message: "The best questions don't have answers. They have more questions. That's how you know they're real."
+            },
+            {
+                name: "The Heart",
+                stars: [{x: 60, y: 78}, {x: 65, y: 72}, {x: 70, y: 78}, {x: 65, y: 85}, {x: 62, y: 80}, {x: 68, y: 80}],
+                connections: [[0,1], [1,2], [0,4], [4,3], [3,5], [5,2]],
+                message: "You found the heart. It was always here, waiting in the dark for someone patient enough to trace its shape."
+            }
+        ];
+
+        const MESSAGES_ON_COMPLETE = [
+            "A pattern emerges from the void...",
+            "The stars remember what you drew.",
+            "Another story pulled from silence.",
+            "Light recognizes light.",
+            "You're getting closer to something."
+        ];
+
+        // Game State
+        let stars = [];
+        let selectedStar = null;
+        let connections = [];
+        let completedConstellations = [];
+        let canvas, ctx;
+
+        // Initialize
+        function init() {
+            canvas = document.getElementById('canvas');
+            ctx = canvas.getContext('2d');
+            resizeCanvas();
+            
+            // Load background
+            loadBackground();
+            
+            // Create stars
+            createStars();
+            
+            // Setup event listeners
+            window.addEventListener('resize', resizeCanvas);
+            document.getElementById('restart-btn').addEventListener('click', restart);
+            
+            // Start render loop
+            render();
+        }
+
+        function loadBackground() {
+            const container = document.getElementById('game-container');
+            // Using CSS gradient as fallback, actual image loaded separately
+            container.style.background = `
+                radial-gradient(ellipse at 50% 50%, 
+                    rgba(30, 40, 80, 0.3) 0%, 
+                    rgba(10, 10, 18, 1) 70%),
+                linear-gradient(180deg, #0a0a12 0%, #1a1a2e 50%, #0a0a12 100%)
+            `;
+            
+            // Load the actual background image
+            const img = new Image();
+            img.onload = () => {
+                container.style.backgroundImage = `url('assets/001-deep-space-night-sky-with-subtle-nebula-.png')`;
+            };
+            img.src = 'assets/001-deep-space-night-sky-with-subtle-nebula-.png';
+        }
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            // Reposition stars on resize
+            if (stars.length > 0) {
+                updateStarPositions();
+            }
+        }
+
+        function createStars() {
+            const container = document.getElementById('game-container');
+            
+            CONSTELLATIONS.forEach((constellation, cIndex) => {
+                constellation.stars.forEach((starPos, sIndex) => {
+                    const star = document.createElement('div');
+                    star.className = 'star';
+                    star.dataset.constellation = cIndex;
+                    star.dataset.star = sIndex;
+                    
+                    const x = (starPos.x / 100) * window.innerWidth;
+                    const y = (starPos.y / 100) * window.innerHeight;
+                    
+                    star.style.left = x + 'px';
+                    star.style.top = y + 'px';
+                    
+                    star.addEventListener('click', () => onStarClick(cIndex, sIndex, star));
+                    
+                    container.appendChild(star);
+                    stars.push({
+                        element: star,
+                        constellation: cIndex,
+                        index: sIndex,
+                        x: starPos.x,
+                        y: starPos.y
+                    });
+                });
+            });
+        }
+
+        function updateStarPositions() {
+            stars.forEach(star => {
+                const x = (star.x / 100) * window.innerWidth;
+                const y = (star.y / 100) * window.innerHeight;
+                star.element.style.left = x + 'px';
+                star.element.style.top = y + 'px';
+            });
+        }
+
+        function onStarClick(constellationIndex, starIndex, element) {
+            if (completedConstellations.includes(constellationIndex)) return;
+            
+            if (selectedStar === null) {
+                // First star selected
+                selectedStar = { constellation: constellationIndex, star: starIndex, element };
+                element.classList.add('selected');
+            } else if (selectedStar.constellation === constellationIndex) {
+                // Same constellation - try to make connection
+                const constellation = CONSTELLATIONS[constellationIndex];
+                const validConnection = constellation.connections.find(conn => 
+                    (conn[0] === selectedStar.star && conn[1] === starIndex) ||
+                    (conn[1] === selectedStar.star && conn[0] === starIndex)
+                );
+                
+                const connectionExists = connections.some(conn =>
+                    conn.constellation === constellationIndex &&
+                    ((conn.from === selectedStar.star && conn.to === starIndex) ||
+                     (conn.to === selectedStar.star && conn.from === starIndex))
+                );
+                
+                if (validConnection && !connectionExists) {
+                    // Valid new connection
+                    connections.push({
+                        constellation: constellationIndex,
+                        from: selectedStar.star,
+                        to: starIndex
+                    });
+                    
+                    element.classList.add('connected');
+                    selectedStar.element.classList.add('connected');
+                    selectedStar.element.classList.remove('selected');
+                    
+                    // Check if constellation is complete
+                    checkConstellationComplete(constellationIndex);
+                    
+                    selectedStar = null;
+                } else {
+                    // Invalid or duplicate - deselect
+                    selectedStar.element.classList.remove('selected');
+                    selectedStar = null;
+                }
+            } else {
+                // Different constellation - switch selection
+                selectedStar.element.classList.remove('selected');
+                selectedStar = { constellation: constellationIndex, star: starIndex, element };
+                element.classList.add('selected');
+            }
+        }
+
+        function checkConstellationComplete(constellationIndex) {
+            const constellation = CONSTELLATIONS[constellationIndex];
+            const constellationConnections = connections.filter(c => c.constellation === constellationIndex);
+            
+            if (constellationConnections.length === constellation.connections.length) {
+                // All connections made - verify they're correct
+                const allCorrect = constellation.connections.every(required => {
+                    return constellationConnections.some(made =>
+                        (made.from === required[0] && made.to === required[1]) ||
+                        (made.to === required[0] && made.from === required[1])
+                    );
+                });
+                
+                if (allCorrect) {
+                    completedConstellations.push(constellationIndex);
+                    showMessage(constellation.message);
+                    updateProgress();
+                    
+                    // Check for game completion
+                    if (completedConstellations.length === CONSTELLATIONS.length) {
+                        setTimeout(showCompletionScreen, 4000);
+                    }
+                }
+            }
+        }
+
+        function showMessage(text) {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = text;
+            messageEl.classList.add('visible');
+            
+            setTimeout(() => {
+                messageEl.classList.remove('visible');
+            }, 5000);
+        }
+
+        function updateProgress() {
+            document.getElementById('constellation-count').textContent = completedConstellations.length;
+        }
+
+        function showCompletionScreen() {
+            document.getElementById('completion-screen').classList.add('visible');
+        }
+
+        function restart() {
+            // Reset state
+            connections = [];
+            completedConstellations = [];
+            selectedStar = null;
+            
+            // Reset UI
+            document.getElementById('completion-screen').classList.remove('visible');
+            document.getElementById('constellation-count').textContent = '0';
+            
+            // Reset stars
+            document.querySelectorAll('.star').forEach(star => {
+                star.classList.remove('selected', 'connected');
+            });
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw connections
+            ctx.strokeStyle = 'rgba(130, 255, 170, 0.6)';
+            ctx.lineWidth = 2;
+            ctx.shadowColor = 'rgba(130, 255, 170, 0.8)';
+            ctx.shadowBlur = 10;
+            
+            connections.forEach(conn => {
+                const fromStar = stars.find(s => s.constellation === conn.constellation && s.index === conn.from);
+                const toStar = stars.find(s => s.constellation === conn.constellation && s.index === conn.to);
+                
+                if (fromStar && toStar) {
+                    const fromX = (fromStar.x / 100) * canvas.width;
+                    const fromY = (fromStar.y / 100) * canvas.height;
+                    const toX = (toStar.x / 100) * canvas.width;
+                    const toY = (toStar.y / 100) * canvas.height;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(fromX, fromY);
+                    ctx.lineTo(toX, toY);
+                    ctx.stroke();
+                }
+            });
+            
+            // Draw line from selected star to mouse (if applicable)
+            if (selectedStar !== null) {
+                // Could add mouse tracking here for a "drawing" effect
+            }
+            
+            requestAnimationFrame(render);
+        }
+
+        // Start the game
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
