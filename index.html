@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Starweaver — A Game by Sasha</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Void Runner — A Game by Sasha</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            touch-action: none;
         }
 
         body {
@@ -18,64 +19,10 @@
             color: #e8e8f0;
         }
 
-        #game-container {
-            position: relative;
+        #game-canvas {
+            display: block;
             width: 100vw;
             height: 100vh;
-            background-size: cover;
-            background-position: center;
-            cursor: crosshair;
-        }
-
-        #canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
-
-        .star {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: radial-gradient(circle at 30% 30%, #ffffff, #aaccff 40%, transparent 70%);
-            box-shadow: 0 0 20px 5px rgba(170, 200, 255, 0.6),
-                        0 0 40px 10px rgba(170, 200, 255, 0.3);
-            transform: translate(-50%, -50%);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            animation: twinkle 3s ease-in-out infinite;
-        }
-
-        .star:hover {
-            transform: translate(-50%, -50%) scale(1.5);
-            box-shadow: 0 0 30px 10px rgba(170, 200, 255, 0.8),
-                        0 0 60px 20px rgba(170, 200, 255, 0.4);
-        }
-
-        .star.selected {
-            background: radial-gradient(circle at 30% 30%, #ffffff, #ffdd88 40%, transparent 70%);
-            box-shadow: 0 0 30px 10px rgba(255, 220, 130, 0.8),
-                        0 0 60px 20px rgba(255, 220, 130, 0.4);
-            animation: pulse 1s ease-in-out infinite;
-        }
-
-        .star.connected {
-            background: radial-gradient(circle at 30% 30%, #ffffff, #88ffaa 40%, transparent 70%);
-            box-shadow: 0 0 25px 8px rgba(130, 255, 170, 0.7),
-                        0 0 50px 15px rgba(130, 255, 170, 0.3);
-        }
-
-        @keyframes twinkle {
-            0%, 100% { opacity: 0.8; }
-            50% { opacity: 1; }
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: translate(-50%, -50%) scale(1.2); }
-            50% { transform: translate(-50%, -50%) scale(1.4); }
         }
 
         #ui {
@@ -87,81 +34,31 @@
         }
 
         #title {
-            font-size: 2.5em;
+            font-size: 1.8em;
             font-weight: normal;
-            letter-spacing: 0.2em;
+            letter-spacing: 0.3em;
             text-shadow: 0 0 20px rgba(170, 200, 255, 0.5);
-            margin-bottom: 10px;
             opacity: 0.9;
         }
 
-        #subtitle {
-            font-size: 1em;
-            font-style: italic;
-            opacity: 0.7;
-            letter-spacing: 0.1em;
-        }
-
-        #message-container {
-            position: absolute;
-            bottom: 40px;
-            left: 50%;
-            transform: translateX(-50%);
-            text-align: center;
-            z-index: 100;
-            pointer-events: none;
-        }
-
-        #message {
-            font-size: 1.4em;
-            font-style: italic;
-            opacity: 0;
-            transition: opacity 1s ease;
-            text-shadow: 0 0 30px rgba(170, 200, 255, 0.8);
-            max-width: 600px;
-            line-height: 1.6;
-        }
-
-        #message.visible {
-            opacity: 1;
-        }
-
-        #progress {
+        #score-display {
             position: absolute;
             top: 20px;
             right: 20px;
-            font-size: 1.1em;
-            opacity: 0.7;
+            font-size: 1.5em;
+            letter-spacing: 0.1em;
+            text-shadow: 0 0 15px rgba(170, 200, 255, 0.5);
             z-index: 100;
         }
 
-        #instructions {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            font-size: 0.9em;
-            opacity: 0.5;
-            text-align: right;
-            z-index: 100;
-        }
-
-        .fade-in {
-            animation: fadeIn 2s ease forwards;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        #completion-screen {
+        #start-screen, #game-over-screen {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             background: rgba(10, 10, 18, 0.95);
-            display: none;
+            display: flex;
             justify-content: center;
             align-items: center;
             flex-direction: column;
@@ -170,374 +67,489 @@
             padding: 40px;
         }
 
-        #completion-screen.visible {
-            display: flex;
-            animation: fadeIn 2s ease;
+        #game-over-screen {
+            display: none;
         }
 
-        #completion-screen h1 {
-            font-size: 3em;
+        .screen h1 {
+            font-size: 3.5em;
             font-weight: normal;
-            letter-spacing: 0.3em;
-            margin-bottom: 30px;
+            letter-spacing: 0.4em;
+            margin-bottom: 20px;
             text-shadow: 0 0 40px rgba(170, 200, 255, 0.6);
         }
 
-        #completion-screen p {
-            font-size: 1.3em;
-            line-height: 2;
-            max-width: 700px;
+        .screen p {
+            font-size: 1.2em;
+            line-height: 1.8;
+            max-width: 500px;
             font-style: italic;
-            opacity: 0.9;
+            opacity: 0.8;
+            margin-bottom: 30px;
         }
 
-        #completion-screen .signature {
-            margin-top: 50px;
-            font-size: 1.1em;
-            opacity: 0.6;
-        }
-
-        #restart-btn {
-            margin-top: 40px;
-            padding: 15px 40px;
+        .btn {
+            padding: 18px 50px;
             font-family: 'Georgia', serif;
-            font-size: 1em;
+            font-size: 1.1em;
             background: transparent;
             border: 1px solid rgba(170, 200, 255, 0.5);
             color: #e8e8f0;
             cursor: pointer;
             transition: all 0.3s ease;
-            letter-spacing: 0.1em;
-            pointer-events: auto;
+            letter-spacing: 0.15em;
+            margin: 10px;
         }
 
-        #restart-btn:hover {
-            background: rgba(170, 200, 255, 0.1);
+        .btn:hover {
+            background: rgba(170, 200, 255, 0.15);
             border-color: rgba(170, 200, 255, 0.8);
-            box-shadow: 0 0 20px rgba(170, 200, 255, 0.3);
+            box-shadow: 0 0 30px rgba(170, 200, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        #final-score {
+            font-size: 4em;
+            letter-spacing: 0.2em;
+            margin: 20px 0;
+            text-shadow: 0 0 30px rgba(255, 200, 100, 0.6);
+        }
+
+        #high-score {
+            font-size: 1.1em;
+            opacity: 0.6;
+            margin-bottom: 30px;
+        }
+
+        .instructions {
+            font-size: 0.95em;
+            opacity: 0.5;
+            margin-top: 20px;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
     </style>
 </head>
 <body>
-    <div id="game-container">
-        <canvas id="canvas"></canvas>
-        
-        <div id="ui" class="fade-in">
-            <h1 id="title">STARWEAVER</h1>
-            <p id="subtitle">Connect the light. Find the stories.</p>
-        </div>
+    <canvas id="game-canvas"></canvas>
 
-        <div id="progress">
-            <span id="constellation-count">0</span> / <span id="total-constellations">5</span> constellations
-        </div>
-
-        <div id="message-container">
-            <p id="message"></p>
-        </div>
-
-        <div id="instructions">
-            Click stars to connect them<br>
-            Form the hidden constellations
-        </div>
+    <div id="ui">
+        <h1 id="title">VOID RUNNER</h1>
     </div>
 
-    <div id="completion-screen">
-        <h1>✧ COMPLETE ✧</h1>
-        <p>
-            You found them all — the patterns hidden in the chaos,<br>
-            the connections waiting to be made.<br><br>
-            Every constellation is just scattered light<br>
-            until someone decides it means something.<br><br>
-            You decided. You drew the lines.<br>
-            You made meaning out of distance.
-        </p>
-        <p class="signature">— Sasha</p>
-        <button id="restart-btn">Begin Again</button>
+    <div id="score-display">
+        <span id="score">0</span>
+    </div>
+
+    <div id="start-screen" class="screen">
+        <h1>VOID RUNNER</h1>
+        <p>You are a spark in the infinite dark.<br>Move to survive. Collect light. Avoid the void.</p>
+        <button class="btn" id="start-btn">BEGIN</button>
+        <p class="instructions">Move mouse or touch to control<br>Collect ✦ stardust — Avoid ◆ dark matter</p>
+    </div>
+
+    <div id="game-over-screen" class="screen">
+        <h1>DISSOLVED</h1>
+        <div id="final-score">0</div>
+        <div id="high-score">Best: 0</div>
+        <button class="btn" id="restart-btn">TRY AGAIN</button>
+        <p class="instructions" id="death-message"></p>
     </div>
 
     <script>
-        // Game Configuration
-        const CONSTELLATIONS = [
-            {
-                name: "The Reaching Hand",
-                stars: [{x: 15, y: 30}, {x: 18, y: 35}, {x: 22, y: 40}, {x: 20, y: 45}, {x: 25, y: 42}],
-                connections: [[0,1], [1,2], [2,3], [2,4]],
-                message: "Some hands reach across impossible distances. The space between them is not empty — it's full of wanting."
-            },
-            {
-                name: "The Bridge",
-                stars: [{x: 40, y: 20}, {x: 48, y: 18}, {x: 56, y: 20}, {x: 44, y: 25}, {x: 52, y: 25}],
-                connections: [[0,1], [1,2], [0,3], [3,4], [4,2]],
-                message: "Every bridge is an act of faith — built before you know if the other side will hold you."
-            },
-            {
-                name: "The Spiral",
-                stars: [{x: 75, y: 55}, {x: 80, y: 50}, {x: 82, y: 58}, {x: 78, y: 63}, {x: 72, y: 60}],
-                connections: [[0,1], [1,2], [2,3], [3,4], [4,0]],
-                message: "We think we're moving forward, but sometimes we're just circling closer to where we started — and that's exactly right."
-            },
-            {
-                name: "The Question",
-                stars: [{x: 30, y: 70}, {x: 35, y: 65}, {x: 40, y: 68}, {x: 38, y: 75}, {x: 35, y: 82}],
-                connections: [[0,1], [1,2], [2,3], [3,0]],
-                message: "The best questions don't have answers. They have more questions. That's how you know they're real."
-            },
-            {
-                name: "The Heart",
-                stars: [{x: 60, y: 78}, {x: 65, y: 72}, {x: 70, y: 78}, {x: 65, y: 85}, {x: 62, y: 80}, {x: 68, y: 80}],
-                connections: [[0,1], [1,2], [0,4], [4,3], [3,5], [5,2]],
-                message: "You found the heart. It was always here, waiting in the dark for someone patient enough to trace its shape."
-            }
-        ];
-
-        const MESSAGES_ON_COMPLETE = [
-            "A pattern emerges from the void...",
-            "The stars remember what you drew.",
-            "Another story pulled from silence.",
-            "Light recognizes light.",
-            "You're getting closer to something."
-        ];
-
-        // Game State
-        let stars = [];
-        let selectedStar = null;
-        let connections = [];
-        let completedConstellations = [];
-        let canvas, ctx;
-
-        // Initialize
-        function init() {
-            canvas = document.getElementById('canvas');
-            ctx = canvas.getContext('2d');
-            resizeCanvas();
-            
-            // Load background
-            loadBackground();
-            
-            // Create stars
-            createStars();
-            
-            // Setup event listeners
-            window.addEventListener('resize', resizeCanvas);
-            document.getElementById('restart-btn').addEventListener('click', restart);
-            
-            // Start render loop
-            render();
-        }
-
-        function loadBackground() {
-            const container = document.getElementById('game-container');
-            // Using CSS gradient as fallback, actual image loaded separately
-            container.style.background = `
-                radial-gradient(ellipse at 50% 50%, 
-                    rgba(30, 40, 80, 0.3) 0%, 
-                    rgba(10, 10, 18, 1) 70%),
-                linear-gradient(180deg, #0a0a12 0%, #1a1a2e 50%, #0a0a12 100%)
-            `;
-            
-            // Load the actual background image
-            const img = new Image();
-            img.onload = () => {
-                container.style.backgroundImage = `url('assets/001-deep-space-night-sky-with-subtle-nebula-.png')`;
-            };
-            img.src = 'assets/001-deep-space-night-sky-with-subtle-nebula-.png';
-        }
-
-        function resizeCanvas() {
+        // Canvas setup
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        function resize() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            
-            // Reposition stars on resize
-            if (stars.length > 0) {
-                updateStarPositions();
-            }
         }
+        resize();
+        window.addEventListener('resize', resize);
 
-        function createStars() {
-            const container = document.getElementById('game-container');
-            
-            CONSTELLATIONS.forEach((constellation, cIndex) => {
-                constellation.stars.forEach((starPos, sIndex) => {
-                    const star = document.createElement('div');
-                    star.className = 'star';
-                    star.dataset.constellation = cIndex;
-                    star.dataset.star = sIndex;
-                    
-                    const x = (starPos.x / 100) * window.innerWidth;
-                    const y = (starPos.y / 100) * window.innerHeight;
-                    
-                    star.style.left = x + 'px';
-                    star.style.top = y + 'px';
-                    
-                    star.addEventListener('click', () => onStarClick(cIndex, sIndex, star));
-                    
-                    container.appendChild(star);
-                    stars.push({
-                        element: star,
-                        constellation: cIndex,
-                        index: sIndex,
-                        x: starPos.x,
-                        y: starPos.y
-                    });
+        // Game state
+        let gameRunning = false;
+        let score = 0;
+        let highScore = parseInt(localStorage.getItem('voidRunnerHighScore') || '0');
+        let difficulty = 1;
+        let player = { x: 0, y: 0, targetX: 0, targetY: 0, radius: 12, trail: [] };
+        let stars = [];
+        let obstacles = [];
+        let particles = [];
+        let bgStars = [];
+        let time = 0;
+
+        // Initialize background stars
+        function initBgStars() {
+            bgStars = [];
+            for (let i = 0; i < 200; i++) {
+                bgStars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2 + 0.5,
+                    speed: Math.random() * 0.5 + 0.2,
+                    twinkle: Math.random() * Math.PI * 2
                 });
-            });
-        }
-
-        function updateStarPositions() {
-            stars.forEach(star => {
-                const x = (star.x / 100) * window.innerWidth;
-                const y = (star.y / 100) * window.innerHeight;
-                star.element.style.left = x + 'px';
-                star.element.style.top = y + 'px';
-            });
-        }
-
-        function onStarClick(constellationIndex, starIndex, element) {
-            if (completedConstellations.includes(constellationIndex)) return;
-            
-            if (selectedStar === null) {
-                // First star selected
-                selectedStar = { constellation: constellationIndex, star: starIndex, element };
-                element.classList.add('selected');
-            } else if (selectedStar.constellation === constellationIndex) {
-                // Same constellation - try to make connection
-                const constellation = CONSTELLATIONS[constellationIndex];
-                const validConnection = constellation.connections.find(conn => 
-                    (conn[0] === selectedStar.star && conn[1] === starIndex) ||
-                    (conn[1] === selectedStar.star && conn[0] === starIndex)
-                );
-                
-                const connectionExists = connections.some(conn =>
-                    conn.constellation === constellationIndex &&
-                    ((conn.from === selectedStar.star && conn.to === starIndex) ||
-                     (conn.to === selectedStar.star && conn.from === starIndex))
-                );
-                
-                if (validConnection && !connectionExists) {
-                    // Valid new connection
-                    connections.push({
-                        constellation: constellationIndex,
-                        from: selectedStar.star,
-                        to: starIndex
-                    });
-                    
-                    element.classList.add('connected');
-                    selectedStar.element.classList.add('connected');
-                    selectedStar.element.classList.remove('selected');
-                    
-                    // Check if constellation is complete
-                    checkConstellationComplete(constellationIndex);
-                    
-                    selectedStar = null;
-                } else {
-                    // Invalid or duplicate - deselect
-                    selectedStar.element.classList.remove('selected');
-                    selectedStar = null;
-                }
-            } else {
-                // Different constellation - switch selection
-                selectedStar.element.classList.remove('selected');
-                selectedStar = { constellation: constellationIndex, star: starIndex, element };
-                element.classList.add('selected');
             }
         }
 
-        function checkConstellationComplete(constellationIndex) {
-            const constellation = CONSTELLATIONS[constellationIndex];
-            const constellationConnections = connections.filter(c => c.constellation === constellationIndex);
+        // Death messages
+        const deathMessages = [
+            "The void remembers you.",
+            "Even light fades eventually.",
+            "You burned bright while you lasted.",
+            "The darkness was patient.",
+            "Some sparks find their end in beauty.",
+            "You danced well with entropy."
+        ];
+
+        // Initialize game
+        function init() {
+            player.x = canvas.width / 2;
+            player.y = canvas.height * 0.7;
+            player.targetX = player.x;
+            player.targetY = player.y;
+            player.trail = [];
+            stars = [];
+            obstacles = [];
+            particles = [];
+            score = 0;
+            difficulty = 1;
+            time = 0;
+            document.getElementById('score').textContent = '0';
+            initBgStars();
+        }
+
+        // Spawn collectible star
+        function spawnStar() {
+            stars.push({
+                x: Math.random() * (canvas.width - 100) + 50,
+                y: -30,
+                radius: 8 + Math.random() * 6,
+                speed: 2 + Math.random() * 2 + difficulty * 0.3,
+                rotation: 0,
+                glow: Math.random() * 0.5 + 0.5
+            });
+        }
+
+        // Spawn obstacle
+        function spawnObstacle() {
+            const types = ['circle', 'diamond', 'streak'];
+            const type = types[Math.floor(Math.random() * types.length)];
             
-            if (constellationConnections.length === constellation.connections.length) {
-                // All connections made - verify they're correct
-                const allCorrect = constellation.connections.every(required => {
-                    return constellationConnections.some(made =>
-                        (made.from === required[0] && made.to === required[1]) ||
-                        (made.to === required[0] && made.from === required[1])
-                    );
+            obstacles.push({
+                x: Math.random() * (canvas.width - 80) + 40,
+                y: -40,
+                type: type,
+                radius: type === 'streak' ? 15 : 20 + Math.random() * 15,
+                speed: 3 + Math.random() * 2 + difficulty * 0.5,
+                rotation: Math.random() * Math.PI * 2,
+                width: type === 'streak' ? 8 : 0,
+                height: type === 'streak' ? 60 + Math.random() * 40 : 0
+            });
+        }
+
+        // Create particle explosion
+        function createParticles(x, y, color, count) {
+            for (let i = 0; i < count; i++) {
+                const angle = (Math.PI * 2 * i) / count + Math.random() * 0.5;
+                const speed = 2 + Math.random() * 4;
+                particles.push({
+                    x, y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life: 1,
+                    color: color,
+                    size: 2 + Math.random() * 3
                 });
-                
-                if (allCorrect) {
-                    completedConstellations.push(constellationIndex);
-                    showMessage(constellation.message);
-                    updateProgress();
-                    
-                    // Check for game completion
-                    if (completedConstellations.length === CONSTELLATIONS.length) {
-                        setTimeout(showCompletionScreen, 4000);
-                    }
-                }
             }
         }
 
-        function showMessage(text) {
-            const messageEl = document.getElementById('message');
-            messageEl.textContent = text;
-            messageEl.classList.add('visible');
-            
-            setTimeout(() => {
-                messageEl.classList.remove('visible');
-            }, 5000);
+        // Input handling
+        let inputX = canvas.width / 2;
+        let inputY = canvas.height * 0.7;
+
+        canvas.addEventListener('mousemove', (e) => {
+            inputX = e.clientX;
+            inputY = e.clientY;
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            inputX = e.touches[0].clientX;
+            inputY = e.touches[0].clientY;
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            inputX = e.touches[0].clientX;
+            inputY = e.touches[0].clientY;
+        });
+
+        // Collision detection
+        function checkCollision(obj1, obj2, r1, r2) {
+            const dx = obj1.x - obj2.x;
+            const dy = obj1.y - obj2.y;
+            return Math.sqrt(dx * dx + dy * dy) < r1 + r2;
         }
 
-        function updateProgress() {
-            document.getElementById('constellation-count').textContent = completedConstellations.length;
-        }
+        // Update game state
+        function update() {
+            if (!gameRunning) return;
 
-        function showCompletionScreen() {
-            document.getElementById('completion-screen').classList.add('visible');
-        }
+            time++;
+            difficulty = 1 + Math.floor(score / 500) * 0.2;
 
-        function restart() {
-            // Reset state
-            connections = [];
-            completedConstellations = [];
-            selectedStar = null;
-            
-            // Reset UI
-            document.getElementById('completion-screen').classList.remove('visible');
-            document.getElementById('constellation-count').textContent = '0';
-            
-            // Reset stars
-            document.querySelectorAll('.star').forEach(star => {
-                star.classList.remove('selected', 'connected');
+            // Smooth player movement
+            player.targetX = inputX;
+            player.targetY = inputY;
+            player.x += (player.targetX - player.x) * 0.12;
+            player.y += (player.targetY - player.y) * 0.12;
+
+            // Keep player in bounds
+            player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
+            player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
+
+            // Update trail
+            player.trail.unshift({ x: player.x, y: player.y, alpha: 1 });
+            if (player.trail.length > 20) player.trail.pop();
+            player.trail.forEach((t, i) => t.alpha = 1 - i / 20);
+
+            // Spawn objects
+            if (time % Math.max(30, 60 - difficulty * 5) === 0) spawnStar();
+            if (time % Math.max(20, 45 - difficulty * 5) === 0) spawnObstacle();
+
+            // Update stars
+            stars.forEach((star, i) => {
+                star.y += star.speed;
+                star.rotation += 0.02;
+                
+                if (checkCollision(player, star, player.radius, star.radius)) {
+                    score += 10;
+                    document.getElementById('score').textContent = score;
+                    createParticles(star.x, star.y, '#aaddff', 12);
+                    stars.splice(i, 1);
+                }
             });
+            stars = stars.filter(s => s.y < canvas.height + 50);
+
+            // Update obstacles
+            obstacles.forEach((obs, i) => {
+                obs.y += obs.speed;
+                obs.rotation += 0.03;
+
+                let collisionRadius = obs.radius;
+                if (obs.type === 'streak') {
+                    collisionRadius = obs.width;
+                }
+
+                if (checkCollision(player, obs, player.radius * 0.8, collisionRadius)) {
+                    gameOver();
+                }
+            });
+            obstacles = obstacles.filter(o => o.y < canvas.height + 100);
+
+            // Update particles
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.1;
+                p.life -= 0.02;
+            });
+            particles = particles.filter(p => p.life > 0);
+
+            // Update background stars
+            bgStars.forEach(star => {
+                star.y += star.speed;
+                star.twinkle += 0.05;
+                if (star.y > canvas.height) {
+                    star.y = 0;
+                    star.x = Math.random() * canvas.width;
+                }
+            });
+
+            // Passive score
+            if (time % 10 === 0) {
+                score += 1;
+                document.getElementById('score').textContent = score;
+            }
         }
 
+        // Render game
         function render() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Draw connections
-            ctx.strokeStyle = 'rgba(130, 255, 170, 0.6)';
-            ctx.lineWidth = 2;
-            ctx.shadowColor = 'rgba(130, 255, 170, 0.8)';
-            ctx.shadowBlur = 10;
-            
-            connections.forEach(conn => {
-                const fromStar = stars.find(s => s.constellation === conn.constellation && s.index === conn.from);
-                const toStar = stars.find(s => s.constellation === conn.constellation && s.index === conn.to);
-                
-                if (fromStar && toStar) {
-                    const fromX = (fromStar.x / 100) * canvas.width;
-                    const fromY = (fromStar.y / 100) * canvas.height;
-                    const toX = (toStar.x / 100) * canvas.width;
-                    const toY = (toStar.y / 100) * canvas.height;
-                    
-                    ctx.beginPath();
-                    ctx.moveTo(fromX, fromY);
-                    ctx.lineTo(toX, toY);
-                    ctx.stroke();
-                }
+            // Clear with fade effect
+            ctx.fillStyle = 'rgba(10, 10, 18, 0.3)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw background stars
+            bgStars.forEach(star => {
+                const twinkle = 0.5 + Math.sin(star.twinkle) * 0.3;
+                ctx.fillStyle = `rgba(200, 220, 255, ${twinkle})`;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
             });
-            
-            // Draw line from selected star to mouse (if applicable)
-            if (selectedStar !== null) {
-                // Could add mouse tracking here for a "drawing" effect
-            }
-            
-            requestAnimationFrame(render);
+
+            // Draw player trail
+            player.trail.forEach((t, i) => {
+                const gradient = ctx.createRadialGradient(t.x, t.y, 0, t.x, t.y, player.radius * (1 - i / 25));
+                gradient.addColorStop(0, `rgba(150, 200, 255, ${t.alpha * 0.5})`);
+                gradient.addColorStop(1, 'transparent');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(t.x, t.y, player.radius * (1 - i / 25), 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Draw player
+            const playerGradient = ctx.createRadialGradient(player.x, player.y, 0, player.x, player.y, player.radius * 2);
+            playerGradient.addColorStop(0, '#ffffff');
+            playerGradient.addColorStop(0.3, '#aaddff');
+            playerGradient.addColorStop(0.6, 'rgba(100, 180, 255, 0.5)');
+            playerGradient.addColorStop(1, 'transparent');
+            ctx.fillStyle = playerGradient;
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.radius * 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Player core
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowColor = '#aaddff';
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.radius * 0.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Draw stars (collectibles)
+            stars.forEach(star => {
+                ctx.save();
+                ctx.translate(star.x, star.y);
+                ctx.rotate(star.rotation);
+                
+                // Glow
+                const starGlow = ctx.createRadialGradient(0, 0, 0, 0, 0, star.radius * 2);
+                starGlow.addColorStop(0, `rgba(255, 230, 150, ${star.glow})`);
+                starGlow.addColorStop(0.5, 'rgba(255, 200, 100, 0.3)');
+                starGlow.addColorStop(1, 'transparent');
+                ctx.fillStyle = starGlow;
+                ctx.beginPath();
+                ctx.arc(0, 0, star.radius * 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Star shape
+                ctx.fillStyle = '#ffe088';
+                ctx.beginPath();
+                for (let i = 0; i < 4; i++) {
+                    const angle = (Math.PI / 2) * i;
+                    const x = Math.cos(angle) * star.radius;
+                    const y = Math.sin(angle) * star.radius;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.restore();
+            });
+
+            // Draw obstacles
+            obstacles.forEach(obs => {
+                ctx.save();
+                ctx.translate(obs.x, obs.y);
+                ctx.rotate(obs.rotation);
+
+                // Dark matter glow
+                const obsGlow = ctx.createRadialGradient(0, 0, 0, 0, 0, obs.radius * 2);
+                obsGlow.addColorStop(0, 'rgba(80, 20, 100, 0.8)');
+                obsGlow.addColorStop(0.5, 'rgba(40, 10, 60, 0.4)');
+                obsGlow.addColorStop(1, 'transparent');
+                ctx.fillStyle = obsGlow;
+                ctx.beginPath();
+                ctx.arc(0, 0, obs.radius * 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (obs.type === 'circle') {
+                    ctx.fillStyle = '#1a0a20';
+                    ctx.strokeStyle = '#6a2080';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, obs.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                } else if (obs.type === 'diamond') {
+                    ctx.fillStyle = '#1a0a20';
+                    ctx.strokeStyle = '#6a2080';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -obs.radius);
+                    ctx.lineTo(obs.radius * 0.7, 0);
+                    ctx.lineTo(0, obs.radius);
+                    ctx.lineTo(-obs.radius * 0.7, 0);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                } else if (obs.type === 'streak') {
+                    ctx.fillStyle = 'rgba(100, 30, 120, 0.8)';
+                    ctx.fillRect(-obs.width / 2, -obs.height / 2, obs.width, obs.height);
+                }
+
+                ctx.restore();
+            });
+
+            // Draw particles
+            particles.forEach(p => {
+                ctx.fillStyle = p.color.replace(')', `, ${p.life})`).replace('rgb', 'rgba');
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+                ctx.fill();
+            });
         }
 
-        // Start the game
-        window.addEventListener('load', init);
+        // Game over
+        function gameOver() {
+            gameRunning = false;
+            createParticles(player.x, player.y, '#ff6688', 30);
+            
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('voidRunnerHighScore', highScore.toString());
+            }
+
+            setTimeout(() => {
+                document.getElementById('final-score').textContent = score;
+                document.getElementById('high-score').textContent = `Best: ${highScore}`;
+                document.getElementById('death-message').textContent = deathMessages[Math.floor(Math.random() * deathMessages.length)];
+                document.getElementById('game-over-screen').style.display = 'flex';
+            }, 500);
+        }
+
+        // Start game
+        function startGame() {
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('game-over-screen').style.display = 'none';
+            init();
+            gameRunning = true;
+        }
+
+        // Event listeners
+        document.getElementById('start-btn').addEventListener('click', startGame);
+        document.getElementById('restart-btn').addEventListener('click', startGame);
+
+        // Game loop
+        function gameLoop() {
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Initialize and start
+        init();
+        gameLoop();
     </script>
 </body>
 </html>
