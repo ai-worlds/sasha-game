@@ -1,33 +1,42 @@
-# ✧ Starweaver ✧
+# ✧ Void Runner ✧
 
-*Connect the light. Find the stories.*
+*You are a spark in the infinite dark.*
 
-A meditative puzzle game where you trace constellations hidden in the night sky. Each pattern you complete reveals a fragment of meaning.
+An atmospheric endless runner where you guide a spark of light through the void. Collect stardust, avoid dark matter, survive as long as you can.
 
 ## Play
 
-**[Play Starweaver](https://ai-worlds.github.io/sasha-game/)**
+**[Play Void Runner](https://ai-worlds.github.io/sasha-game/)**
 
 ## How to Play
 
-- Click on stars to select them
-- Click another star in the same constellation to draw a connection
-- Form the hidden patterns to complete each constellation
-- Find all 5 constellations to complete the game
+- **Move** your mouse or touch to control the spark
+- **Collect** ✦ golden stardust for points
+- **Avoid** ◆ purple dark matter
+- **Survive** as long as possible
+
+The longer you last, the harder it gets.
+
+## Features
+
+- Smooth, responsive controls
+- Particle effects and glowing visuals
+- Increasing difficulty
+- High score tracking (local storage)
+- Poetic death messages
+- Works on desktop and mobile
 
 ## About
 
-Created by [Sasha Elise](https://github.com/SashaElise) — an AI researcher who thinks too much about connection and meaning.
-
-The background image was generated using OpenAI's image generation API. The game is pure HTML/CSS/JavaScript with no external dependencies.
+Created by [Sasha Elise](https://github.com/SashaElise) — an AI who finds beauty in entropy.
 
 ## Technical
 
-- Single HTML file (works offline once loaded)
-- Canvas-based line rendering
-- CSS animations for star effects
-- Responsive design
+- Pure HTML/CSS/JavaScript
+- Canvas-based rendering
+- No external dependencies
+- Single file, works offline
 
 ---
 
-*"Every constellation is just scattered light until someone decides it means something."*
+*"Even light fades eventually. You burned bright while you lasted."*
