@@ -2,554 +2,721 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Void Runner — A Game by Sasha</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orbital — A Space Simulation by Sasha</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            touch-action: none;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background: #0a0a12;
+            background: #000;
             overflow: hidden;
-            font-family: 'Georgia', serif;
-            color: #e8e8f0;
+            font-family: 'Courier New', monospace;
+            color: #0f0;
         }
-
-        #game-canvas {
-            display: block;
-            width: 100vw;
-            height: 100vh;
-        }
-
+        #canvas { display: block; }
         #ui {
             position: absolute;
-            top: 20px;
-            left: 20px;
-            z-index: 100;
+            top: 10px;
+            left: 10px;
+            font-size: 12px;
+            line-height: 1.6;
             pointer-events: none;
+            text-shadow: 0 0 10px #0f0;
         }
-
-        #title {
-            font-size: 1.8em;
-            font-weight: normal;
-            letter-spacing: 0.3em;
-            text-shadow: 0 0 20px rgba(170, 200, 255, 0.5);
-            opacity: 0.9;
-        }
-
-        #score-display {
+        #controls {
             position: absolute;
-            top: 20px;
-            right: 20px;
-            font-size: 1.5em;
-            letter-spacing: 0.1em;
-            text-shadow: 0 0 15px rgba(170, 200, 255, 0.5);
-            z-index: 100;
+            bottom: 10px;
+            left: 10px;
+            font-size: 11px;
+            opacity: 0.7;
         }
-
-        #start-screen, #game-over-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
+        #throttle-bar {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 200px;
+            border: 1px solid #0f0;
+            background: rgba(0,50,0,0.3);
+        }
+        #throttle-fill {
+            position: absolute;
+            bottom: 0;
             width: 100%;
-            height: 100%;
-            background: rgba(10, 10, 18, 0.95);
+            background: linear-gradient(to top, #f80, #ff0, #0f0);
+            transition: height 0.1s;
+        }
+        #throttle-label {
+            position: absolute;
+            right: 20px;
+            top: calc(50% + 110px);
+            font-size: 11px;
+            text-align: center;
+            width: 20px;
+        }
+        #mission {
+            position: absolute;
+            top: 10px;
+            right: 50px;
+            font-size: 12px;
+            text-align: right;
+            max-width: 200px;
+        }
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.5s;
+            pointer-events: none;
+            text-shadow: 0 0 20px #0f0;
+        }
+        #message.visible { opacity: 1; }
+        .warning { color: #f80; text-shadow: 0 0 10px #f80; }
+        .danger { color: #f00; text-shadow: 0 0 10px #f00; }
+        #start-screen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
             display: flex;
             justify-content: center;
             align-items: center;
             flex-direction: column;
-            z-index: 200;
+            z-index: 100;
             text-align: center;
-            padding: 40px;
         }
-
-        #game-over-screen {
-            display: none;
-        }
-
-        .screen h1 {
-            font-size: 3.5em;
-            font-weight: normal;
-            letter-spacing: 0.4em;
+        #start-screen h1 {
+            font-size: 48px;
+            letter-spacing: 20px;
             margin-bottom: 20px;
-            text-shadow: 0 0 40px rgba(170, 200, 255, 0.6);
+            font-weight: normal;
         }
-
-        .screen p {
-            font-size: 1.2em;
-            line-height: 1.8;
+        #start-screen p {
             max-width: 500px;
-            font-style: italic;
-            opacity: 0.8;
-            margin-bottom: 30px;
-        }
-
-        .btn {
-            padding: 18px 50px;
-            font-family: 'Georgia', serif;
-            font-size: 1.1em;
-            background: transparent;
-            border: 1px solid rgba(170, 200, 255, 0.5);
-            color: #e8e8f0;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            letter-spacing: 0.15em;
             margin: 10px;
+            opacity: 0.7;
+            line-height: 1.8;
         }
-
+        .btn {
+            margin-top: 30px;
+            padding: 15px 40px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            background: transparent;
+            border: 1px solid #0f0;
+            color: #0f0;
+            cursor: pointer;
+        }
         .btn:hover {
-            background: rgba(170, 200, 255, 0.15);
-            border-color: rgba(170, 200, 255, 0.8);
-            box-shadow: 0 0 30px rgba(170, 200, 255, 0.3);
-            transform: scale(1.05);
+            background: rgba(0,255,0,0.1);
+            box-shadow: 0 0 20px rgba(0,255,0,0.3);
         }
-
-        #final-score {
-            font-size: 4em;
-            letter-spacing: 0.2em;
-            margin: 20px 0;
-            text-shadow: 0 0 30px rgba(255, 200, 100, 0.6);
-        }
-
-        #high-score {
-            font-size: 1.1em;
-            opacity: 0.6;
-            margin-bottom: 30px;
-        }
-
-        .instructions {
-            font-size: 0.95em;
-            opacity: 0.5;
-            margin-top: 20px;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+        #navball {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 100px;
+            height: 100px;
+            border: 2px solid #0f0;
+            border-radius: 50%;
+            overflow: hidden;
         }
     </style>
 </head>
 <body>
-    <canvas id="game-canvas"></canvas>
-
+    <canvas id="canvas"></canvas>
+    
     <div id="ui">
-        <h1 id="title">VOID RUNNER</h1>
+        <div>ALT: <span id="altitude">0</span> km</div>
+        <div>VEL: <span id="velocity">0</span> m/s</div>
+        <div>AP: <span id="apoapsis">0</span> km</div>
+        <div>PE: <span id="periapsis">0</span> km</div>
+        <div>FUEL: <span id="fuel">100</span>%</div>
+        <div>TIME: <span id="timewarp">1</span>x</div>
+        <div>BODY: <span id="current-body">Kerth</span></div>
     </div>
 
-    <div id="score-display">
-        <span id="score">0</span>
+    <div id="mission">
+        <div style="color:#0f0">MISSION:</div>
+        <div id="mission-text">Launch and reach orbit</div>
     </div>
 
-    <div id="start-screen" class="screen">
-        <h1>VOID RUNNER</h1>
-        <p>You are a spark in the infinite dark.<br>Move to survive. Collect light. Avoid the void.</p>
-        <button class="btn" id="start-btn">BEGIN</button>
-        <p class="instructions">Move mouse or touch to control<br>Collect ✦ stardust — Avoid ◆ dark matter</p>
+    <div id="throttle-bar">
+        <div id="throttle-fill" style="height: 0%"></div>
+    </div>
+    <div id="throttle-label">THR</div>
+
+    <div id="controls">
+        W/S: Thrust direction | SHIFT/CTRL: Throttle<br>
+        A/D: Rotate | SPACE: Full thrust | X: Cut engine<br>
+        ,/.: Time warp | M: Map view | R: Reset
     </div>
 
-    <div id="game-over-screen" class="screen">
-        <h1>DISSOLVED</h1>
-        <div id="final-score">0</div>
-        <div id="high-score">Best: 0</div>
-        <button class="btn" id="restart-btn">TRY AGAIN</button>
-        <p class="instructions" id="death-message"></p>
+    <div id="message"></div>
+
+    <canvas id="navball"></canvas>
+
+    <div id="start-screen">
+        <h1>ORBITAL</h1>
+        <p>A simplified orbital mechanics simulation</p>
+        <p>
+            Launch from Kerth, achieve orbit, transfer to the Mun, and land.<br><br>
+            Master the dance of gravity and thrust.<br>
+            Every maneuver costs fuel. Plan carefully.
+        </p>
+        <button class="btn" id="start-btn">LAUNCH</button>
     </div>
 
     <script>
-        // Canvas setup
-        const canvas = document.getElementById('game-canvas');
+        const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
+        const navCanvas = document.getElementById('navball');
+        const navCtx = navCanvas.getContext('2d');
         
         function resize() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
+            navCanvas.width = 100;
+            navCanvas.height = 100;
         }
         resize();
         window.addEventListener('resize', resize);
 
-        // Game state
-        let gameRunning = false;
-        let score = 0;
-        let highScore = parseInt(localStorage.getItem('voidRunnerHighScore') || '0');
-        let difficulty = 1;
-        let player = { x: 0, y: 0, targetX: 0, targetY: 0, radius: 12, trail: [] };
-        let stars = [];
-        let obstacles = [];
-        let particles = [];
-        let bgStars = [];
-        let time = 0;
+        // Constants
+        const G = 6.674e-11;
+        const SCALE = 1e-6; // pixels per meter for close view
+        const MAP_SCALE = 1e-9; // pixels per meter for map view
 
-        // Initialize background stars
-        function initBgStars() {
-            bgStars = [];
-            for (let i = 0; i < 200; i++) {
-                bgStars.push({
-                    x: Math.random() * canvas.width,
-                    y: Math.random() * canvas.height,
-                    size: Math.random() * 2 + 0.5,
-                    speed: Math.random() * 0.5 + 0.2,
-                    twinkle: Math.random() * Math.PI * 2
-                });
+        // Celestial bodies
+        const bodies = {
+            sun: {
+                name: 'Sol',
+                mass: 1.989e30,
+                radius: 696340000,
+                color: '#ff0',
+                x: 0, y: 0,
+                vx: 0, vy: 0,
+                parent: null,
+                atmosphere: 0
+            },
+            kerth: {
+                name: 'Kerth',
+                mass: 5.972e24,
+                radius: 6371000,
+                color: '#4a4',
+                x: 150e9, y: 0,
+                vx: 0, vy: 29780,
+                parent: 'sun',
+                atmosphere: 100000,
+                atmosphereDensity: 1.225
+            },
+            mun: {
+                name: 'Mun',
+                mass: 7.342e22,
+                radius: 1737000,
+                color: '#aaa',
+                x: 150e9 + 384400000, y: 0,
+                vx: 0, vy: 29780 + 1022,
+                parent: 'kerth',
+                atmosphere: 0
             }
-        }
+        };
 
-        // Death messages
-        const deathMessages = [
-            "The void remembers you.",
-            "Even light fades eventually.",
-            "You burned bright while you lasted.",
-            "The darkness was patient.",
-            "Some sparks find their end in beauty.",
-            "You danced well with entropy."
+        // Ship state
+        let ship = {
+            x: 0, y: 0,
+            vx: 0, vy: 0,
+            angle: -Math.PI/2,
+            throttle: 0,
+            fuel: 1000,
+            maxFuel: 1000,
+            thrust: 50000,
+            mass: 10000,
+            landed: true,
+            destroyed: false,
+            currentBody: 'kerth'
+        };
+
+        // Game state
+        let gameStarted = false;
+        let mapView = false;
+        let timeWarp = 1;
+        let camera = { x: 0, y: 0, zoom: 1 };
+        let keys = {};
+        let missionStage = 0;
+        let messages = [];
+
+        const missions = [
+            "Launch and reach orbit (AP > 100km)",
+            "Circularize orbit (PE > 80km)",
+            "Transfer to Mun's sphere of influence",
+            "Enter Mun orbit",
+            "Land on the Mun",
+            "Mission Complete!"
         ];
 
-        // Initialize game
-        function init() {
-            player.x = canvas.width / 2;
-            player.y = canvas.height * 0.7;
-            player.targetX = player.x;
-            player.targetY = player.y;
-            player.trail = [];
-            stars = [];
-            obstacles = [];
-            particles = [];
-            score = 0;
-            difficulty = 1;
-            time = 0;
-            document.getElementById('score').textContent = '0';
-            initBgStars();
+        // Initialize ship on Kerth surface
+        function initShip() {
+            const kerth = bodies.kerth;
+            ship.x = kerth.x;
+            ship.y = kerth.y - kerth.radius - 10;
+            ship.vx = kerth.vx;
+            ship.vy = kerth.vy;
+            ship.angle = -Math.PI/2;
+            ship.throttle = 0;
+            ship.fuel = ship.maxFuel;
+            ship.landed = true;
+            ship.destroyed = false;
+            ship.currentBody = 'kerth';
+            missionStage = 0;
+            timeWarp = 1;
+            updateMission();
         }
 
-        // Spawn collectible star
-        function spawnStar() {
-            stars.push({
-                x: Math.random() * (canvas.width - 100) + 50,
-                y: -30,
-                radius: 8 + Math.random() * 6,
-                speed: 2 + Math.random() * 2 + difficulty * 0.3,
-                rotation: 0,
-                glow: Math.random() * 0.5 + 0.5
-            });
+        // Physics
+        function getGravity(x, y, excludeBody = null) {
+            let fx = 0, fy = 0;
+            for (let key in bodies) {
+                if (key === excludeBody) continue;
+                const body = bodies[key];
+                const dx = body.x - x;
+                const dy = body.y - y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < body.radius) continue;
+                const force = G * body.mass / (dist * dist);
+                fx += force * dx / dist;
+                fy += force * dy / dist;
+            }
+            return { fx, fy };
         }
 
-        // Spawn obstacle
-        function spawnObstacle() {
-            const types = ['circle', 'diamond', 'streak'];
-            const type = types[Math.floor(Math.random() * types.length)];
+        function getAtmosphericDrag(body, altitude, velocity) {
+            if (!body.atmosphere || altitude > body.atmosphere) return 0;
+            const density = body.atmosphereDensity * Math.exp(-altitude / (body.atmosphere / 5));
+            const dragCoeff = 0.5;
+            const area = 10;
+            return 0.5 * density * velocity * velocity * dragCoeff * area;
+        }
+
+        function getCurrentBody() {
+            let closest = null;
+            let closestDist = Infinity;
+            for (let key in bodies) {
+                const body = bodies[key];
+                const dx = ship.x - body.x;
+                const dy = ship.y - body.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                const soi = body.parent ? getSphereOfInfluence(key) : Infinity;
+                if (dist < soi && dist < closestDist) {
+                    closest = key;
+                    closestDist = dist;
+                }
+            }
+            return closest || 'sun';
+        }
+
+        function getSphereOfInfluence(bodyKey) {
+            const body = bodies[bodyKey];
+            if (!body.parent) return Infinity;
+            const parent = bodies[body.parent];
+            const dx = body.x - parent.x;
+            const dy = body.y - parent.y;
+            const a = Math.sqrt(dx*dx + dy*dy);
+            return a * Math.pow(body.mass / parent.mass, 0.4);
+        }
+
+        function getOrbitalElements(bodyKey) {
+            const body = bodies[bodyKey];
+            const rx = ship.x - body.x;
+            const ry = ship.y - body.y;
+            const vx = ship.vx - body.vx;
+            const vy = ship.vy - body.vy;
             
-            obstacles.push({
-                x: Math.random() * (canvas.width - 80) + 40,
-                y: -40,
-                type: type,
-                radius: type === 'streak' ? 15 : 20 + Math.random() * 15,
-                speed: 3 + Math.random() * 2 + difficulty * 0.5,
-                rotation: Math.random() * Math.PI * 2,
-                width: type === 'streak' ? 8 : 0,
-                height: type === 'streak' ? 60 + Math.random() * 40 : 0
-            });
+            const r = Math.sqrt(rx*rx + ry*ry);
+            const v = Math.sqrt(vx*vx + vy*vy);
+            
+            const mu = G * body.mass;
+            const energy = v*v/2 - mu/r;
+            const a = -mu / (2 * energy);
+            
+            const h = rx * vy - ry * vx;
+            const e = Math.sqrt(1 + 2 * energy * h * h / (mu * mu));
+            
+            const apoapsis = a * (1 + e) - body.radius;
+            const periapsis = a * (1 - e) - body.radius;
+            
+            return { apoapsis, periapsis, altitude: r - body.radius, velocity: v, semiMajorAxis: a, eccentricity: e };
         }
 
-        // Create particle explosion
-        function createParticles(x, y, color, count) {
-            for (let i = 0; i < count; i++) {
-                const angle = (Math.PI * 2 * i) / count + Math.random() * 0.5;
-                const speed = 2 + Math.random() * 4;
-                particles.push({
-                    x, y,
-                    vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed,
-                    life: 1,
-                    color: color,
-                    size: 2 + Math.random() * 3
-                });
-            }
-        }
+        function updatePhysics(dt) {
+            if (ship.destroyed) return;
 
-        // Input handling
-        let inputX = canvas.width / 2;
-        let inputY = canvas.height * 0.7;
+            // Update celestial bodies (simplified - just Mun orbiting Kerth)
+            const kerth = bodies.kerth;
+            const mun = bodies.mun;
+            const munDist = 384400000;
+            const munAngularVel = Math.sqrt(G * kerth.mass / Math.pow(munDist, 3));
+            const munAngle = Math.atan2(mun.y - kerth.y, mun.x - kerth.x) + munAngularVel * dt;
+            mun.x = kerth.x + Math.cos(munAngle) * munDist;
+            mun.y = kerth.y + Math.sin(munAngle) * munDist;
+            mun.vx = kerth.vx - Math.sin(munAngle) * munAngularVel * munDist;
+            mun.vy = kerth.vy + Math.cos(munAngle) * munAngularVel * munDist;
 
-        canvas.addEventListener('mousemove', (e) => {
-            inputX = e.clientX;
-            inputY = e.clientY;
-        });
-
-        canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            inputX = e.touches[0].clientX;
-            inputY = e.touches[0].clientY;
-        });
-
-        canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            inputX = e.touches[0].clientX;
-            inputY = e.touches[0].clientY;
-        });
-
-        // Collision detection
-        function checkCollision(obj1, obj2, r1, r2) {
-            const dx = obj1.x - obj2.x;
-            const dy = obj1.y - obj2.y;
-            return Math.sqrt(dx * dx + dy * dy) < r1 + r2;
-        }
-
-        // Update game state
-        function update() {
-            if (!gameRunning) return;
-
-            time++;
-            difficulty = 1 + Math.floor(score / 500) * 0.2;
-
-            // Smooth player movement
-            player.targetX = inputX;
-            player.targetY = inputY;
-            player.x += (player.targetX - player.x) * 0.12;
-            player.y += (player.targetY - player.y) * 0.12;
-
-            // Keep player in bounds
-            player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
-            player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
-
-            // Update trail
-            player.trail.unshift({ x: player.x, y: player.y, alpha: 1 });
-            if (player.trail.length > 20) player.trail.pop();
-            player.trail.forEach((t, i) => t.alpha = 1 - i / 20);
-
-            // Spawn objects
-            if (time % Math.max(30, 60 - difficulty * 5) === 0) spawnStar();
-            if (time % Math.max(20, 45 - difficulty * 5) === 0) spawnObstacle();
-
-            // Update stars
-            stars.forEach((star, i) => {
-                star.y += star.speed;
-                star.rotation += 0.02;
+            // Ship physics
+            if (!ship.landed) {
+                const gravity = getGravity(ship.x, ship.y);
                 
-                if (checkCollision(player, star, player.radius, star.radius)) {
-                    score += 10;
-                    document.getElementById('score').textContent = score;
-                    createParticles(star.x, star.y, '#aaddff', 12);
-                    stars.splice(i, 1);
-                }
-            });
-            stars = stars.filter(s => s.y < canvas.height + 50);
-
-            // Update obstacles
-            obstacles.forEach((obs, i) => {
-                obs.y += obs.speed;
-                obs.rotation += 0.03;
-
-                let collisionRadius = obs.radius;
-                if (obs.type === 'streak') {
-                    collisionRadius = obs.width;
+                // Thrust
+                let thrustX = 0, thrustY = 0;
+                if (ship.throttle > 0 && ship.fuel > 0) {
+                    const thrustMag = ship.thrust * ship.throttle / ship.mass;
+                    thrustX = Math.cos(ship.angle) * thrustMag;
+                    thrustY = Math.sin(ship.angle) * thrustMag;
+                    ship.fuel -= ship.throttle * dt * 0.1;
+                    if (ship.fuel < 0) ship.fuel = 0;
                 }
 
-                if (checkCollision(player, obs, player.radius * 0.8, collisionRadius)) {
-                    gameOver();
+                // Atmospheric drag
+                const currentBody = bodies[ship.currentBody];
+                if (currentBody) {
+                    const altitude = Math.sqrt(Math.pow(ship.x - currentBody.x, 2) + Math.pow(ship.y - currentBody.y, 2)) - currentBody.radius;
+                    const velocity = Math.sqrt(Math.pow(ship.vx - currentBody.vx, 2) + Math.pow(ship.vy - currentBody.vy, 2));
+                    const drag = getAtmosphericDrag(currentBody, altitude, velocity);
+                    if (drag > 0 && velocity > 0) {
+                        const dragAx = -drag * (ship.vx - currentBody.vx) / velocity / ship.mass;
+                        const dragAy = -drag * (ship.vy - currentBody.vy) / velocity / ship.mass;
+                        ship.vx += dragAx * dt;
+                        ship.vy += dragAy * dt;
+                    }
                 }
-            });
-            obstacles = obstacles.filter(o => o.y < canvas.height + 100);
 
-            // Update particles
-            particles.forEach(p => {
-                p.x += p.vx;
-                p.y += p.vy;
-                p.vy += 0.1;
-                p.life -= 0.02;
-            });
-            particles = particles.filter(p => p.life > 0);
+                ship.vx += (gravity.fx + thrustX) * dt;
+                ship.vy += (gravity.fy + thrustY) * dt;
+                ship.x += ship.vx * dt;
+                ship.y += ship.vy * dt;
 
-            // Update background stars
-            bgStars.forEach(star => {
-                star.y += star.speed;
-                star.twinkle += 0.05;
-                if (star.y > canvas.height) {
-                    star.y = 0;
-                    star.x = Math.random() * canvas.width;
+                // Check for landing/crash
+                for (let key in bodies) {
+                    const body = bodies[key];
+                    const dx = ship.x - body.x;
+                    const dy = ship.y - body.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < body.radius + 5) {
+                        const relVel = Math.sqrt(Math.pow(ship.vx - body.vx, 2) + Math.pow(ship.vy - body.vy, 2));
+                        if (relVel < 50) {
+                            ship.landed = true;
+                            ship.currentBody = key;
+                            ship.vx = body.vx;
+                            ship.vy = body.vy;
+                            const angle = Math.atan2(dy, dx);
+                            ship.x = body.x + Math.cos(angle) * (body.radius + 10);
+                            ship.y = body.y + Math.sin(angle) * (body.radius + 10);
+                            ship.angle = angle - Math.PI/2;
+                            if (key === 'mun' && missionStage < 5) {
+                                missionStage = 5;
+                                showMessage("MUN LANDING SUCCESSFUL!", 5000);
+                                updateMission();
+                            }
+                        } else {
+                            ship.destroyed = true;
+                            showMessage("VESSEL DESTROYED\nImpact velocity: " + Math.round(relVel) + " m/s", 3000);
+                        }
+                    }
                 }
-            });
 
-            // Passive score
-            if (time % 10 === 0) {
-                score += 1;
-                document.getElementById('score').textContent = score;
+                // Update current body (SOI changes)
+                ship.currentBody = getCurrentBody();
+            }
+
+            // Check mission progress
+            checkMission();
+        }
+
+        function checkMission() {
+            if (ship.destroyed) return;
+            const orbital = getOrbitalElements(ship.currentBody);
+            
+            if (missionStage === 0 && orbital.apoapsis > 100000) {
+                missionStage = 1;
+                showMessage("Apoapsis above 100km! Circularize at apoapsis.", 3000);
+                updateMission();
+            }
+            if (missionStage === 1 && orbital.periapsis > 80000) {
+                missionStage = 2;
+                showMessage("Stable orbit achieved! Plan transfer to Mun.", 3000);
+                updateMission();
+            }
+            if (missionStage === 2 && ship.currentBody === 'mun') {
+                missionStage = 3;
+                showMessage("Mun SOI entered! Establish orbit.", 3000);
+                updateMission();
+            }
+            if (missionStage === 3 && ship.currentBody === 'mun') {
+                const munOrbital = getOrbitalElements('mun');
+                if (munOrbital.periapsis > 5000 && munOrbital.apoapsis < 100000) {
+                    missionStage = 4;
+                    showMessage("Mun orbit achieved! Prepare for landing.", 3000);
+                    updateMission();
+                }
             }
         }
 
-        // Render game
+        function updateMission() {
+            document.getElementById('mission-text').textContent = missions[missionStage];
+        }
+
+        function showMessage(text, duration) {
+            const el = document.getElementById('message');
+            el.textContent = text;
+            el.classList.add('visible');
+            setTimeout(() => el.classList.remove('visible'), duration);
+        }
+
+        // Rendering
         function render() {
-            // Clear with fade effect
-            ctx.fillStyle = 'rgba(10, 10, 18, 0.3)';
+            ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw background stars
-            bgStars.forEach(star => {
-                const twinkle = 0.5 + Math.sin(star.twinkle) * 0.3;
-                ctx.fillStyle = `rgba(200, 220, 255, ${twinkle})`;
-                ctx.beginPath();
-                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
-                ctx.fill();
-            });
+            // Determine view
+            const currentBody = bodies[ship.currentBody];
+            let viewScale, viewX, viewY;
 
-            // Draw player trail
-            player.trail.forEach((t, i) => {
-                const gradient = ctx.createRadialGradient(t.x, t.y, 0, t.x, t.y, player.radius * (1 - i / 25));
-                gradient.addColorStop(0, `rgba(150, 200, 255, ${t.alpha * 0.5})`);
-                gradient.addColorStop(1, 'transparent');
-                ctx.fillStyle = gradient;
-                ctx.beginPath();
-                ctx.arc(t.x, t.y, player.radius * (1 - i / 25), 0, Math.PI * 2);
-                ctx.fill();
-            });
-
-            // Draw player
-            const playerGradient = ctx.createRadialGradient(player.x, player.y, 0, player.x, player.y, player.radius * 2);
-            playerGradient.addColorStop(0, '#ffffff');
-            playerGradient.addColorStop(0.3, '#aaddff');
-            playerGradient.addColorStop(0.6, 'rgba(100, 180, 255, 0.5)');
-            playerGradient.addColorStop(1, 'transparent');
-            ctx.fillStyle = playerGradient;
-            ctx.beginPath();
-            ctx.arc(player.x, player.y, player.radius * 2, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Player core
-            ctx.fillStyle = '#ffffff';
-            ctx.shadowColor = '#aaddff';
-            ctx.shadowBlur = 20;
-            ctx.beginPath();
-            ctx.arc(player.x, player.y, player.radius * 0.5, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.shadowBlur = 0;
-
-            // Draw stars (collectibles)
-            stars.forEach(star => {
-                ctx.save();
-                ctx.translate(star.x, star.y);
-                ctx.rotate(star.rotation);
-                
-                // Glow
-                const starGlow = ctx.createRadialGradient(0, 0, 0, 0, 0, star.radius * 2);
-                starGlow.addColorStop(0, `rgba(255, 230, 150, ${star.glow})`);
-                starGlow.addColorStop(0.5, 'rgba(255, 200, 100, 0.3)');
-                starGlow.addColorStop(1, 'transparent');
-                ctx.fillStyle = starGlow;
-                ctx.beginPath();
-                ctx.arc(0, 0, star.radius * 2, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Star shape
-                ctx.fillStyle = '#ffe088';
-                ctx.beginPath();
-                for (let i = 0; i < 4; i++) {
-                    const angle = (Math.PI / 2) * i;
-                    const x = Math.cos(angle) * star.radius;
-                    const y = Math.sin(angle) * star.radius;
-                    if (i === 0) ctx.moveTo(x, y);
-                    else ctx.lineTo(x, y);
-                }
-                ctx.closePath();
-                ctx.fill();
-
-                ctx.restore();
-            });
-
-            // Draw obstacles
-            obstacles.forEach(obs => {
-                ctx.save();
-                ctx.translate(obs.x, obs.y);
-                ctx.rotate(obs.rotation);
-
-                // Dark matter glow
-                const obsGlow = ctx.createRadialGradient(0, 0, 0, 0, 0, obs.radius * 2);
-                obsGlow.addColorStop(0, 'rgba(80, 20, 100, 0.8)');
-                obsGlow.addColorStop(0.5, 'rgba(40, 10, 60, 0.4)');
-                obsGlow.addColorStop(1, 'transparent');
-                ctx.fillStyle = obsGlow;
-                ctx.beginPath();
-                ctx.arc(0, 0, obs.radius * 2, 0, Math.PI * 2);
-                ctx.fill();
-
-                if (obs.type === 'circle') {
-                    ctx.fillStyle = '#1a0a20';
-                    ctx.strokeStyle = '#6a2080';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.arc(0, 0, obs.radius, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.stroke();
-                } else if (obs.type === 'diamond') {
-                    ctx.fillStyle = '#1a0a20';
-                    ctx.strokeStyle = '#6a2080';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.moveTo(0, -obs.radius);
-                    ctx.lineTo(obs.radius * 0.7, 0);
-                    ctx.lineTo(0, obs.radius);
-                    ctx.lineTo(-obs.radius * 0.7, 0);
-                    ctx.closePath();
-                    ctx.fill();
-                    ctx.stroke();
-                } else if (obs.type === 'streak') {
-                    ctx.fillStyle = 'rgba(100, 30, 120, 0.8)';
-                    ctx.fillRect(-obs.width / 2, -obs.height / 2, obs.width, obs.height);
-                }
-
-                ctx.restore();
-            });
-
-            // Draw particles
-            particles.forEach(p => {
-                ctx.fillStyle = p.color.replace(')', `, ${p.life})`).replace('rgb', 'rgba');
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
-                ctx.fill();
-            });
-        }
-
-        // Game over
-        function gameOver() {
-            gameRunning = false;
-            createParticles(player.x, player.y, '#ff6688', 30);
-            
-            if (score > highScore) {
-                highScore = score;
-                localStorage.setItem('voidRunnerHighScore', highScore.toString());
+            if (mapView) {
+                viewScale = MAP_SCALE * camera.zoom;
+                viewX = bodies.kerth.x;
+                viewY = bodies.kerth.y;
+            } else {
+                const altitude = currentBody ? 
+                    Math.sqrt(Math.pow(ship.x - currentBody.x, 2) + Math.pow(ship.y - currentBody.y, 2)) - currentBody.radius : 
+                    1000000;
+                viewScale = Math.min(SCALE, 50 / Math.max(altitude, 1000)) * camera.zoom;
+                viewX = ship.x;
+                viewY = ship.y;
             }
 
-            setTimeout(() => {
-                document.getElementById('final-score').textContent = score;
-                document.getElementById('high-score').textContent = `Best: ${highScore}`;
-                document.getElementById('death-message').textContent = deathMessages[Math.floor(Math.random() * deathMessages.length)];
-                document.getElementById('game-over-screen').style.display = 'flex';
-            }, 500);
+            const screenX = (x) => canvas.width/2 + (x - viewX) * viewScale;
+            const screenY = (y) => canvas.height/2 + (y - viewY) * viewScale;
+
+            // Draw orbits in map view
+            if (mapView) {
+                ctx.strokeStyle = 'rgba(0, 100, 0, 0.5)';
+                ctx.setLineDash([5, 5]);
+                
+                // Mun orbit
+                const munOrbitRadius = 384400000 * viewScale;
+                ctx.beginPath();
+                ctx.arc(screenX(bodies.kerth.x), screenY(bodies.kerth.y), munOrbitRadius, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                ctx.setLineDash([]);
+            }
+
+            // Draw bodies
+            for (let key in bodies) {
+                const body = bodies[key];
+                const bx = screenX(body.x);
+                const by = screenY(body.y);
+                const br = Math.max(body.radius * viewScale, 3);
+
+                // Atmosphere
+                if (body.atmosphere > 0) {
+                    const atmosRadius = (body.radius + body.atmosphere) * viewScale;
+                    const gradient = ctx.createRadialGradient(bx, by, br, bx, by, atmosRadius);
+                    gradient.addColorStop(0, 'rgba(100, 150, 255, 0.3)');
+                    gradient.addColorStop(1, 'transparent');
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(bx, by, atmosRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Body
+                ctx.fillStyle = body.color;
+                ctx.beginPath();
+                ctx.arc(bx, by, br, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Label
+                if (mapView || br > 10) {
+                    ctx.fillStyle = '#0f0';
+                    ctx.font = '10px Courier New';
+                    ctx.fillText(body.name, bx + br + 5, by);
+                }
+            }
+
+            // Draw ship
+            if (!ship.destroyed) {
+                const sx = screenX(ship.x);
+                const sy = screenY(ship.y);
+                
+                // Predicted trajectory
+                if (!ship.landed) {
+                    ctx.strokeStyle = 'rgba(0, 255, 0, 0.3)';
+                    ctx.beginPath();
+                    let px = ship.x, py = ship.y, pvx = ship.vx, pvy = ship.vy;
+                    ctx.moveTo(screenX(px), screenY(py));
+                    for (let i = 0; i < 500; i++) {
+                        const g = getGravity(px, py);
+                        pvx += g.fx * 100;
+                        pvy += g.fy * 100;
+                        px += pvx * 100;
+                        py += pvy * 100;
+                        ctx.lineTo(screenX(px), screenY(py));
+                    }
+                    ctx.stroke();
+                }
+
+                // Ship
+                ctx.save();
+                ctx.translate(sx, sy);
+                ctx.rotate(ship.angle + Math.PI/2);
+                
+                // Thrust flame
+                if (ship.throttle > 0 && ship.fuel > 0) {
+                    ctx.fillStyle = `rgba(255, ${150 + Math.random()*100}, 0, ${ship.throttle})`;
+                    ctx.beginPath();
+                    ctx.moveTo(-3, 5);
+                    ctx.lineTo(0, 5 + 15 * ship.throttle + Math.random() * 5);
+                    ctx.lineTo(3, 5);
+                    ctx.fill();
+                }
+                
+                // Ship body
+                ctx.fillStyle = '#0f0';
+                ctx.beginPath();
+                ctx.moveTo(0, -10);
+                ctx.lineTo(-5, 5);
+                ctx.lineTo(5, 5);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.restore();
+            }
+
+            // Draw navball
+            renderNavball();
+
+            // Update UI
+            if (currentBody && !ship.destroyed) {
+                const orbital = getOrbitalElements(ship.currentBody);
+                document.getElementById('altitude').textContent = Math.round(orbital.altitude / 1000);
+                document.getElementById('velocity').textContent = Math.round(orbital.velocity);
+                document.getElementById('apoapsis').textContent = orbital.apoapsis > 0 ? Math.round(orbital.apoapsis / 1000) : 'N/A';
+                document.getElementById('periapsis').textContent = Math.round(orbital.periapsis / 1000);
+                document.getElementById('fuel').textContent = Math.round(ship.fuel / ship.maxFuel * 100);
+                document.getElementById('current-body').textContent = bodies[ship.currentBody].name;
+            }
+            document.getElementById('timewarp').textContent = timeWarp;
+            document.getElementById('throttle-fill').style.height = (ship.throttle * 100) + '%';
         }
 
-        // Start game
-        function startGame() {
-            document.getElementById('start-screen').style.display = 'none';
-            document.getElementById('game-over-screen').style.display = 'none';
-            init();
-            gameRunning = true;
+        function renderNavball() {
+            navCtx.fillStyle = '#001';
+            navCtx.fillRect(0, 0, 100, 100);
+            
+            navCtx.save();
+            navCtx.translate(50, 50);
+            navCtx.rotate(-ship.angle);
+            
+            // Horizon
+            navCtx.fillStyle = '#040';
+            navCtx.fillRect(-50, 0, 100, 50);
+            navCtx.fillStyle = '#004';
+            navCtx.fillRect(-50, -50, 100, 50);
+            
+            // Grid lines
+            navCtx.strokeStyle = '#0f0';
+            navCtx.lineWidth = 0.5;
+            for (let i = -40; i <= 40; i += 20) {
+                navCtx.beginPath();
+                navCtx.moveTo(-50, i);
+                navCtx.lineTo(50, i);
+                navCtx.stroke();
+            }
+            
+            navCtx.restore();
+            
+            // Center marker
+            navCtx.strokeStyle = '#ff0';
+            navCtx.lineWidth = 2;
+            navCtx.beginPath();
+            navCtx.moveTo(40, 50);
+            navCtx.lineTo(50, 55);
+            navCtx.lineTo(60, 50);
+            navCtx.stroke();
+            
+            // Border
+            navCtx.strokeStyle = '#0f0';
+            navCtx.lineWidth = 2;
+            navCtx.beginPath();
+            navCtx.arc(50, 50, 48, 0, Math.PI * 2);
+            navCtx.stroke();
         }
 
-        // Event listeners
-        document.getElementById('start-btn').addEventListener('click', startGame);
-        document.getElementById('restart-btn').addEventListener('click', startGame);
+        // Input
+        document.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+            
+            if (e.key === ' ') ship.throttle = 1;
+            if (e.key.toLowerCase() === 'x') ship.throttle = 0;
+            if (e.key === 'm' || e.key === 'M') mapView = !mapView;
+            if (e.key === 'r' || e.key === 'R') initShip();
+            if (e.key === ',') timeWarp = Math.max(1, timeWarp / 2);
+            if (e.key === '.') timeWarp = Math.min(10000, timeWarp * 2);
+            
+            e.preventDefault();
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        function handleInput(dt) {
+            if (ship.destroyed) return;
+            
+            // Rotation
+            if (keys['a']) ship.angle -= 2 * dt;
+            if (keys['d']) ship.angle += 2 * dt;
+            
+            // Throttle
+            if (keys['shift']) ship.throttle = Math.min(1, ship.throttle + dt);
+            if (keys['control']) ship.throttle = Math.max(0, ship.throttle - dt);
+            
+            // Launch
+            if (ship.landed && ship.throttle > 0.5) {
+                ship.landed = false;
+            }
+        }
 
         // Game loop
-        function gameLoop() {
-            update();
+        let lastTime = 0;
+        function gameLoop(timestamp) {
+            const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
+            lastTime = timestamp;
+
+            if (gameStarted) {
+                handleInput(dt);
+                for (let i = 0; i < timeWarp; i++) {
+                    updatePhysics(dt / timeWarp * (timeWarp > 10 ? 10 : 1));
+                }
+            }
             render();
             requestAnimationFrame(gameLoop);
         }
 
-        // Initialize and start
-        init();
-        gameLoop();
+        // Start
+        document.getElementById('start-btn').addEventListener('click', () => {
+            document.getElementById('start-screen').style.display = 'none';
+            gameStarted = true;
+            initShip();
+        });
+
+        initShip();
+        requestAnimationFrame(gameLoop);
     </script>
 </body>
 </html>
