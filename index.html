@@ -186,18 +186,9 @@
         const navCanvas = document.getElementById('navball');
         const navCtx = navCanvas.getContext('2d');
         
-        function resize() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            navCanvas.width = 100;
-            navCanvas.height = 100;
-            initStars();
-        }
-        resize();
-        window.addEventListener('resize', resize);
-
-        // Background stars
+        // Background stars (declared early to avoid TDZ)
         let bgStars = [];
+        
         function initStars() {
             bgStars = [];
             for (let i = 0; i < 300; i++) {
@@ -213,6 +204,16 @@
                 });
             }
         }
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            navCanvas.width = 100;
+            navCanvas.height = 100;
+            initStars();
+        }
+        resize();
+        window.addEventListener('resize', resize);
 
         // Constants
         const G = 6.674e-11;
