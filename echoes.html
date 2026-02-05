@@ -171,6 +171,30 @@
 
         .legend span {
             margin-right: 15px;
+            position: relative;
+            cursor: help;
+        }
+
+        .legend span .tooltip {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1a2a;
+            border: 1px solid #3a3a5a;
+            color: #c0c0c0;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+            z-index: 50;
+            pointer-events: none;
+            margin-bottom: 4px;
+        }
+
+        .legend span:hover .tooltip {
+            display: block;
         }
     </style>
 </head>
@@ -209,14 +233,14 @@
         </div>
 
         <div class="legend">
-            <span>@ You</span>
-            <span style="color:#ef4444">g Goblin</span>
-            <span style="color:#f97316">o Orc</span>
-            <span style="color:#dc2626">T Troll</span>
-            <span style="color:#fbbf24">$ Gold</span>
-            <span style="color:#22c55e">♥ Health</span>
-            <span style="color:#3b82f6">↑ Weapon</span>
-            <span style="color:#8b5cf6">&gt; Stairs</span>
+            <span>@ You<span class="tooltip">You move in 4 directions (WASD/Arrows). Attack by moving into enemies.</span></span>
+            <span style="color:#ef4444">g Goblin<span class="tooltip">HP 5, ATK 2. Can attack diagonally! Stay on cardinal sides.</span></span>
+            <span style="color:#f97316">o Orc<span class="tooltip">HP 10, ATK 4. Can attack diagonally! Tougher than goblins.</span></span>
+            <span style="color:#dc2626">T Troll<span class="tooltip">HP 20, ATK 6. Can attack diagonally! Appears on floor 4+.</span></span>
+            <span style="color:#fbbf24">$ Gold<span class="tooltip">Collect gold. 10-30 per pile. Final score!</span></span>
+            <span style="color:#22c55e">♥ Health<span class="tooltip">Heals 8-12 HP. Overflow beyond max HP increases max HP by ¼.</span></span>
+            <span style="color:#3b82f6">↑ Weapon<span class="tooltip">+2 ATK permanently. Stacks with multiple pickups.</span></span>
+            <span style="color:#8b5cf6">&gt; Stairs<span class="tooltip">Descend to the next floor. Amulet is on floor 5.</span></span>
         </div>
     </div>
 
@@ -553,8 +577,20 @@
                 addMessage(`Found ${amount} gold!`, 'item');
             } else if (item.type === 'health') {
                 const heal = 8 + Math.floor(Math.random() * 5);
-                player.hp = Math.min(player.maxHp, player.hp + heal);
-                addMessage(`Drank a health potion! (+${heal} HP)`, 'item');
+                const newHp = player.hp + heal;
+                const overflow = Math.max(0, newHp - player.maxHp);
+                if (overflow > 0) {
+                    const maxHpGain = Math.floor(overflow / 4);
+                    if (maxHpGain > 0) {
+                        player.maxHp += maxHpGain;
+                        addMessage(`Drank a health potion! (+${heal} HP, +${maxHpGain} max HP!)`, 'item');
+                    } else {
+                        addMessage(`Drank a health potion! (+${heal} HP)`, 'item');
+                    }
+                } else {
+                    addMessage(`Drank a health potion! (+${heal} HP)`, 'item');
+                }
+                player.hp = Math.min(player.maxHp, newHp);
             } else if (item.type === 'weapon') {
                 player.atk += 2;
                 addMessage(`Found a Sharp Blade! (+2 ATK)`, 'item');
@@ -646,13 +682,21 @@
                         }
                     } else if (explored[y][x]) {
                         // Explored but not visible - dim
-                        const tile = map[y][x];
-                        if (tile === WALL) {
-                            display += '<span style="color:#252530">#</span>';
-                        } else if (tile === STAIRS) {
-                            display += '<span style="color:#3d2f5a">&gt;</span>';
+                        const item = items.find(i => i.x === x && i.y === y);
+                        if (item) {
+                            // Show items dimmed in fog of war
+                            const dimColors = { '♥': '#1a4a1a', '↑': '#1a2a4a', '$': '#4a3a0a', '✧': '#3d2f1a' };
+                            const dimColor = dimColors[item.char] || '#2a2a3a';
+                            display += `<span style="color:${dimColor}">${item.char}</span>`;
                         } else {
-                            display += '<span style="color:#1a1a24">.</span>';
+                            const tile = map[y][x];
+                            if (tile === WALL) {
+                                display += '<span style="color:#252530">#</span>';
+                            } else if (tile === STAIRS) {
+                                display += '<span style="color:#3d2f5a">&gt;</span>';
+                            } else {
+                                display += '<span style="color:#1a1a24">.</span>';
+                            }
                         }
                     } else {
                         display += ' ';
