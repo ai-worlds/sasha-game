@@ -47,7 +47,7 @@
             justify-content: space-between;
             align-items: center;
             padding: 10px 15px;
-            background: rgba(10, 10, 20, 0.85);
+            background: rgba(10, 10, 20, 0.9);
             border-bottom: 1px solid #223;
             pointer-events: auto;
         }
@@ -85,13 +85,14 @@
         #problem {
             font-size: clamp(28px, 8vw, 48px);
             color: #eef;
-            text-shadow: 0 0 20px rgba(150, 180, 255, 0.5);
+            text-shadow: 0 0 20px rgba(150, 180, 255, 0.5), 0 2px 4px rgba(0,0,0,0.8);
             margin-bottom: 30px;
             text-align: center;
-            background: rgba(10, 10, 20, 0.9);
+            background: rgba(10, 10, 25, 0.95);
             padding: 20px 40px;
             border-radius: 12px;
-            border: 2px solid #334;
+            border: 2px solid #446;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
         }
         
         #answers {
@@ -103,7 +104,7 @@
         }
         
         .answer-btn {
-            background: rgba(30, 30, 50, 0.9);
+            background: linear-gradient(180deg, rgba(40, 40, 65, 0.95) 0%, rgba(25, 25, 45, 0.95) 100%);
             border: 2px solid #445;
             color: #dde;
             font-family: inherit;
@@ -112,24 +113,28 @@
             cursor: pointer;
             border-radius: 8px;
             transition: all 0.15s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
         }
         
         .answer-btn:hover {
-            background: rgba(50, 50, 80, 0.95);
+            background: linear-gradient(180deg, rgba(55, 55, 85, 0.95) 0%, rgba(35, 35, 60, 0.95) 100%);
             border-color: #667;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.5);
         }
         
         .answer-btn:active {
-            transform: scale(0.95);
+            transform: scale(0.95) translateY(0);
         }
         
         .answer-btn.correct {
-            background: rgba(40, 120, 60, 0.9);
+            background: linear-gradient(180deg, rgba(40, 140, 70, 0.95) 0%, rgba(25, 100, 45, 0.95) 100%);
             border-color: #4a8;
         }
         
         .answer-btn.wrong {
-            background: rgba(120, 40, 40, 0.9);
+            background: linear-gradient(180deg, rgba(140, 40, 40, 0.95) 0%, rgba(100, 25, 25, 0.95) 100%);
             border-color: #a44;
         }
         
@@ -138,11 +143,12 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 48px;
+            font-size: 64px;
             z-index: 20;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.2s;
+            text-shadow: 0 0 30px currentColor;
         }
         
         #menu {
@@ -151,7 +157,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(5, 5, 10, 0.95);
+            background: rgba(5, 5, 10, 0.97);
             z-index: 100;
             display: none;
             overflow-y: auto;
@@ -379,7 +385,7 @@
         <div id="topBar">
             <div id="stats">
                 <div>Height: <span id="heightDisplay">0</span> / 1000</div>
-                <div>Streak: <span id="streakDisplay">0</span> | Nerf: <span id="nerfDisplay">0</span>%</div>
+                <div>Streak: <span id="streakDisplay">0</span> | Karma: <span id="karmaDisplay">0</span>%</div>
             </div>
             <button id="menuBtn">☰ Menu</button>
         </div>
@@ -460,8 +466,7 @@
         // ========== CONFIGURATION ==========
         const CONFIG = {
             GOAL_HEIGHT: 1000,
-            BASE_FALL_PERCENT: 100,
-            NERF_PER_FALL: 1,
+            KARMA_PER_CORRECT: 10, // Every 10 correct = 1% karma
         };
 
         // ========== CANVAS SETUP ==========
@@ -480,27 +485,32 @@
             height: 0,
             targetHeight: 0,
             streak: 0,
-            nerfLevel: 0,
+            karmaLevel: 0,
             totalCorrect: 0,
             totalWrong: 0,
             operations: { add: true, sub: true, mul: true, div: true },
             mode: 'answer',
             numChoices: 6,
-            problems: {}, // key: "a op b" -> { correct: 0, wrong: 0, totalTime: 0, attempts: 0 }
+            problems: {},
             currentProblem: null,
             problemStartTime: 0,
             gameWon: false,
             characterY: 0,
+            characterVY: 0,
+            characterState: 'idle', // idle, jumping, falling
+            animFrame: 0,
             platforms: [],
             particles: [],
             stars: [],
+            clouds: [],
+            time: 0,
         };
 
         // ========== STORAGE ==========
         function saveState() {
             const saveData = {
                 height: state.height,
-                nerfLevel: state.nerfLevel,
+                karmaLevel: state.karmaLevel,
                 totalCorrect: state.totalCorrect,
                 totalWrong: state.totalWrong,
                 operations: state.operations,
@@ -516,10 +526,18 @@
             const saved = localStorage.getItem('numberClimb');
             if (saved) {
                 const data = JSON.parse(saved);
+                // Handle migration from old nerfLevel to karmaLevel
+                if (data.nerfLevel !== undefined && data.karmaLevel === undefined) {
+                    data.karmaLevel = Math.floor(data.totalCorrect / CONFIG.KARMA_PER_CORRECT);
+                    delete data.nerfLevel;
+                }
                 Object.assign(state, data);
                 state.targetHeight = state.height;
+                // Recalculate karma from totalCorrect for consistency
+                state.karmaLevel = Math.min(100, Math.floor(state.totalCorrect / CONFIG.KARMA_PER_CORRECT));
             }
             generateStars();
+            generateClouds();
             generatePlatforms();
         }
         
@@ -530,7 +548,7 @@
                     height: 0,
                     targetHeight: 0,
                     streak: 0,
-                    nerfLevel: 0,
+                    karmaLevel: 0,
                     totalCorrect: 0,
                     totalWrong: 0,
                     operations: { add: true, sub: true, mul: true, div: true },
@@ -541,11 +559,17 @@
                     problemStartTime: 0,
                     gameWon: false,
                     characterY: 0,
+                    characterVY: 0,
+                    characterState: 'idle',
+                    animFrame: 0,
                     platforms: [],
                     particles: [],
                     stars: [],
+                    clouds: [],
+                    time: 0,
                 };
                 generateStars();
+                generateClouds();
                 generatePlatforms();
                 updateMenuUI();
                 generateProblem();
@@ -556,12 +580,9 @@
         // ========== PROBLEM GENERATION ==========
         function getProblemDifficulty(key) {
             const p = state.problems[key];
-            if (!p || p.attempts === 0) return 0.5; // Unknown = medium priority
-            
+            if (!p || p.attempts === 0) return 0.5;
             const avgTime = p.totalTime / p.attempts;
             const errorRate = p.wrong / p.attempts;
-            
-            // Higher score = harder = show more often
             return (avgTime / 5000) + (errorRate * 2);
         }
         
@@ -608,7 +629,6 @@
             const allProblems = generateAllProblems();
             if (allProblems.length === 0) return null;
             
-            // Weight by difficulty
             const weighted = allProblems.map(p => {
                 const key = p.display;
                 const difficulty = getProblemDifficulty(key);
@@ -637,7 +657,6 @@
             state.currentProblem = problem;
             state.problemStartTime = Date.now();
             
-            // Generate display based on mode
             let displayText;
             let correctAnswer;
             
@@ -645,7 +664,6 @@
                 displayText = `${problem.display} = ?`;
                 correctAnswer = problem.answer;
             } else {
-                // Question mode: hide one operand
                 const opSymbol = { add: '+', sub: '−', mul: '×', div: '÷' }[problem.op];
                 if (Math.random() < 0.5) {
                     displayText = `__ ${opSymbol} ${problem.b} = ${problem.answer}`;
@@ -659,12 +677,10 @@
             state.currentProblem.correctAnswer = correctAnswer;
             document.getElementById('problem').textContent = displayText;
             
-            // Generate answer choices
             const choices = new Set([correctAnswer]);
             while (choices.size < state.numChoices) {
-                let wrong;
                 const variance = Math.max(5, Math.ceil(correctAnswer * 0.5));
-                wrong = correctAnswer + Math.floor(Math.random() * variance * 2) - variance;
+                const wrong = correctAnswer + Math.floor(Math.random() * variance * 2) - variance;
                 if (wrong > 0 && wrong !== correctAnswer) {
                     choices.add(wrong);
                 }
@@ -700,7 +716,6 @@
             
             const isCorrect = choice === problem.correctAnswer;
             
-            // Disable all buttons
             document.querySelectorAll('.answer-btn').forEach(b => b.disabled = true);
             
             if (isCorrect) {
@@ -710,8 +725,14 @@
                 state.streak++;
                 state.targetHeight = Math.min(CONFIG.GOAL_HEIGHT, state.targetHeight + 1);
                 
+                // Karma increases by 1% every 10 correct answers
+                state.karmaLevel = Math.min(100, Math.floor(state.totalCorrect / CONFIG.KARMA_PER_CORRECT));
+                
+                state.characterState = 'jumping';
+                state.characterVY = -15;
+                
                 showFeedback('✓', '#4a8');
-                createParticles(canvas.width / 2, state.characterY, '#4a8', 10);
+                createParticles(canvas.width / 2, state.characterY, '#4a8', 15);
                 
                 if (state.targetHeight >= CONFIG.GOAL_HEIGHT && !state.gameWon) {
                     state.gameWon = true;
@@ -721,7 +742,6 @@
                 }
             } else {
                 btn.classList.add('wrong');
-                // Show correct answer
                 document.querySelectorAll('.answer-btn').forEach(b => {
                     if (parseInt(b.textContent) === problem.correctAnswer) {
                         b.classList.add('correct');
@@ -732,15 +752,16 @@
                 state.totalWrong++;
                 state.streak = 0;
                 
-                // Fall based on nerf level
-                const fallPercent = Math.max(0, CONFIG.BASE_FALL_PERCENT - state.nerfLevel);
+                // Fall based on karma level (0 karma = 100% fall, 100 karma = 0% fall)
+                const fallPercent = Math.max(0, 100 - state.karmaLevel);
                 const fallAmount = state.targetHeight * (fallPercent / 100);
                 state.targetHeight = Math.max(0, state.targetHeight - fallAmount);
                 
-                state.nerfLevel = Math.min(100, state.nerfLevel + CONFIG.NERF_PER_FALL);
+                state.characterState = 'falling';
+                state.characterVY = 5;
                 
                 showFeedback('✗', '#a44');
-                createParticles(canvas.width / 2, state.characterY, '#a44', 20);
+                createParticles(canvas.width / 2, state.characterY, '#a44', 25);
             }
             
             saveState();
@@ -762,12 +783,26 @@
         // ========== BACKGROUND GAME ==========
         function generateStars() {
             state.stars = [];
-            for (let i = 0; i < 100; i++) {
+            for (let i = 0; i < 150; i++) {
                 state.stars.push({
                     x: Math.random() * canvas.width,
                     y: Math.random() * canvas.height,
                     size: Math.random() * 2 + 0.5,
-                    speed: Math.random() * 0.5 + 0.1,
+                    twinkle: Math.random() * Math.PI * 2,
+                    speed: Math.random() * 0.3 + 0.1,
+                });
+            }
+        }
+        
+        function generateClouds() {
+            state.clouds = [];
+            for (let i = 0; i < 20; i++) {
+                state.clouds.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * 2000,
+                    width: 100 + Math.random() * 200,
+                    height: 40 + Math.random() * 60,
+                    speed: 0.2 + Math.random() * 0.3,
                 });
             }
         }
@@ -776,22 +811,27 @@
             state.platforms = [];
             const platformCount = CONFIG.GOAL_HEIGHT + 50;
             for (let i = 0; i < platformCount; i++) {
+                const variation = Math.sin(i * 0.1) * 0.2;
                 state.platforms.push({
                     y: i,
-                    x: 0.2 + Math.random() * 0.6,
-                    width: 0.1 + Math.random() * 0.15,
+                    x: 0.3 + variation + Math.random() * 0.4,
+                    width: 0.12 + Math.random() * 0.1,
+                    type: Math.floor(Math.random() * 3),
                 });
             }
         }
         
         function createParticles(x, y, color, count) {
             for (let i = 0; i < count; i++) {
+                const angle = (Math.PI * 2 * i) / count + Math.random() * 0.5;
+                const speed = 3 + Math.random() * 6;
                 state.particles.push({
                     x, y,
-                    vx: (Math.random() - 0.5) * 10,
-                    vy: (Math.random() - 0.5) * 10,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 3,
                     life: 1,
                     color,
+                    size: 2 + Math.random() * 4,
                 });
             }
         }
@@ -799,27 +839,226 @@
         function getEnvironmentColors(height) {
             const progress = height / CONFIG.GOAL_HEIGHT;
             
-            if (progress < 0.2) {
-                // Deep underground - dark purple/black
-                return { bg1: '#0a0510', bg2: '#15102a', platform: '#2a2040', accent: '#4a3060' };
-            } else if (progress < 0.4) {
-                // Caves - dark blue
-                return { bg1: '#050a15', bg2: '#102030', platform: '#203040', accent: '#305060' };
-            } else if (progress < 0.6) {
-                // Surface - dark green/grey
-                return { bg1: '#0a100a', bg2: '#152015', platform: '#253525', accent: '#354535' };
-            } else if (progress < 0.8) {
-                // Sky - dark blue with hints of purple
-                return { bg1: '#0a0a20', bg2: '#151530', platform: '#252545', accent: '#404070' };
+            if (progress < 0.15) {
+                return { 
+                    bg1: '#0a0510', bg2: '#1a1025', 
+                    platform: '#3a2850', platformTop: '#5a3870', platformGlow: '#8040a0',
+                    accent: '#6030a0', name: 'The Depths'
+                };
+            } else if (progress < 0.35) {
+                return { 
+                    bg1: '#05080f', bg2: '#101828', 
+                    platform: '#203848', platformTop: '#305868', platformGlow: '#4080a0',
+                    accent: '#2060a0', name: 'Crystal Caves'
+                };
+            } else if (progress < 0.55) {
+                return { 
+                    bg1: '#080a05', bg2: '#152010', 
+                    platform: '#2a3820', platformTop: '#3a4830', platformGlow: '#5a8040',
+                    accent: '#408030', name: 'The Surface'
+                };
+            } else if (progress < 0.75) {
+                return { 
+                    bg1: '#08080f', bg2: '#181830', 
+                    platform: '#303050', platformTop: '#404068', platformGlow: '#6060a0',
+                    accent: '#5050a0', name: 'Sky Realm'
+                };
             } else {
-                // Space - deep black with stars
-                return { bg1: '#02020a', bg2: '#0a0a15', platform: '#202035', accent: '#4050a0' };
+                return { 
+                    bg1: '#020208', bg2: '#0a0a18', 
+                    platform: '#252540', platformTop: '#353560', platformGlow: '#5050ff',
+                    accent: '#4040c0', name: 'The Void'
+                };
             }
         }
         
+        function drawPlatform(x, y, width, colors, type) {
+            const h = 12;
+            
+            // Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.4)';
+            ctx.beginPath();
+            ctx.ellipse(x, y + h + 4, width * 0.45, 6, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Platform body (3D effect)
+            ctx.fillStyle = colors.platform;
+            ctx.beginPath();
+            ctx.moveTo(x - width/2, y);
+            ctx.lineTo(x + width/2, y);
+            ctx.lineTo(x + width/2 - 4, y + h);
+            ctx.lineTo(x - width/2 + 4, y + h);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Platform top
+            ctx.fillStyle = colors.platformTop;
+            ctx.beginPath();
+            ctx.ellipse(x, y, width/2, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Highlight
+            ctx.fillStyle = 'rgba(255,255,255,0.15)';
+            ctx.beginPath();
+            ctx.ellipse(x, y - 2, width/2 - 4, 4, 0, Math.PI, Math.PI * 2);
+            ctx.fill();
+            
+            // Glow underneath
+            const glow = ctx.createRadialGradient(x, y + h/2, 0, x, y + h/2, width/2);
+            glow.addColorStop(0, colors.platformGlow + '40');
+            glow.addColorStop(1, 'transparent');
+            ctx.fillStyle = glow;
+            ctx.fillRect(x - width/2, y - 10, width, h + 20);
+            
+            // Crystal/decoration based on type
+            if (type === 1) {
+                ctx.fillStyle = colors.platformGlow;
+                ctx.beginPath();
+                ctx.moveTo(x, y - 15);
+                ctx.lineTo(x + 4, y - 4);
+                ctx.lineTo(x - 4, y - 4);
+                ctx.closePath();
+                ctx.fill();
+            } else if (type === 2) {
+                ctx.fillStyle = colors.accent + '80';
+                ctx.beginPath();
+                ctx.arc(x - 10, y - 3, 3, 0, Math.PI * 2);
+                ctx.arc(x + 10, y - 3, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        function drawCharacter(x, y, state_name) {
+            const bounce = Math.sin(state.time * 8) * 2;
+            const t = state.time;
+            
+            ctx.save();
+            ctx.translate(x, y);
+            
+            // Glow aura
+            const auraGrad = ctx.createRadialGradient(0, -20, 0, 0, -20, 50);
+            auraGrad.addColorStop(0, 'rgba(100, 180, 255, 0.3)');
+            auraGrad.addColorStop(0.5, 'rgba(100, 180, 255, 0.1)');
+            auraGrad.addColorStop(1, 'transparent');
+            ctx.fillStyle = auraGrad;
+            ctx.beginPath();
+            ctx.arc(0, -20, 50, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 12, 4, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Legs
+            const legSwing = state_name === 'jumping' ? -0.3 : state_name === 'falling' ? 0.5 : Math.sin(t * 5) * 0.1;
+            ctx.strokeStyle = '#68c';
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            
+            // Left leg
+            ctx.beginPath();
+            ctx.moveTo(-5, -12 + bounce);
+            ctx.lineTo(-8, 0);
+            ctx.stroke();
+            
+            // Right leg
+            ctx.beginPath();
+            ctx.moveTo(5, -12 + bounce);
+            ctx.lineTo(8, 0);
+            ctx.stroke();
+            
+            // Body
+            ctx.fillStyle = '#5af';
+            ctx.beginPath();
+            ctx.ellipse(0, -22 + bounce, 10, 14, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Body highlight
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.beginPath();
+            ctx.ellipse(-3, -26 + bounce, 4, 6, -0.3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Head
+            ctx.fillStyle = '#8cf';
+            ctx.beginPath();
+            ctx.arc(0, -40 + bounce, 10, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Head highlight
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.beginPath();
+            ctx.arc(-3, -43 + bounce, 4, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Eyes
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(-4, -40 + bounce, 2.5, 0, Math.PI * 2);
+            ctx.arc(4, -40 + bounce, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Pupils
+            ctx.fillStyle = '#224';
+            ctx.beginPath();
+            ctx.arc(-3.5, -40 + bounce, 1.5, 0, Math.PI * 2);
+            ctx.arc(4.5, -40 + bounce, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Arms
+            ctx.strokeStyle = '#68c';
+            ctx.lineWidth = 4;
+            
+            const armRaise = state_name === 'jumping' ? -0.8 : state_name === 'falling' ? 0.5 : 0;
+            
+            // Left arm
+            ctx.beginPath();
+            ctx.moveTo(-10, -25 + bounce);
+            ctx.lineTo(-18, -18 + bounce + armRaise * 15);
+            ctx.stroke();
+            
+            // Right arm
+            ctx.beginPath();
+            ctx.moveTo(10, -25 + bounce);
+            ctx.lineTo(18, -18 + bounce + armRaise * 15);
+            ctx.stroke();
+            
+            // Cape/trail effect when moving
+            if (state_name === 'jumping' || state_name === 'falling') {
+                ctx.fillStyle = 'rgba(100, 150, 255, 0.3)';
+                ctx.beginPath();
+                ctx.moveTo(-8, -15 + bounce);
+                ctx.quadraticCurveTo(0, 20, 8, -15 + bounce);
+                ctx.quadraticCurveTo(0, -5, -8, -15 + bounce);
+                ctx.fill();
+            }
+            
+            ctx.restore();
+        }
+        
         function render() {
+            state.time += 0.016;
+            state.animFrame++;
+            
             // Smooth height animation
-            state.height += (state.targetHeight - state.height) * 0.1;
+            const heightDiff = state.targetHeight - state.height;
+            state.height += heightDiff * 0.08;
+            
+            // Update character physics
+            if (state.characterState === 'jumping') {
+                state.characterVY += 0.8;
+                if (state.characterVY > 0) {
+                    state.characterState = 'idle';
+                }
+            } else if (state.characterState === 'falling') {
+                state.characterVY *= 0.95;
+                if (Math.abs(heightDiff) < 1) {
+                    state.characterState = 'idle';
+                    state.characterVY = 0;
+                }
+            }
             
             const colors = getEnvironmentColors(state.height);
             
@@ -831,24 +1070,41 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
             // Stars (more visible at higher altitudes)
-            const starAlpha = Math.min(1, state.height / 500);
+            const starAlpha = Math.min(1, state.height / 400);
             for (const star of state.stars) {
-                star.y += star.speed * (state.targetHeight > state.height ? -1 : state.targetHeight < state.height ? 1 : 0);
+                const parallax = (state.targetHeight - state.height) * star.speed;
+                star.y += parallax * 0.5;
                 if (star.y < 0) star.y = canvas.height;
                 if (star.y > canvas.height) star.y = 0;
                 
-                ctx.fillStyle = `rgba(255, 255, 255, ${starAlpha * (0.3 + Math.random() * 0.3)})`;
+                const twinkle = Math.sin(state.time * 3 + star.twinkle) * 0.3 + 0.7;
+                ctx.fillStyle = `rgba(255, 255, 255, ${starAlpha * twinkle * 0.8})`;
                 ctx.beginPath();
                 ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
                 ctx.fill();
             }
             
-            // Platforms
-            const visibleRange = 20;
-            const baseY = canvas.height * 0.7;
-            const platformSpacing = 30;
+            // Clouds (only in mid sections)
+            if (state.height > 300 && state.height < 800) {
+                const cloudAlpha = 1 - Math.abs(state.height - 550) / 300;
+                for (const cloud of state.clouds) {
+                    const screenY = (cloud.y - state.height * 2) % (canvas.height + 200) - 100;
+                    cloud.x += cloud.speed;
+                    if (cloud.x > canvas.width + cloud.width) cloud.x = -cloud.width;
+                    
+                    ctx.fillStyle = `rgba(255, 255, 255, ${cloudAlpha * 0.08})`;
+                    ctx.beginPath();
+                    ctx.ellipse(cloud.x, screenY, cloud.width/2, cloud.height/2, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
             
-            for (let i = Math.max(0, Math.floor(state.height) - 5); i < Math.min(state.platforms.length, Math.floor(state.height) + visibleRange); i++) {
+            // Platforms
+            const visibleRange = 25;
+            const baseY = canvas.height * 0.65;
+            const platformSpacing = 28;
+            
+            for (let i = Math.max(0, Math.floor(state.height) - 8); i < Math.min(state.platforms.length, Math.floor(state.height) + visibleRange); i++) {
                 const plat = state.platforms[i];
                 const screenY = baseY - (i - state.height) * platformSpacing;
                 
@@ -857,40 +1113,23 @@
                 const platX = plat.x * canvas.width;
                 const platWidth = plat.width * canvas.width;
                 
-                ctx.fillStyle = colors.platform;
-                ctx.fillRect(platX - platWidth / 2, screenY, platWidth, 8);
-                
-                // Platform glow
-                ctx.fillStyle = colors.accent;
-                ctx.fillRect(platX - platWidth / 2, screenY, platWidth, 2);
+                drawPlatform(platX, screenY, platWidth, colors, plat.type);
             }
             
             // Character
             const charX = canvas.width / 2;
-            state.characterY = baseY - 20;
+            state.characterY = baseY - 20 + state.characterVY;
             
-            // Character body
-            ctx.fillStyle = '#8af';
-            ctx.beginPath();
-            ctx.arc(charX, state.characterY - 15, 12, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Character glow
-            const glowGradient = ctx.createRadialGradient(charX, state.characterY - 15, 0, charX, state.characterY - 15, 30);
-            glowGradient.addColorStop(0, 'rgba(100, 180, 255, 0.3)');
-            glowGradient.addColorStop(1, 'rgba(100, 180, 255, 0)');
-            ctx.fillStyle = glowGradient;
-            ctx.beginPath();
-            ctx.arc(charX, state.characterY - 15, 30, 0, Math.PI * 2);
-            ctx.fill();
+            drawCharacter(charX, state.characterY, state.characterState);
             
             // Particles
             for (let i = state.particles.length - 1; i >= 0; i--) {
                 const p = state.particles[i];
                 p.x += p.vx;
                 p.y += p.vy;
-                p.vy += 0.3;
-                p.life -= 0.02;
+                p.vy += 0.2;
+                p.vx *= 0.98;
+                p.life -= 0.015;
                 
                 if (p.life <= 0) {
                     state.particles.splice(i, 1);
@@ -900,26 +1139,45 @@
                 ctx.fillStyle = p.color;
                 ctx.globalAlpha = p.life;
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+                ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.globalAlpha = 1;
             }
             
-            // Height indicator on side
-            const indicatorHeight = canvas.height * 0.6;
-            const indicatorY = canvas.height * 0.2;
-            const indicatorX = canvas.width - 30;
+            // Height indicator
+            const indicatorHeight = canvas.height * 0.5;
+            const indicatorY = canvas.height * 0.25;
+            const indicatorX = canvas.width - 25;
             
-            ctx.fillStyle = 'rgba(30, 30, 50, 0.5)';
-            ctx.fillRect(indicatorX - 5, indicatorY, 10, indicatorHeight);
+            // Track background
+            ctx.fillStyle = 'rgba(30, 30, 50, 0.6)';
+            ctx.beginPath();
+            ctx.roundRect(indicatorX - 6, indicatorY, 12, indicatorHeight, 6);
+            ctx.fill();
             
+            // Progress fill
             const progressHeight = (state.height / CONFIG.GOAL_HEIGHT) * indicatorHeight;
-            ctx.fillStyle = '#4a8';
-            ctx.fillRect(indicatorX - 5, indicatorY + indicatorHeight - progressHeight, 10, progressHeight);
+            const progGrad = ctx.createLinearGradient(0, indicatorY + indicatorHeight, 0, indicatorY);
+            progGrad.addColorStop(0, '#2a4');
+            progGrad.addColorStop(0.5, '#4c8');
+            progGrad.addColorStop(1, '#8ef');
+            ctx.fillStyle = progGrad;
+            ctx.beginPath();
+            ctx.roundRect(indicatorX - 4, indicatorY + indicatorHeight - progressHeight, 8, progressHeight, 4);
+            ctx.fill();
             
             // Goal marker
             ctx.fillStyle = '#ff0';
-            ctx.fillRect(indicatorX - 8, indicatorY - 2, 16, 4);
+            ctx.shadowColor = '#ff0';
+            ctx.shadowBlur = 10;
+            ctx.fillRect(indicatorX - 10, indicatorY - 2, 20, 4);
+            ctx.shadowBlur = 0;
+            
+            // Zone name
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.font = '12px monospace';
+            ctx.textAlign = 'right';
+            ctx.fillText(colors.name, canvas.width - 15, canvas.height - 15);
             
             requestAnimationFrame(render);
         }
@@ -928,29 +1186,24 @@
         function updateStats() {
             document.getElementById('heightDisplay').textContent = Math.floor(state.height);
             document.getElementById('streakDisplay').textContent = state.streak;
-            document.getElementById('nerfDisplay').textContent = state.nerfLevel;
+            document.getElementById('karmaDisplay').textContent = state.karmaLevel;
         }
         
         function updateMenuUI() {
-            // Operations toggles
             document.querySelectorAll('.toggle[data-op]').forEach(toggle => {
                 const op = toggle.dataset.op;
                 toggle.classList.toggle('on', state.operations[op]);
             });
             
-            // Mode buttons
             document.querySelectorAll('.mode-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.mode === state.mode);
             });
             
-            // Choices slider
             document.getElementById('choicesSlider').value = state.numChoices;
             document.getElementById('choicesValue').textContent = state.numChoices;
             
-            // Hardest problems
             updateHardestList();
             
-            // Progress stats
             document.getElementById('progressStats').innerHTML = `
                 <div style="color: #889; font-size: 13px; line-height: 1.8;">
                     Height: ${Math.floor(state.height)} / ${CONFIG.GOAL_HEIGHT}<br>
@@ -958,7 +1211,7 @@
                     Total Wrong: ${state.totalWrong}<br>
                     Accuracy: ${state.totalCorrect + state.totalWrong > 0 ? 
                         Math.round(state.totalCorrect / (state.totalCorrect + state.totalWrong) * 100) : 0}%<br>
-                    Nerf Level: ${state.nerfLevel}%
+                    Karma Level: ${state.karmaLevel}% (${state.totalCorrect % CONFIG.KARMA_PER_CORRECT}/${CONFIG.KARMA_PER_CORRECT} to next)
                 </div>
             `;
         }
@@ -999,7 +1252,7 @@
         
         function showVictory() {
             document.getElementById('victoryStats').textContent = 
-                `${state.totalCorrect} correct, ${state.totalWrong} wrong, ${state.nerfLevel}% nerf`;
+                `${state.totalCorrect} correct, ${state.totalWrong} wrong, ${state.karmaLevel}% karma`;
             document.getElementById('victoryScreen').classList.add('visible');
         }
 
