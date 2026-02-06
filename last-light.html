@@ -422,35 +422,43 @@
                 
                 // Check mirror collision
                 for (const mirror of gameState.mirrors) {
-                    if (distance(x, y, mirror.x, mirror.y) < 20) {
+                    if (distance(x, y, mirror.x, mirror.y) < 15) {
                         hitSomething = true;
                         endX = x;
                         endY = y;
                         
-                        // Reflect ray
-                        const reflectAngle = 2 * mirror.angle - angle + Math.PI;
-                        traceLightRay(x, y, reflectAngle, maxRange * 0.8, color, intensity * 0.85, bounces + 1);
+                        // Reflect ray: angle of reflection = 2 * mirror_normal - incoming_angle
+                        // Mirror angle is the surface angle, normal is perpendicular
+                        const normalAngle = mirror.angle + Math.PI / 2;
+                        const reflectAngle = 2 * normalAngle - angle;
+                        
+                        // Start reflected ray outside the mirror to prevent re-hitting
+                        const offsetX = Math.cos(reflectAngle) * 20;
+                        const offsetY = Math.sin(reflectAngle) * 20;
+                        traceLightRay(x + offsetX, y + offsetY, reflectAngle, maxRange * 0.8, color, intensity * 0.85, bounces + 1);
                         break;
                     }
                 }
                 
                 // Check lens collision
                 for (const lens of gameState.lenses) {
-                    if (distance(x, y, lens.x, lens.y) < 25) {
+                    if (distance(x, y, lens.x, lens.y) < 15) {
                         hitSomething = true;
                         endX = x;
                         endY = y;
                         
-                        // Lens focuses light - creates narrower, longer beam
+                        // Lens focuses light - creates narrower, longer beam in lens direction
                         const lensAngle = lens.angle;
-                        traceLightRay(x, y, lensAngle, maxRange * 1.5, color, intensity * 1.2, bounces + 1);
+                        const offsetX = Math.cos(lensAngle) * 20;
+                        const offsetY = Math.sin(lensAngle) * 20;
+                        traceLightRay(x + offsetX, y + offsetY, lensAngle, maxRange * 1.5, color, intensity * 1.2, bounces + 1);
                         break;
                     }
                 }
                 
                 // Check prism collision
                 for (const prism of gameState.prisms) {
-                    if (distance(x, y, prism.x, prism.y) < 20) {
+                    if (distance(x, y, prism.x, prism.y) < 15) {
                         hitSomething = true;
                         endX = x;
                         endY = y;
@@ -461,7 +469,9 @@
                             const splitColor = j === -1 ? { r: 255, g: 150, b: 100 } :
                                               j === 0 ? { r: 255, g: 220, b: 150 } :
                                               { r: 255, g: 100, b: 80 };
-                            traceLightRay(x, y, splitAngle, maxRange * 0.6, splitColor, intensity * 0.6, bounces + 1);
+                            const offsetX = Math.cos(splitAngle) * 20;
+                            const offsetY = Math.sin(splitAngle) * 20;
+                            traceLightRay(x + offsetX, y + offsetY, splitAngle, maxRange * 0.6, splitColor, intensity * 0.6, bounces + 1);
                         }
                         break;
                     }
