@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Last Light</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #000;
+            overflow: hidden;
+            font-family: 'Georgia', serif;
+            cursor: crosshair;
+        }
+        
+        #gameCanvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #ffd89b;
+            text-shadow: 0 0 10px rgba(255, 200, 100, 0.5);
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        #ui h1 {
+            font-size: 24px;
+            font-weight: normal;
+            letter-spacing: 3px;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+        
+        #stats {
+            font-size: 14px;
+            line-height: 1.8;
+            opacity: 0.8;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 10;
+        }
+        
+        .tool-btn {
+            background: rgba(20, 15, 30, 0.8);
+            border: 1px solid rgba(255, 200, 100, 0.3);
+            color: #ffd89b;
+            padding: 12px 24px;
+            font-family: 'Georgia', serif;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 1px;
+        }
+        
+        .tool-btn:hover {
+            background: rgba(255, 200, 100, 0.2);
+            border-color: rgba(255, 200, 100, 0.6);
+            box-shadow: 0 0 20px rgba(255, 180, 80, 0.3);
+        }
+        
+        .tool-btn.active {
+            background: rgba(255, 180, 80, 0.3);
+            border-color: #ffd89b;
+            box-shadow: 0 0 25px rgba(255, 180, 80, 0.5);
+        }
+        
+        .tool-btn .cost {
+            font-size: 11px;
+            opacity: 0.7;
+            display: block;
+            margin-top: 4px;
+        }
+        
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ffd89b;
+            font-size: 18px;
+            text-align: center;
+            z-index: 20;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 1s ease;
+            text-shadow: 0 0 30px rgba(255, 180, 80, 0.8);
+            max-width: 500px;
+            line-height: 1.8;
+            letter-spacing: 1px;
+        }
+        
+        #message.visible {
+            opacity: 1;
+        }
+        
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, rgba(40, 20, 10, 0.9) 0%, rgba(0, 0, 0, 0.98) 70%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            color: #ffd89b;
+            text-align: center;
+        }
+        
+        #startScreen h1 {
+            font-size: 64px;
+            font-weight: normal;
+            letter-spacing: 15px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 50px rgba(255, 180, 80, 0.6);
+        }
+        
+        #startScreen .subtitle {
+            font-size: 18px;
+            opacity: 0.7;
+            margin-bottom: 60px;
+            font-style: italic;
+            letter-spacing: 2px;
+        }
+        
+        #startScreen .instructions {
+            font-size: 14px;
+            line-height: 2;
+            opacity: 0.6;
+            margin-bottom: 40px;
+            max-width: 400px;
+        }
+        
+        #startBtn {
+            background: transparent;
+            border: 1px solid rgba(255, 200, 100, 0.5);
+            color: #ffd89b;
+            padding: 15px 50px;
+            font-family: 'Georgia', serif;
+            font-size: 18px;
+            cursor: pointer;
+            letter-spacing: 3px;
+            transition: all 0.5s ease;
+        }
+        
+        #startBtn:hover {
+            background: rgba(255, 180, 80, 0.2);
+            box-shadow: 0 0 40px rgba(255, 180, 80, 0.4);
+            transform: scale(1.05);
+        }
+        
+        #waveAnnounce {
+            position: absolute;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ffd89b;
+            font-size: 32px;
+            letter-spacing: 5px;
+            opacity: 0;
+            z-index: 15;
+            text-shadow: 0 0 40px rgba(255, 180, 80, 0.8);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="ui">
+        <h1>LAST LIGHT</h1>
+        <div id="stats">
+            <div>Wave: <span id="waveNum">1</span></div>
+            <div>Stardust: <span id="stardust">50</span> ✧</div>
+            <div>Star Life: <span id="starLife">100</span>%</div>
+            <div>Creatures: <span id="creatureCount">0</span></div>
+        </div>
+    </div>
+    
+    <div id="controls">
+        <button class="tool-btn active" data-tool="mirror">
+            Mirror
+            <span class="cost">25 ✧</span>
+        </button>
+        <button class="tool-btn" data-tool="lens">
+            Lens
+            <span class="cost">40 ✧</span>
+        </button>
+        <button class="tool-btn" data-tool="prism">
+            Prism
+            <span class="cost">60 ✧</span>
+        </button>
+        <button class="tool-btn" data-tool="remove">
+            Remove
+            <span class="cost">Free</span>
+        </button>
+    </div>
+    
+    <div id="message"></div>
+    <div id="waveAnnounce"></div>
+    
+    <div id="startScreen">
+        <h1>LAST LIGHT</h1>
+        <div class="subtitle">an elegy for a dying sun</div>
+        <div class="instructions">
+            A star fades at the heart of darkness.<br>
+            Place mirrors to reflect its waning light.<br>
+            Use lenses to focus beams against the shadows.<br>
+            The creatures fear the light, but they are patient.<br>
+            <br>
+            You cannot save the star. Only remember it.
+        </div>
+        <button id="startBtn">BEGIN</button>
+    </div>
+
+    <script>
+        // ========== GAME CONFIGURATION ==========
+        const CONFIG = {
+            MIRROR_COST: 25,
+            LENS_COST: 40,
+            PRISM_COST: 60,
+            STARTING_STARDUST: 50,
+            STAR_INITIAL_RADIUS: 80,
+            STAR_MIN_RADIUS: 15,
+            STAR_SHRINK_PER_WAVE: 5,
+            LIGHT_RAY_COUNT: 24,
+            LIGHT_RANGE: 400,
+            CREATURE_BASE_SPEED: 0.5,
+            CREATURE_BASE_HP: 30,
+            WAVE_CREATURE_BASE: 5,
+            WAVE_CREATURE_INCREMENT: 3,
+        };
+
+        // ========== CANVAS SETUP ==========
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // ========== GAME STATE ==========
+        let gameState = {
+            running: false,
+            wave: 1,
+            stardust: CONFIG.STARTING_STARDUST,
+            starRadius: CONFIG.STAR_INITIAL_RADIUS,
+            starLife: 100,
+            selectedTool: 'mirror',
+            creatures: [],
+            mirrors: [],
+            lenses: [],
+            prisms: [],
+            particles: [],
+            lightRays: [],
+            stardustParticles: [],
+            waveInProgress: false,
+            creaturesRemaining: 0,
+            gameOver: false,
+            starPulse: 0,
+            time: 0,
+            backgroundStars: [],
+            placementPreview: null,
+            placementAngle: 0,
+        };
+
+        // Generate background stars
+        function generateBackgroundStars() {
+            gameState.backgroundStars = [];
+            for (let i = 0; i < 200; i++) {
+                gameState.backgroundStars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 1.5 + 0.5,
+                    brightness: Math.random() * 0.5 + 0.2,
+                    twinkle: Math.random() * Math.PI * 2,
+                });
+            }
+        }
+
+        // ========== AUDIO SYSTEM (Web Audio API) ==========
+        let audioCtx = null;
+        
+        function initAudio() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        
+        function playTone(freq, duration, type = 'sine', volume = 0.1) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+        
+        function playCollectSound() {
+            playTone(800, 0.1, 'sine', 0.08);
+            setTimeout(() => playTone(1000, 0.15, 'sine', 0.06), 50);
+        }
+        
+        function playPlaceSound() {
+            playTone(300, 0.2, 'triangle', 0.1);
+        }
+        
+        function playCreatureDeathSound() {
+            playTone(200, 0.3, 'sawtooth', 0.05);
+            playTone(150, 0.4, 'sawtooth', 0.03);
+        }
+        
+        function playWaveSound() {
+            playTone(400, 0.5, 'sine', 0.1);
+            setTimeout(() => playTone(500, 0.5, 'sine', 0.08), 200);
+            setTimeout(() => playTone(600, 0.7, 'sine', 0.06), 400);
+        }
+
+        // ========== UTILITY FUNCTIONS ==========
+        function getStarColor() {
+            const life = gameState.starLife;
+            if (life > 70) return { r: 255, g: 220, b: 150 }; // Warm gold
+            if (life > 40) return { r: 255, g: 160, b: 80 };  // Orange
+            if (life > 20) return { r: 220, g: 80, b: 50 };   // Red-orange
+            return { r: 150, g: 40, b: 30 };                   // Dim ember
+        }
+        
+        function distance(x1, y1, x2, y2) {
+            return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+        }
+        
+        function normalizeAngle(angle) {
+            while (angle < 0) angle += Math.PI * 2;
+            while (angle >= Math.PI * 2) angle -= Math.PI * 2;
+            return angle;
+        }
+        
+        function lerp(a, b, t) {
+            return a + (b - a) * t;
+        }
+
+        // ========== LIGHT RAY SYSTEM ==========
+        function castLightRays() {
+            gameState.lightRays = [];
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const rayCount = CONFIG.LIGHT_RAY_COUNT;
+            const starColor = getStarColor();
+            
+            for (let i = 0; i < rayCount; i++) {
+                const baseAngle = (i / rayCount) * Math.PI * 2;
+                // Add slight variation for organic feel
+                const angle = baseAngle + Math.sin(gameState.time * 0.5 + i) * 0.05;
+                
+                traceLightRay(cx, cy, angle, CONFIG.LIGHT_RANGE, starColor, 1.0, 0);
+            }
+        }
+        
+        function traceLightRay(startX, startY, angle, maxRange, color, intensity, bounces) {
+            if (bounces > 5 || intensity < 0.1) return;
+            
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            let x = startX;
+            let y = startY;
+            const dx = Math.cos(angle);
+            const dy = Math.sin(angle);
+            let traveled = 0;
+            let hitSomething = false;
+            
+            // Start from star edge if starting from center
+            if (bounces === 0) {
+                x = cx + dx * gameState.starRadius;
+                y = cy + dy * gameState.starRadius;
+            }
+            
+            const stepSize = 5;
+            let endX = x;
+            let endY = y;
+            
+            while (traveled < maxRange && !hitSomething) {
+                x += dx * stepSize;
+                y += dy * stepSize;
+                traveled += stepSize;
+                
+                // Check bounds
+                if (x < 0 || x > canvas.width || y < 0 || y > canvas.height) {
+                    break;
+                }
+                
+                // Check mirror collision
+                for (const mirror of gameState.mirrors) {
+                    if (distance(x, y, mirror.x, mirror.y) < 20) {
+                        hitSomething = true;
+                        endX = x;
+                        endY = y;
+                        
+                        // Reflect ray
+                        const reflectAngle = 2 * mirror.angle - angle + Math.PI;
+                        traceLightRay(x, y, reflectAngle, maxRange * 0.8, color, intensity * 0.85, bounces + 1);
+                        break;
+                    }
+                }
+                
+                // Check lens collision
+                for (const lens of gameState.lenses) {
+                    if (distance(x, y, lens.x, lens.y) < 25) {
+                        hitSomething = true;
+                        endX = x;
+                        endY = y;
+                        
+                        // Lens focuses light - creates narrower, longer beam
+                        const lensAngle = lens.angle;
+                        traceLightRay(x, y, lensAngle, maxRange * 1.5, color, intensity * 1.2, bounces + 1);
+                        break;
+                    }
+                }
+                
+                // Check prism collision
+                for (const prism of gameState.prisms) {
+                    if (distance(x, y, prism.x, prism.y) < 20) {
+                        hitSomething = true;
+                        endX = x;
+                        endY = y;
+                        
+                        // Prism splits into 3 beams
+                        for (let j = -1; j <= 1; j++) {
+                            const splitAngle = prism.angle + j * 0.4;
+                            const splitColor = j === -1 ? { r: 255, g: 150, b: 100 } :
+                                              j === 0 ? { r: 255, g: 220, b: 150 } :
+                                              { r: 255, g: 100, b: 80 };
+                            traceLightRay(x, y, splitAngle, maxRange * 0.6, splitColor, intensity * 0.6, bounces + 1);
+                        }
+                        break;
+                    }
+                }
+                
+                endX = x;
+                endY = y;
+            }
+            
+            // Store ray for rendering and damage calculation
+            gameState.lightRays.push({
+                startX: bounces === 0 ? cx + dx * gameState.starRadius : startX,
+                startY: bounces === 0 ? cy + dy * gameState.starRadius : startY,
+                endX: endX,
+                endY: endY,
+                color: color,
+                intensity: intensity,
+                width: bounces === 0 ? 3 : 2,
+            });
+        }
+
+        // ========== CREATURE SYSTEM ==========
+        class Creature {
+            constructor(type, x, y) {
+                this.type = type;
+                this.x = x;
+                this.y = y;
+                this.targetX = canvas.width / 2;
+                this.targetY = canvas.height / 2;
+                
+                switch(type) {
+                    case 'swarm':
+                        this.hp = CONFIG.CREATURE_BASE_HP * 0.5;
+                        this.maxHp = this.hp;
+                        this.speed = CONFIG.CREATURE_BASE_SPEED * 1.5;
+                        this.size = 12;
+                        this.value = 8;
+                        this.color = { r: 60, g: 40, b: 80 };
+                        break;
+                    case 'brute':
+                        this.hp = CONFIG.CREATURE_BASE_HP * 2.5;
+                        this.maxHp = this.hp;
+                        this.speed = CONFIG.CREATURE_BASE_SPEED * 0.5;
+                        this.size = 25;
+                        this.value = 20;
+                        this.color = { r: 40, g: 30, b: 60 };
+                        break;
+                    case 'dimmer':
+                        this.hp = CONFIG.CREATURE_BASE_HP;
+                        this.maxHp = this.hp;
+                        this.speed = CONFIG.CREATURE_BASE_SPEED * 0.8;
+                        this.size = 18;
+                        this.value = 15;
+                        this.color = { r: 30, g: 20, b: 50 };
+                        this.dimRadius = 60;
+                        break;
+                    default: // normal
+                        this.hp = CONFIG.CREATURE_BASE_HP;
+                        this.maxHp = this.hp;
+                        this.speed = CONFIG.CREATURE_BASE_SPEED;
+                        this.size = 15;
+                        this.value = 10;
+                        this.color = { r: 50, g: 35, b: 70 };
+                }
+                
+                this.wobble = Math.random() * Math.PI * 2;
+                this.eyeGlow = Math.random() * 0.5 + 0.5;
+            }
+            
+            update() {
+                // Move toward star
+                const angle = Math.atan2(this.targetY - this.y, this.targetX - this.x);
+                this.x += Math.cos(angle) * this.speed;
+                this.y += Math.sin(angle) * this.speed;
+                this.wobble += 0.1;
+                
+                // Check if hit star
+                const distToStar = distance(this.x, this.y, canvas.width / 2, canvas.height / 2);
+                if (distToStar < gameState.starRadius + this.size) {
+                    gameState.starLife -= 5;
+                    this.hp = 0;
+                    
+                    // Particle burst
+                    for (let i = 0; i < 10; i++) {
+                        gameState.particles.push({
+                            x: this.x,
+                            y: this.y,
+                            vx: (Math.random() - 0.5) * 5,
+                            vy: (Math.random() - 0.5) * 5,
+                            life: 1,
+                            color: { r: 100, g: 50, b: 150 },
+                            size: 3,
+                        });
+                    }
+                }
+                
+                // Take damage from light rays
+                for (const ray of gameState.lightRays) {
+                    if (this.isInLightRay(ray)) {
+                        // Dimmer creatures create darkness aura
+                        if (this.type === 'dimmer') {
+                            this.hp -= ray.intensity * 0.3;
+                        } else {
+                            this.hp -= ray.intensity * 0.5;
+                        }
+                    }
+                }
+            }
+            
+            isInLightRay(ray) {
+                // Check if creature is within light ray path
+                const rayLen = distance(ray.startX, ray.startY, ray.endX, ray.endY);
+                if (rayLen < 1) return false;
+                
+                const dx = ray.endX - ray.startX;
+                const dy = ray.endY - ray.startY;
+                const t = Math.max(0, Math.min(1, 
+                    ((this.x - ray.startX) * dx + (this.y - ray.startY) * dy) / (rayLen * rayLen)
+                ));
+                
+                const closestX = ray.startX + t * dx;
+                const closestY = ray.startY + t * dy;
+                const dist = distance(this.x, this.y, closestX, closestY);
+                
+                return dist < this.size + 15;
+            }
+            
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                
+                // Shadowy body with wisps
+                const wobbleX = Math.sin(this.wobble) * 3;
+                const wobbleY = Math.cos(this.wobble * 0.7) * 3;
+                
+                // Darkness aura for dimmer type
+                if (this.type === 'dimmer') {
+                    const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, this.dimRadius);
+                    gradient.addColorStop(0, 'rgba(0, 0, 0, 0.5)');
+                    gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.dimRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                // Main body
+                const gradient = ctx.createRadialGradient(wobbleX, wobbleY, 0, 0, 0, this.size);
+                gradient.addColorStop(0, `rgba(${this.color.r + 20}, ${this.color.g + 20}, ${this.color.b + 30}, 0.9)`);
+                gradient.addColorStop(0.6, `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, 0.7)`);
+                gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(wobbleX, wobbleY, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Wispy tendrils
+                ctx.strokeStyle = `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, 0.4)`;
+                ctx.lineWidth = 2;
+                for (let i = 0; i < 4; i++) {
+                    const tendrilAngle = (i / 4) * Math.PI * 2 + this.wobble * 0.5;
+                    ctx.beginPath();
+                    ctx.moveTo(wobbleX, wobbleY);
+                    ctx.quadraticCurveTo(
+                        wobbleX + Math.cos(tendrilAngle) * this.size * 1.5,
+                        wobbleY + Math.sin(tendrilAngle) * this.size * 1.5,
+                        wobbleX + Math.cos(tendrilAngle + 0.5) * this.size * 2,
+                        wobbleY + Math.sin(tendrilAngle + 0.5) * this.size * 2
+                    );
+                    ctx.stroke();
+                }
+                
+                // Glowing eyes
+                const eyeGlow = this.eyeGlow * (0.8 + Math.sin(gameState.time * 3) * 0.2);
+                ctx.fillStyle = `rgba(255, 100, 150, ${eyeGlow})`;
+                ctx.shadowColor = 'rgba(255, 100, 150, 0.8)';
+                ctx.shadowBlur = 10;
+                ctx.beginPath();
+                ctx.arc(wobbleX - 4, wobbleY - 2, 2, 0, Math.PI * 2);
+                ctx.arc(wobbleX + 4, wobbleY - 2, 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.restore();
+                
+                // Health bar
+                if (this.hp < this.maxHp) {
+                    const barWidth = this.size * 2;
+                    const barHeight = 3;
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                    ctx.fillRect(this.x - barWidth / 2, this.y - this.size - 10, barWidth, barHeight);
+                    ctx.fillStyle = `rgba(255, ${100 + (this.hp / this.maxHp) * 155}, 100, 0.8)`;
+                    ctx.fillRect(this.x - barWidth / 2, this.y - this.size - 10, barWidth * (this.hp / this.maxHp), barHeight);
+                }
+            }
+        }
+
+        // ========== SPAWN SYSTEM ==========
+        function spawnWave() {
+            if (gameState.waveInProgress) return;
+            
+            gameState.waveInProgress = true;
+            const baseCount = CONFIG.WAVE_CREATURE_BASE + (gameState.wave - 1) * CONFIG.WAVE_CREATURE_INCREMENT;
+            gameState.creaturesRemaining = baseCount;
+            
+            playWaveSound();
+            showWaveAnnouncement();
+            
+            // Spawn creatures over time
+            let spawned = 0;
+            const spawnInterval = setInterval(() => {
+                if (spawned >= baseCount || gameState.gameOver) {
+                    clearInterval(spawnInterval);
+                    return;
+                }
+                
+                // Random spawn position from edge
+                const angle = Math.random() * Math.PI * 2;
+                const dist = Math.max(canvas.width, canvas.height) * 0.6;
+                const x = canvas.width / 2 + Math.cos(angle) * dist;
+                const y = canvas.height / 2 + Math.sin(angle) * dist;
+                
+                // Choose creature type based on wave
+                let type = 'normal';
+                const roll = Math.random();
+                if (gameState.wave >= 3 && roll < 0.2) type = 'brute';
+                else if (gameState.wave >= 2 && roll < 0.4) type = 'swarm';
+                else if (gameState.wave >= 4 && roll < 0.5) type = 'dimmer';
+                
+                gameState.creatures.push(new Creature(type, x, y));
+                spawned++;
+            }, 500);
+        }
+        
+        function showWaveAnnouncement() {
+            const el = document.getElementById('waveAnnounce');
+            el.textContent = `WAVE ${gameState.wave}`;
+            el.style.opacity = '1';
+            setTimeout(() => {
+                el.style.opacity = '0';
+            }, 2000);
+        }
+
+        // ========== PLACEMENT SYSTEM ==========
+        function placeObject(x, y) {
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const distFromStar = distance(x, y, cx, cy);
+            
+            // Can't place too close to star
+            if (distFromStar < gameState.starRadius + 40) {
+                return;
+            }
+            
+            const angle = gameState.placementAngle;
+            
+            switch (gameState.selectedTool) {
+                case 'mirror':
+                    if (gameState.stardust >= CONFIG.MIRROR_COST) {
+                        gameState.stardust -= CONFIG.MIRROR_COST;
+                        gameState.mirrors.push({ x, y, angle });
+                        playPlaceSound();
+                    }
+                    break;
+                case 'lens':
+                    if (gameState.stardust >= CONFIG.LENS_COST) {
+                        gameState.stardust -= CONFIG.LENS_COST;
+                        gameState.lenses.push({ x, y, angle });
+                        playPlaceSound();
+                    }
+                    break;
+                case 'prism':
+                    if (gameState.stardust >= CONFIG.PRISM_COST) {
+                        gameState.stardust -= CONFIG.PRISM_COST;
+                        gameState.prisms.push({ x, y, angle });
+                        playPlaceSound();
+                    }
+                    break;
+                case 'remove':
+                    // Remove closest object
+                    let minDist = 30;
+                    let toRemove = null;
+                    let removeFrom = null;
+                    
+                    for (const m of gameState.mirrors) {
+                        const d = distance(x, y, m.x, m.y);
+                        if (d < minDist) {
+                            minDist = d;
+                            toRemove = m;
+                            removeFrom = gameState.mirrors;
+                        }
+                    }
+                    for (const l of gameState.lenses) {
+                        const d = distance(x, y, l.x, l.y);
+                        if (d < minDist) {
+                            minDist = d;
+                            toRemove = l;
+                            removeFrom = gameState.lenses;
+                        }
+                    }
+                    for (const p of gameState.prisms) {
+                        const d = distance(x, y, p.x, p.y);
+                        if (d < minDist) {
+                            minDist = d;
+                            toRemove = p;
+                            removeFrom = gameState.prisms;
+                        }
+                    }
+                    
+                    if (toRemove && removeFrom) {
+                        const idx = removeFrom.indexOf(toRemove);
+                        if (idx > -1) removeFrom.splice(idx, 1);
+                    }
+                    break;
+            }
+            
+            updateUI();
+        }
+
+        // ========== RENDERING ==========
+        function drawBackground() {
+            // Deep space gradient
+            const gradient = ctx.createRadialGradient(
+                canvas.width / 2, canvas.height / 2, 0,
+                canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height)
+            );
+            const starColor = getStarColor();
+            gradient.addColorStop(0, `rgba(${Math.floor(starColor.r * 0.15)}, ${Math.floor(starColor.g * 0.1)}, ${Math.floor(starColor.b * 0.1)}, 1)`);
+            gradient.addColorStop(0.3, 'rgba(10, 5, 15, 1)');
+            gradient.addColorStop(1, 'rgba(0, 0, 5, 1)');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Background stars
+            for (const star of gameState.backgroundStars) {
+                const twinkle = Math.sin(gameState.time * 2 + star.twinkle) * 0.3 + 0.7;
+                ctx.fillStyle = `rgba(255, 255, 255, ${star.brightness * twinkle})`;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        function drawStar() {
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const color = getStarColor();
+            const pulse = Math.sin(gameState.starPulse) * 0.1 + 1;
+            const radius = gameState.starRadius * pulse;
+            
+            // Outer glow
+            for (let i = 5; i >= 1; i--) {
+                const glowRadius = radius * (1 + i * 0.4);
+                const alpha = 0.1 / i;
+                const gradient = ctx.createRadialGradient(cx, cy, radius, cx, cy, glowRadius);
+                gradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`);
+                gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(cx, cy, glowRadius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Core
+            const coreGradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+            coreGradient.addColorStop(0, `rgba(255, 255, 255, 0.9)`);
+            coreGradient.addColorStop(0.3, `rgba(${color.r}, ${color.g}, ${color.b}, 1)`);
+            coreGradient.addColorStop(0.7, `rgba(${Math.floor(color.r * 0.8)}, ${Math.floor(color.g * 0.6)}, ${Math.floor(color.b * 0.4)}, 1)`);
+            coreGradient.addColorStop(1, `rgba(${Math.floor(color.r * 0.5)}, ${Math.floor(color.g * 0.3)}, ${Math.floor(color.b * 0.2)}, 0.8)`);
+            
+            ctx.fillStyle = coreGradient;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Surface detail - corona flares
+            ctx.save();
+            ctx.translate(cx, cy);
+            for (let i = 0; i < 12; i++) {
+                const flareAngle = (i / 12) * Math.PI * 2 + gameState.time * 0.2;
+                const flareLength = radius * (0.3 + Math.sin(gameState.time * 3 + i) * 0.2);
+                
+                ctx.save();
+                ctx.rotate(flareAngle);
+                
+                const flareGradient = ctx.createLinearGradient(radius, 0, radius + flareLength, 0);
+                flareGradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, 0.6)`);
+                flareGradient.addColorStop(1, 'rgba(255, 200, 100, 0)');
+                
+                ctx.fillStyle = flareGradient;
+                ctx.beginPath();
+                ctx.moveTo(radius - 5, -3);
+                ctx.lineTo(radius + flareLength, 0);
+                ctx.lineTo(radius - 5, 3);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.restore();
+            }
+            ctx.restore();
+        }
+        
+        function drawLightRays() {
+            for (const ray of gameState.lightRays) {
+                const gradient = ctx.createLinearGradient(ray.startX, ray.startY, ray.endX, ray.endY);
+                gradient.addColorStop(0, `rgba(${ray.color.r}, ${ray.color.g}, ${ray.color.b}, ${ray.intensity * 0.4})`);
+                gradient.addColorStop(1, `rgba(${ray.color.r}, ${ray.color.g}, ${ray.color.b}, 0)`);
+                
+                ctx.strokeStyle = gradient;
+                ctx.lineWidth = ray.width;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(ray.startX, ray.startY);
+                ctx.lineTo(ray.endX, ray.endY);
+                ctx.stroke();
+                
+                // Soft glow around ray
+                ctx.strokeStyle = `rgba(${ray.color.r}, ${ray.color.g}, ${ray.color.b}, ${ray.intensity * 0.1})`;
+                ctx.lineWidth = ray.width + 10;
+                ctx.stroke();
+            }
+        }
+        
+        function drawMirrors() {
+            for (const mirror of gameState.mirrors) {
+                ctx.save();
+                ctx.translate(mirror.x, mirror.y);
+                ctx.rotate(mirror.angle);
+                
+                // Crystal mirror
+                const gradient = ctx.createLinearGradient(-15, 0, 15, 0);
+                gradient.addColorStop(0, 'rgba(200, 220, 255, 0.3)');
+                gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.9)');
+                gradient.addColorStop(1, 'rgba(200, 220, 255, 0.3)');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.moveTo(-15, -3);
+                ctx.lineTo(15, -3);
+                ctx.lineTo(12, 3);
+                ctx.lineTo(-12, 3);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Glint
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                
+                // Sparkle effect
+                const sparkle = Math.sin(gameState.time * 5 + mirror.x) * 0.5 + 0.5;
+                ctx.fillStyle = `rgba(255, 255, 255, ${sparkle * 0.8})`;
+                ctx.beginPath();
+                ctx.arc(0, 0, 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.restore();
+            }
+        }
+        
+        function drawLenses() {
+            for (const lens of gameState.lenses) {
+                ctx.save();
+                ctx.translate(lens.x, lens.y);
+                ctx.rotate(lens.angle);
+                
+                // Lens shape (convex)
+                const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 20);
+                gradient.addColorStop(0, 'rgba(255, 220, 150, 0.2)');
+                gradient.addColorStop(0.5, 'rgba(200, 180, 255, 0.4)');
+                gradient.addColorStop(1, 'rgba(150, 200, 255, 0.2)');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 20, 8, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.strokeStyle = 'rgba(200, 220, 255, 0.6)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Direction indicator
+                ctx.strokeStyle = 'rgba(255, 200, 100, 0.5)';
+                ctx.beginPath();
+                ctx.moveTo(20, 0);
+                ctx.lineTo(30, 0);
+                ctx.stroke();
+                
+                ctx.restore();
+            }
+        }
+        
+        function drawPrisms() {
+            for (const prism of gameState.prisms) {
+                ctx.save();
+                ctx.translate(prism.x, prism.y);
+                ctx.rotate(prism.angle);
+                
+                // Triangle prism
+                const gradient = ctx.createLinearGradient(-15, 15, 15, -15);
+                gradient.addColorStop(0, 'rgba(255, 100, 100, 0.4)');
+                gradient.addColorStop(0.5, 'rgba(255, 255, 100, 0.4)');
+                gradient.addColorStop(1, 'rgba(100, 100, 255, 0.4)');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.moveTo(0, -15);
+                ctx.lineTo(13, 10);
+                ctx.lineTo(-13, 10);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                
+                ctx.restore();
+            }
+        }
+        
+        function drawParticles() {
+            // Regular particles
+            for (let i = gameState.particles.length - 1; i >= 0; i--) {
+                const p = gameState.particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vx *= 0.98;
+                p.vy *= 0.98;
+                p.life -= 0.02;
+                
+                if (p.life <= 0) {
+                    gameState.particles.splice(i, 1);
+                    continue;
+                }
+                
+                ctx.fillStyle = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${p.life})`;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Stardust particles (collectible)
+            for (let i = gameState.stardustParticles.length - 1; i >= 0; i--) {
+                const s = gameState.stardustParticles[i];
+                s.life -= 0.005;
+                s.y += Math.sin(gameState.time * 5 + s.x) * 0.5;
+                s.x += Math.cos(gameState.time * 3 + s.y) * 0.3;
+                
+                if (s.life <= 0) {
+                    gameState.stardustParticles.splice(i, 1);
+                    continue;
+                }
+                
+                // Draw stardust
+                const glow = Math.sin(gameState.time * 10 + i) * 0.3 + 0.7;
+                ctx.fillStyle = `rgba(255, 220, 150, ${s.life * glow})`;
+                ctx.shadowColor = 'rgba(255, 200, 100, 0.8)';
+                ctx.shadowBlur = 15;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+        
+        function drawPlacementPreview() {
+            if (!gameState.placementPreview || gameState.selectedTool === 'remove') return;
+            
+            const { x, y } = gameState.placementPreview;
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const distFromStar = distance(x, y, cx, cy);
+            const tooClose = distFromStar < gameState.starRadius + 40;
+            
+            ctx.save();
+            ctx.globalAlpha = tooClose ? 0.3 : 0.6;
+            ctx.translate(x, y);
+            ctx.rotate(gameState.placementAngle);
+            
+            if (gameState.selectedTool === 'mirror') {
+                ctx.fillStyle = tooClose ? 'rgba(255, 100, 100, 0.5)' : 'rgba(200, 220, 255, 0.5)';
+                ctx.fillRect(-15, -3, 30, 6);
+            } else if (gameState.selectedTool === 'lens') {
+                ctx.fillStyle = tooClose ? 'rgba(255, 100, 100, 0.5)' : 'rgba(200, 180, 255, 0.5)';
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 20, 8, 0, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (gameState.selectedTool === 'prism') {
+                ctx.fillStyle = tooClose ? 'rgba(255, 100, 100, 0.5)' : 'rgba(200, 200, 255, 0.5)';
+                ctx.beginPath();
+                ctx.moveTo(0, -15);
+                ctx.lineTo(13, 10);
+                ctx.lineTo(-13, 10);
+                ctx.closePath();
+                ctx.fill();
+            }
+            
+            ctx.restore();
+        }
+
+        // ========== GAME LOGIC ==========
+        function updateCreatures() {
+            for (let i = gameState.creatures.length - 1; i >= 0; i--) {
+                const creature = gameState.creatures[i];
+                creature.update();
+                
+                if (creature.hp <= 0) {
+                    // Drop stardust
+                    for (let j = 0; j < 3; j++) {
+                        gameState.stardustParticles.push({
+                            x: creature.x + (Math.random() - 0.5) * 30,
+                            y: creature.y + (Math.random() - 0.5) * 30,
+                            value: Math.ceil(creature.value / 3),
+                            life: 1,
+                        });
+                    }
+                    
+                    // Death particles
+                    for (let j = 0; j < 15; j++) {
+                        gameState.particles.push({
+                            x: creature.x,
+                            y: creature.y,
+                            vx: (Math.random() - 0.5) * 8,
+                            vy: (Math.random() - 0.5) * 8,
+                            life: 1,
+                            color: creature.color,
+                            size: 4,
+                        });
+                    }
+                    
+                    playCreatureDeathSound();
+                    gameState.creatures.splice(i, 1);
+                    gameState.creaturesRemaining--;
+                }
+            }
+        }
+        
+        function collectStardust() {
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            
+            for (let i = gameState.stardustParticles.length - 1; i >= 0; i--) {
+                const s = gameState.stardustParticles[i];
+                const dist = distance(s.x, s.y, cx, cy);
+                
+                // Auto-collect if close to star
+                if (dist < gameState.starRadius + 50) {
+                    gameState.stardust += s.value;
+                    playCollectSound();
+                    
+                    // Collection effect
+                    for (let j = 0; j < 5; j++) {
+                        gameState.particles.push({
+                            x: s.x,
+                            y: s.y,
+                            vx: (Math.random() - 0.5) * 3,
+                            vy: (Math.random() - 0.5) * 3,
+                            life: 0.5,
+                            color: { r: 255, g: 220, b: 150 },
+                            size: 2,
+                        });
+                    }
+                    
+                    gameState.stardustParticles.splice(i, 1);
+                    updateUI();
+                }
+            }
+        }
+        
+        function checkWaveComplete() {
+            if (gameState.waveInProgress && gameState.creaturesRemaining <= 0 && gameState.creatures.length === 0) {
+                gameState.waveInProgress = false;
+                
+                // Star shrinks
+                gameState.starRadius = Math.max(
+                    CONFIG.STAR_MIN_RADIUS,
+                    gameState.starRadius - CONFIG.STAR_SHRINK_PER_WAVE
+                );
+                gameState.starLife = Math.max(0, gameState.starLife - 3);
+                
+                // Bonus stardust for completing wave
+                gameState.stardust += 20 + gameState.wave * 5;
+                
+                gameState.wave++;
+                updateUI();
+                
+                // Start next wave after delay
+                setTimeout(() => {
+                    if (!gameState.gameOver) {
+                        spawnWave();
+                    }
+                }, 3000);
+            }
+        }
+        
+        function checkGameOver() {
+            if (gameState.starLife <= 0 || gameState.starRadius <= CONFIG.STAR_MIN_RADIUS) {
+                gameState.gameOver = true;
+                gameState.running = false;
+                showEndMessage();
+            }
+        }
+        
+        function showEndMessage() {
+            const messages = [
+                "The last light fades into memory.\nBut what is remembered, lives.",
+                "Even stars must rest.\nIn the darkness, we carry their warmth within us.",
+                "The light is gone, but not forgotten.\nEvery shadow remembers the sun.",
+                "An ending is just a transformation.\nThe light becomes part of everything it touched.",
+                "In the final ember's glow,\nwe saw eternity.",
+            ];
+            
+            const msg = messages[Math.floor(Math.random() * messages.length)];
+            const el = document.getElementById('message');
+            el.innerHTML = msg.replace('\n', '<br><br>') + 
+                `<br><br><span style="font-size: 14px; opacity: 0.6;">Wave ${gameState.wave - 1} reached</span>`;
+            el.classList.add('visible');
+        }
+        
+        function updateUI() {
+            document.getElementById('waveNum').textContent = gameState.wave;
+            document.getElementById('stardust').textContent = gameState.stardust;
+            document.getElementById('starLife').textContent = Math.round(gameState.starLife);
+            document.getElementById('creatureCount').textContent = gameState.creatures.length;
+        }
+
+        // ========== MAIN GAME LOOP ==========
+        function gameLoop() {
+            if (!gameState.running) {
+                // Still draw the final state
+                draw();
+                return;
+            }
+            
+            gameState.time += 0.016;
+            gameState.starPulse += 0.05;
+            
+            castLightRays();
+            updateCreatures();
+            collectStardust();
+            checkWaveComplete();
+            checkGameOver();
+            
+            draw();
+            updateUI();
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function draw() {
+            drawBackground();
+            drawLightRays();
+            drawStar();
+            drawMirrors();
+            drawLenses();
+            drawPrisms();
+            
+            for (const creature of gameState.creatures) {
+                creature.draw();
+            }
+            
+            drawParticles();
+            drawPlacementPreview();
+        }
+
+        // ========== INPUT HANDLING ==========
+        canvas.addEventListener('click', (e) => {
+            if (!gameState.running) return;
+            placeObject(e.clientX, e.clientY);
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            gameState.placementPreview = { x: e.clientX, y: e.clientY };
+        });
+        
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            gameState.placementAngle += e.deltaY > 0 ? 0.1 : -0.1;
+        });
+        
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                gameState.selectedTool = btn.dataset.tool;
+            });
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === '1') selectTool('mirror');
+            if (e.key === '2') selectTool('lens');
+            if (e.key === '3') selectTool('prism');
+            if (e.key === '4' || e.key === 'r') selectTool('remove');
+            if (e.key === 'q') gameState.placementAngle -= 0.2;
+            if (e.key === 'e') gameState.placementAngle += 0.2;
+        });
+        
+        function selectTool(tool) {
+            document.querySelectorAll('.tool-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.tool === tool);
+            });
+            gameState.selectedTool = tool;
+        }
+
+        // ========== START GAME ==========
+        document.getElementById('startBtn').addEventListener('click', () => {
+            document.getElementById('startScreen').style.display = 'none';
+            initAudio();
+            generateBackgroundStars();
+            gameState.running = true;
+            
+            // Start first wave after brief delay
+            setTimeout(() => spawnWave(), 2000);
+            
+            gameLoop();
+        });
+        
+        // Initial draw for background
+        generateBackgroundStars();
+        draw();
+    </script>
+</body>
+</html>

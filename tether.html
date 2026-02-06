@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tether - A Dual Vision Puzzle Platformer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0f;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+
+        #gameContainer {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #gameWrapper {
+            position: relative;
+            display: flex;
+            gap: 4px;
+            border: 3px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0, 150, 255, 0.3);
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #canvasNormal {
+            border-right: 2px solid #444;
+        }
+
+        #canvasThermal {
+            border-left: 2px solid #444;
+        }
+
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 20px;
+            border-radius: 20px;
+            backdrop-filter: blur(5px);
+        }
+
+        .stat {
+            color: #fff;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stat-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+
+        #lunaIcon { background: linear-gradient(135deg, #7eb8ff, #4a90d9); }
+        #emberIcon { background: linear-gradient(135deg, #ff6b4a, #ff9500); }
+
+        .active-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4eff4e;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        #controls {
+            color: #888;
+            font-size: 12px;
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        #levelInfo {
+            color: #fff;
+            font-size: 16px;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            padding: 30px 50px;
+            border-radius: 15px;
+            text-align: center;
+            z-index: 100;
+            display: none;
+            border: 2px solid #4a90d9;
+            box-shadow: 0 0 50px rgba(74, 144, 217, 0.5);
+        }
+
+        #message h2 {
+            margin-bottom: 15px;
+            color: #7eb8ff;
+        }
+
+        #message p {
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        #message button {
+            background: linear-gradient(135deg, #4a90d9, #7eb8ff);
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        #message button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(126, 184, 255, 0.5);
+        }
+
+        #conductivity {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 15px;
+            border-radius: 15px;
+        }
+
+        .conduct-indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            color: #666;
+            transition: all 0.3s;
+        }
+
+        .conduct-indicator.active {
+            color: #fff;
+        }
+
+        .conduct-indicator.active.fire { color: #ff6b4a; text-shadow: 0 0 10px #ff6b4a; }
+        .conduct-indicator.active.electric { color: #ffeb3b; text-shadow: 0 0 10px #ffeb3b; }
+        .conduct-indicator.active.cold { color: #4fc3f7; text-shadow: 0 0 10px #4fc3f7; }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="levelInfo">Level 1: First Steps</div>
+        <div id="gameWrapper">
+            <canvas id="canvasNormal" width="480" height="400"></canvas>
+            <canvas id="canvasThermal" width="480" height="400"></canvas>
+            <div id="ui">
+                <div class="stat">
+                    <div class="stat-icon" id="lunaIcon"></div>
+                    <span>Luna</span>
+                    <div class="active-indicator" id="lunaActive"></div>
+                </div>
+                <div class="stat">
+                    <div class="stat-icon" id="emberIcon"></div>
+                    <span>Ember</span>
+                    <div class="active-indicator" id="emberActive" style="display: none;"></div>
+                </div>
+            </div>
+            <div id="conductivity">
+                <div class="conduct-indicator fire" id="fireIndicator">🔥 Fire</div>
+                <div class="conduct-indicator electric" id="electricIndicator">⚡ Electric</div>
+                <div class="conduct-indicator cold" id="coldIndicator">❄️ Cold</div>
+            </div>
+        </div>
+        <div id="controls">
+            <strong>Controls:</strong> WASD/Arrows to move | TAB to switch characters | R to restart level
+        </div>
+        <div id="message">
+            <h2>Welcome to Tether</h2>
+            <p>Luna sees the world in vivid colors.<br>Ember sees only heat signatures.<br>Together, connected by an unbreakable tether, they must escape.</p>
+            <button onclick="startGame()">Begin</button>
+        </div>
+    </div>
+
+    <script>
+        // Canvas setup
+        const canvasNormal = document.getElementById('canvasNormal');
+        const canvasThermal = document.getElementById('canvasThermal');
+        const ctxN = canvasNormal.getContext('2d');
+        const ctxT = canvasThermal.getContext('2d');
+        const W = canvasNormal.width;
+        const H = canvasNormal.height;
+
+        // Game state
+        const game = {
+            currentLevel: 0,
+            activeCharacter: 0, // 0 = Luna, 1 = Ember
+            keys: {},
+            tether: {
+                maxLength: 200,
+                conducting: null, // 'fire', 'electric', 'cold', or null
+                conductTimer: 0,
+                segments: []
+            },
+            particles: [],
+            time: 0
+        };
+
+        // Characters
+        const characters = [
+            { // Luna - Normal vision
+                x: 100, y: 300, vx: 0, vy: 0,
+                width: 24, height: 32,
+                color: '#7eb8ff',
+                grounded: false,
+                name: 'Luna'
+            },
+            { // Ember - Thermal vision
+                x: 150, y: 300, vx: 0, vy: 0,
+                width: 24, height: 32,
+                color: '#ff6b4a',
+                grounded: false,
+                name: 'Ember'
+            }
+        ];
+
+        // Level definitions
+        const levels = [
+            { // Level 1: Basic movement and switching
+                name: "First Steps",
+                hint: "Learn to move and switch between Luna and Ember. Reach the green exit!",
+                lunaStart: { x: 50, y: 320 },
+                emberStart: { x: 100, y: 320 },
+                exit: { x: 420, y: 310, width: 40, height: 50 },
+                platforms: [
+                    { x: 0, y: 360, w: 480, h: 40, type: 'ground' },
+                    { x: 150, y: 300, w: 80, h: 20, type: 'platform' },
+                    { x: 280, y: 250, w: 80, h: 20, type: 'platform' },
+                    { x: 380, y: 310, w: 100, h: 20, type: 'platform' }
+                ],
+                hazards: [],
+                sources: [],
+                interactables: []
+            },
+            { // Level 2: Introduce fire conductivity
+                name: "Warm Welcome",
+                hint: "The ice blocks Luna's path. Ember can see the heat source - conduct fire through the tether!",
+                lunaStart: { x: 50, y: 320 },
+                emberStart: { x: 100, y: 320 },
+                exit: { x: 420, y: 100, width: 40, height: 50 },
+                platforms: [
+                    { x: 0, y: 360, w: 480, h: 40, type: 'ground' },
+                    { x: 0, y: 200, w: 150, h: 20, type: 'platform' },
+                    { x: 200, y: 200, w: 100, h: 20, type: 'platform' },
+                    { x: 380, y: 150, w: 100, h: 20, type: 'platform' }
+                ],
+                hazards: [],
+                sources: [
+                    { x: 30, y: 170, type: 'fire', radius: 20 }
+                ],
+                interactables: [
+                    { x: 200, y: 140, w: 50, h: 60, type: 'ice', melted: false }
+                ]
+            },
+            { // Level 3: Electric doors
+                name: "Power Up",
+                hint: "The door needs power! Find the electric source and conduct it to the switch.",
+                lunaStart: { x: 50, y: 320 },
+                emberStart: { x: 100, y: 320 },
+                exit: { x: 420, y: 50, width: 40, height: 50 },
+                platforms: [
+                    { x: 0, y: 360, w: 480, h: 40, type: 'ground' },
+                    { x: 0, y: 250, w: 120, h: 20, type: 'platform' },
+                    { x: 180, y: 180, w: 120, h: 20, type: 'platform' },
+                    { x: 350, y: 100, w: 130, h: 20, type: 'platform' }
+                ],
+                hazards: [],
+                sources: [
+                    { x: 50, y: 220, type: 'electric', radius: 20 }
+                ],
+                interactables: [
+                    { x: 350, y: 50, w: 20, h: 50, type: 'door', powered: false },
+                    { x: 230, y: 150, w: 20, h: 30, type: 'switch', activated: false }
+                ]
+            },
+            { // Level 4: Cold and water
+                name: "Frozen Path",
+                hint: "Water blocks the way. Find cold to freeze it into a bridge!",
+                lunaStart: { x: 50, y: 120 },
+                emberStart: { x: 100, y: 120 },
+                exit: { x: 420, y: 310, width: 40, height: 50 },
+                platforms: [
+                    { x: 0, y: 360, w: 200, h: 40, type: 'ground' },
+                    { x: 300, y: 360, w: 180, h: 40, type: 'ground' },
+                    { x: 0, y: 150, w: 150, h: 20, type: 'platform' },
+                    { x: 300, y: 200, w: 100, h: 20, type: 'platform' }
+                ],
+                hazards: [
+                    { x: 200, y: 340, w: 100, h: 60, type: 'water', frozen: false }
+                ],
+                sources: [
+                    { x: 350, y: 170, type: 'cold', radius: 20 }
+                ],
+                interactables: []
+            },
+            { // Level 5: Combined challenge
+                name: "The Great Escape",
+                hint: "Use everything you've learned! Fire, electricity, and teamwork.",
+                lunaStart: { x: 50, y: 320 },
+                emberStart: { x: 80, y: 320 },
+                exit: { x: 420, y: 40, width: 40, height: 50 },
+                platforms: [
+                    { x: 0, y: 360, w: 480, h: 40, type: 'ground' },
+                    { x: 0, y: 280, w: 80, h: 20, type: 'platform' },
+                    { x: 130, y: 220, w: 80, h: 20, type: 'platform' },
+                    { x: 260, y: 160, w: 80, h: 20, type: 'platform' },
+                    { x: 380, y: 90, w: 100, h: 20, type: 'platform' }
+                ],
+                hazards: [],
+                sources: [
+                    { x: 40, y: 250, type: 'fire', radius: 18 },
+                    { x: 170, y: 190, type: 'electric', radius: 18 }
+                ],
+                interactables: [
+                    { x: 130, y: 160, w: 40, h: 60, type: 'ice', melted: false },
+                    { x: 380, y: 40, w: 15, h: 50, type: 'door', powered: false },
+                    { x: 300, y: 130, w: 20, h: 30, type: 'switch', activated: false }
+                ]
+            }
+        ];
+
+        // Physics constants
+        const GRAVITY = 0.5;
+        const MOVE_SPEED = 4;
+        const JUMP_FORCE = -12;
+        const FRICTION = 0.85;
+
+        // Input handling
+        document.addEventListener('keydown', (e) => {
+            game.keys[e.code] = true;
+            
+            if (e.code === 'Tab') {
+                e.preventDefault();
+                switchCharacter();
+            }
+            if (e.code === 'KeyR') {
+                loadLevel(game.currentLevel);
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            game.keys[e.code] = false;
+        });
+
+        function switchCharacter() {
+            game.activeCharacter = 1 - game.activeCharacter;
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('lunaActive').style.display = game.activeCharacter === 0 ? 'block' : 'none';
+            document.getElementById('emberActive').style.display = game.activeCharacter === 1 ? 'block' : 'none';
+            
+            const fireInd = document.getElementById('fireIndicator');
+            const elecInd = document.getElementById('electricIndicator');
+            const coldInd = document.getElementById('coldIndicator');
+            
+            fireInd.className = 'conduct-indicator fire' + (game.tether.conducting === 'fire' ? ' active' : '');
+            elecInd.className = 'conduct-indicator electric' + (game.tether.conducting === 'electric' ? ' active' : '');
+            coldInd.className = 'conduct-indicator cold' + (game.tether.conducting === 'cold' ? ' active' : '');
+        }
+
+        function loadLevel(index) {
+            const level = levels[index];
+            game.currentLevel = index;
+            
+            // Reset characters
+            characters[0].x = level.lunaStart.x;
+            characters[0].y = level.lunaStart.y;
+            characters[0].vx = 0;
+            characters[0].vy = 0;
+            
+            characters[1].x = level.emberStart.x;
+            characters[1].y = level.emberStart.y;
+            characters[1].vx = 0;
+            characters[1].vy = 0;
+            
+            // Reset tether
+            game.tether.conducting = null;
+            game.tether.conductTimer = 0;
+            game.tether.segments = [];
+            
+            // Reset interactables
+            level.interactables.forEach(obj => {
+                if (obj.type === 'ice') obj.melted = false;
+                if (obj.type === 'door') obj.powered = false;
+                if (obj.type === 'switch') obj.activated = false;
+            });
+            
+            // Reset hazards
+            level.hazards.forEach(h => {
+                if (h.type === 'water') h.frozen = false;
+            });
+            
+            game.particles = [];
+            game.activeCharacter = 0;
+            
+            document.getElementById('levelInfo').textContent = `Level ${index + 1}: ${level.name}`;
+            updateUI();
+        }
+
+        function showMessage(title, text, buttonText, callback) {
+            const msg = document.getElementById('message');
+            msg.innerHTML = `<h2>${title}</h2><p>${text}</p><button onclick="(${callback.toString()})()">${buttonText}</button>`;
+            msg.style.display = 'block';
+        }
+
+        function hideMessage() {
+            document.getElementById('message').style.display = 'none';
+        }
+
+        function startGame() {
+            hideMessage();
+            loadLevel(0);
+            showMessage(
+                levels[0].name,
+                levels[0].hint,
+                'Start',
+                hideMessage
+            );
+        }
+
+        function nextLevel() {
+            if (game.currentLevel < levels.length - 1) {
+                loadLevel(game.currentLevel + 1);
+                showMessage(
+                    levels[game.currentLevel].name,
+                    levels[game.currentLevel].hint,
+                    'Go!',
+                    hideMessage
+                );
+            } else {
+                showMessage(
+                    '🎉 Victory!',
+                    'Luna and Ember have escaped together!<br>Their bond proved unbreakable.',
+                    'Play Again',
+                    () => { hideMessage(); loadLevel(0); }
+                );
+            }
+        }
+
+        // Physics and collision
+        function rectCollision(r1, r2) {
+            return r1.x < r2.x + r2.w &&
+                   r1.x + r1.width > r2.x &&
+                   r1.y < r2.y + r2.h &&
+                   r1.y + r1.height > r2.y;
+        }
+
+        function pointInCircle(px, py, cx, cy, r) {
+            const dx = px - cx;
+            const dy = py - cy;
+            return dx * dx + dy * dy < r * r;
+        }
+
+        function distance(x1, y1, x2, y2) {
+            return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+        }
+
+        function updatePhysics() {
+            const level = levels[game.currentLevel];
+            const active = characters[game.activeCharacter];
+            const inactive = characters[1 - game.activeCharacter];
+            
+            // Input for active character
+            if (game.keys['ArrowLeft'] || game.keys['KeyA']) {
+                active.vx = -MOVE_SPEED;
+            } else if (game.keys['ArrowRight'] || game.keys['KeyD']) {
+                active.vx = MOVE_SPEED;
+            } else {
+                active.vx *= FRICTION;
+            }
+            
+            if ((game.keys['ArrowUp'] || game.keys['KeyW'] || game.keys['Space']) && active.grounded) {
+                active.vy = JUMP_FORCE;
+                active.grounded = false;
+            }
+            
+            // Apply gravity
+            characters.forEach(char => {
+                char.vy += GRAVITY;
+                char.x += char.vx;
+                char.y += char.vy;
+                char.grounded = false;
+            });
+            
+            // Platform collision
+            characters.forEach(char => {
+                level.platforms.forEach(plat => {
+                    if (rectCollision(
+                        { x: char.x, y: char.y, width: char.width, height: char.height },
+                        { x: plat.x, y: plat.y, w: plat.w, h: plat.h }
+                    )) {
+                        // Determine collision side
+                        const overlapLeft = (char.x + char.width) - plat.x;
+                        const overlapRight = (plat.x + plat.w) - char.x;
+                        const overlapTop = (char.y + char.height) - plat.y;
+                        const overlapBottom = (plat.y + plat.h) - char.y;
+                        
+                        const minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
+                        
+                        if (minOverlap === overlapTop && char.vy > 0) {
+                            char.y = plat.y - char.height;
+                            char.vy = 0;
+                            char.grounded = true;
+                        } else if (minOverlap === overlapBottom && char.vy < 0) {
+                            char.y = plat.y + plat.h;
+                            char.vy = 0;
+                        } else if (minOverlap === overlapLeft) {
+                            char.x = plat.x - char.width;
+                            char.vx = 0;
+                        } else if (minOverlap === overlapRight) {
+                            char.x = plat.x + plat.w;
+                            char.vx = 0;
+                        }
+                    }
+                });
+                
+                // Frozen water as platform
+                level.hazards.forEach(h => {
+                    if (h.type === 'water' && h.frozen) {
+                        if (rectCollision(
+                            { x: char.x, y: char.y, width: char.width, height: char.height },
+                            { x: h.x, y: h.y, w: h.w, h: 20 }
+                        )) {
+                            if (char.vy > 0 && char.y + char.height - char.vy <= h.y) {
+                                char.y = h.y - char.height;
+                                char.vy = 0;
+                                char.grounded = true;
+                            }
+                        }
+                    }
+                });
+            });
+            
+            // Tether constraint
+            const dist = distance(characters[0].x + 12, characters[0].y + 16,
+                                  characters[1].x + 12, characters[1].y + 16);
+            
+            if (dist > game.tether.maxLength) {
+                const angle = Math.atan2(
+                    characters[1].y - characters[0].y,
+                    characters[1].x - characters[0].x
+                );
+                const excess = dist - game.tether.maxLength;
+                
+                // Pull active character back
+                active.x -= Math.cos(angle) * excess * (game.activeCharacter === 0 ? -1 : 1);
+                active.y -= Math.sin(angle) * excess * (game.activeCharacter === 0 ? -1 : 1);
+            }
+            
+            // Boundary constraints
+            characters.forEach(char => {
+                char.x = Math.max(0, Math.min(W - char.width, char.x));
+                char.y = Math.max(0, Math.min(H - char.height, char.y));
+                if (char.y >= H - char.height) {
+                    char.grounded = true;
+                    char.vy = 0;
+                }
+            });
+            
+            // Check source contact for conductivity
+            game.tether.conducting = null;
+            level.sources.forEach(src => {
+                characters.forEach(char => {
+                    const cx = char.x + char.width / 2;
+                    const cy = char.y + char.height / 2;
+                    if (pointInCircle(cx, cy, src.x, src.y, src.radius + 20)) {
+                        game.tether.conducting = src.type;
+                        game.tether.conductTimer = 60;
+                    }
+                });
+            });
+            
+            if (game.tether.conductTimer > 0) {
+                game.tether.conductTimer--;
+                if (game.tether.conductTimer === 0) {
+                    game.tether.conducting = null;
+                }
+            }
+            
+            // Apply conductivity effects
+            if (game.tether.conducting) {
+                characters.forEach(char => {
+                    const cx = char.x + char.width / 2;
+                    const cy = char.y + char.height / 2;
+                    
+                    // Ice melting
+                    if (game.tether.conducting === 'fire') {
+                        level.interactables.forEach(obj => {
+                            if (obj.type === 'ice' && !obj.melted) {
+                                if (distance(cx, cy, obj.x + obj.w/2, obj.y + obj.h/2) < 50) {
+                                    obj.melted = true;
+                                    spawnParticles(obj.x + obj.w/2, obj.y + obj.h/2, '#4fc3f7', 20);
+                                }
+                            }
+                        });
+                    }
+                    
+                    // Switch activation
+                    if (game.tether.conducting === 'electric') {
+                        level.interactables.forEach(obj => {
+                            if (obj.type === 'switch' && !obj.activated) {
+                                if (distance(cx, cy, obj.x + obj.w/2, obj.y + obj.h/2) < 40) {
+                                    obj.activated = true;
+                                    // Power connected door
+                                    level.interactables.forEach(door => {
+                                        if (door.type === 'door') door.powered = true;
+                                    });
+                                    spawnParticles(obj.x + obj.w/2, obj.y + obj.h/2, '#ffeb3b', 15);
+                                }
+                            }
+                        });
+                    }
+                    
+                    // Water freezing
+                    if (game.tether.conducting === 'cold') {
+                        level.hazards.forEach(h => {
+                            if (h.type === 'water' && !h.frozen) {
+                                if (distance(cx, cy, h.x + h.w/2, h.y + h.h/2) < 80) {
+                                    h.frozen = true;
+                                    spawnParticles(h.x + h.w/2, h.y + h.h/2, '#81d4fa', 25);
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+            
+            // Check exit
+            const exit = level.exit;
+            let bothAtExit = true;
+            characters.forEach(char => {
+                if (!rectCollision(
+                    { x: char.x, y: char.y, width: char.width, height: char.height },
+                    { x: exit.x, y: exit.y, w: exit.width, h: exit.height }
+                )) {
+                    bothAtExit = false;
+                }
+            });
+            
+            // Check if door blocks
+            let doorBlocking = false;
+            level.interactables.forEach(obj => {
+                if (obj.type === 'door' && !obj.powered) {
+                    if (obj.x < exit.x + exit.width && obj.x + obj.w > exit.x) {
+                        doorBlocking = true;
+                    }
+                }
+            });
+            
+            if (bothAtExit && !doorBlocking) {
+                nextLevel();
+            }
+            
+            updateUI();
+        }
+
+        function spawnParticles(x, y, color, count) {
+            for (let i = 0; i < count; i++) {
+                game.particles.push({
+                    x, y,
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: (Math.random() - 0.5) * 6 - 2,
+                    color,
+                    life: 40 + Math.random() * 20,
+                    size: 3 + Math.random() * 4
+                });
+            }
+        }
+
+        function updateParticles() {
+            game.particles = game.particles.filter(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.1;
+                p.life--;
+                p.size *= 0.96;
+                return p.life > 0;
+            });
+        }
+
+        // Rendering
+        function drawNormal() {
+            const level = levels[game.currentLevel];
+            
+            // Sky gradient
+            const skyGrad = ctxN.createLinearGradient(0, 0, 0, H);
+            skyGrad.addColorStop(0, '#87CEEB');
+            skyGrad.addColorStop(1, '#E0F7FA');
+            ctxN.fillStyle = skyGrad;
+            ctxN.fillRect(0, 0, W, H);
+            
+            // Decorative clouds
+            ctxN.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            drawCloud(50, 50, 40);
+            drawCloud(200, 80, 30);
+            drawCloud(350, 40, 35);
+            
+            // Platforms
+            level.platforms.forEach(plat => {
+                if (plat.type === 'ground') {
+                    const groundGrad = ctxN.createLinearGradient(plat.x, plat.y, plat.x, plat.y + plat.h);
+                    groundGrad.addColorStop(0, '#8B4513');
+                    groundGrad.addColorStop(0.3, '#654321');
+                    groundGrad.addColorStop(1, '#3d2914');
+                    ctxN.fillStyle = groundGrad;
+                    ctxN.fillRect(plat.x, plat.y, plat.w, plat.h);
+                    
+                    // Grass on top
+                    ctxN.fillStyle = '#4CAF50';
+                    ctxN.fillRect(plat.x, plat.y, plat.w, 8);
+                    ctxN.fillStyle = '#66BB6A';
+                    for (let i = plat.x; i < plat.x + plat.w; i += 8) {
+                        ctxN.fillRect(i, plat.y - 3, 4, 6);
+                    }
+                } else {
+                    ctxN.fillStyle = '#78909C';
+                    ctxN.fillRect(plat.x, plat.y, plat.w, plat.h);
+                    ctxN.fillStyle = '#90A4AE';
+                    ctxN.fillRect(plat.x, plat.y, plat.w, 5);
+                }
+            });
+            
+            // Hazards
+            level.hazards.forEach(h => {
+                if (h.type === 'water') {
+                    if (h.frozen) {
+                        ctxN.fillStyle = '#B3E5FC';
+                        ctxN.fillRect(h.x, h.y, h.w, 20);
+                        ctxN.fillStyle = '#E1F5FE';
+                        ctxN.fillRect(h.x, h.y, h.w, 5);
+                    } else {
+                        const waterGrad = ctxN.createLinearGradient(h.x, h.y, h.x, h.y + h.h);
+                        waterGrad.addColorStop(0, '#29B6F6');
+                        waterGrad.addColorStop(1, '#0277BD');
+                        ctxN.fillStyle = waterGrad;
+                        ctxN.fillRect(h.x, h.y, h.w, h.h);
+                        
+                        // Waves
+                        ctxN.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                        for (let i = 0; i < h.w; i += 20) {
+                            const waveY = Math.sin(game.time * 0.1 + i * 0.1) * 3;
+                            ctxN.beginPath();
+                            ctxN.arc(h.x + i + 10, h.y + waveY, 8, 0, Math.PI);
+                            ctxN.fill();
+                        }
+                    }
+                }
+            });
+            
+            // Sources (only fire visible in normal view)
+            level.sources.forEach(src => {
+                if (src.type === 'fire') {
+                    drawFire(ctxN, src.x, src.y, src.radius);
+                } else if (src.type === 'electric') {
+                    // Faint glow in normal view
+                    ctxN.fillStyle = 'rgba(255, 235, 59, 0.3)';
+                    ctxN.beginPath();
+                    ctxN.arc(src.x, src.y, src.radius, 0, Math.PI * 2);
+                    ctxN.fill();
+                } else if (src.type === 'cold') {
+                    // Subtle frost
+                    ctxN.fillStyle = 'rgba(179, 229, 252, 0.5)';
+                    ctxN.beginPath();
+                    ctxN.arc(src.x, src.y, src.radius, 0, Math.PI * 2);
+                    ctxN.fill();
+                }
+            });
+            
+            // Interactables
+            level.interactables.forEach(obj => {
+                if (obj.type === 'ice' && !obj.melted) {
+                    ctxN.fillStyle = '#B3E5FC';
+                    ctxN.fillRect(obj.x, obj.y, obj.w, obj.h);
+                    ctxN.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                    ctxN.fillRect(obj.x + 5, obj.y + 5, obj.w - 10, 10);
+                }
+                if (obj.type === 'door') {
+                    ctxN.fillStyle = obj.powered ? '#4CAF50' : '#795548';
+                    ctxN.fillRect(obj.x, obj.y, obj.w, obj.h);
+                    if (!obj.powered) {
+                        ctxN.fillStyle = '#5D4037';
+                        ctxN.fillRect(obj.x + 2, obj.y + obj.h - 10, 5, 5);
+                    }
+                }
+                if (obj.type === 'switch') {
+                    ctxN.fillStyle = '#607D8B';
+                    ctxN.fillRect(obj.x, obj.y, obj.w, obj.h);
+                    ctxN.fillStyle = obj.activated ? '#FFEB3B' : '#455A64';
+                    ctxN.beginPath();
+                    ctxN.arc(obj.x + obj.w/2, obj.y + 10, 6, 0, Math.PI * 2);
+                    ctxN.fill();
+                }
+            });
+            
+            // Exit
+            const exit = level.exit;
+            const exitGrad = ctxN.createLinearGradient(exit.x, exit.y, exit.x, exit.y + exit.height);
+            exitGrad.addColorStop(0, '#81C784');
+            exitGrad.addColorStop(1, '#4CAF50');
+            ctxN.fillStyle = exitGrad;
+            ctxN.fillRect(exit.x, exit.y, exit.width, exit.height);
+            ctxN.fillStyle = '#A5D6A7';
+            ctxN.fillRect(exit.x + 5, exit.y + 5, exit.width - 10, 10);
+            
+            // Exit glow
+            ctxN.shadowColor = '#4CAF50';
+            ctxN.shadowBlur = 15 + Math.sin(game.time * 0.1) * 5;
+            ctxN.fillStyle = 'rgba(129, 199, 132, 0.3)';
+            ctxN.fillRect(exit.x - 5, exit.y - 5, exit.width + 10, exit.height + 10);
+            ctxN.shadowBlur = 0;
+            
+            // Tether
+            drawTether(ctxN, false);
+            
+            // Characters
+            drawCharacter(ctxN, characters[0], false);
+            drawCharacter(ctxN, characters[1], false);
+            
+            // Particles
+            game.particles.forEach(p => {
+                ctxN.globalAlpha = p.life / 60;
+                ctxN.fillStyle = p.color;
+                ctxN.beginPath();
+                ctxN.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctxN.fill();
+            });
+            ctxN.globalAlpha = 1;
+            
+            // View label
+            ctxN.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctxN.fillRect(10, H - 30, 80, 22);
+            ctxN.fillStyle = '#7eb8ff';
+            ctxN.font = 'bold 12px sans-serif';
+            ctxN.fillText("Luna's View", 15, H - 14);
+        }
+
+        function drawThermal() {
+            const level = levels[game.currentLevel];
+            
+            // Dark background
+            ctxT.fillStyle = '#0a0a12';
+            ctxT.fillRect(0, 0, W, H);
+            
+            // Platforms - cold/dark with slight heat
+            level.platforms.forEach(plat => {
+                ctxT.fillStyle = '#1a1a2e';
+                ctxT.fillRect(plat.x, plat.y, plat.w, plat.h);
+                // Slight edge glow
+                ctxT.strokeStyle = '#2a2a4e';
+                ctxT.lineWidth = 1;
+                ctxT.strokeRect(plat.x, plat.y, plat.w, plat.h);
+            });
+            
+            // Hazards
+            level.hazards.forEach(h => {
+                if (h.type === 'water') {
+                    if (h.frozen) {
+                        // Frozen - very cold, dark blue
+                        ctxT.fillStyle = '#0a1a2a';
+                        ctxT.fillRect(h.x, h.y, h.w, 20);
+                    } else {
+                        // Water - cool
+                        ctxT.fillStyle = '#0a2a3a';
+                        ctxT.fillRect(h.x, h.y, h.w, h.h);
+                    }
+                }
+            });
+            
+            // Sources - HIGHLY visible in thermal
+            level.sources.forEach(src => {
+                if (src.type === 'fire') {
+                    // Hot! White-yellow-orange gradient
+                    const fireGrad = ctxT.createRadialGradient(src.x, src.y, 0, src.x, src.y, src.radius * 3);
+                    fireGrad.addColorStop(0, '#ffffff');
+                    fireGrad.addColorStop(0.3, '#ffeb3b');
+                    fireGrad.addColorStop(0.6, '#ff9800');
+                    fireGrad.addColorStop(1, 'transparent');
+                    ctxT.fillStyle = fireGrad;
+                    ctxT.beginPath();
+                    ctxT.arc(src.x, src.y, src.radius * 3, 0, Math.PI * 2);
+                    ctxT.fill();
+                } else if (src.type === 'electric') {
+                    // Electric - bright white/blue pulses
+                    const pulse = Math.sin(game.time * 0.3) * 0.3 + 0.7;
+                    const elecGrad = ctxT.createRadialGradient(src.x, src.y, 0, src.x, src.y, src.radius * 2.5);
+                    elecGrad.addColorStop(0, `rgba(255, 255, 255, ${pulse})`);
+                    elecGrad.addColorStop(0.4, `rgba(255, 235, 59, ${pulse * 0.7})`);
+                    elecGrad.addColorStop(1, 'transparent');
+                    ctxT.fillStyle = elecGrad;
+                    ctxT.beginPath();
+                    ctxT.arc(src.x, src.y, src.radius * 2.5, 0, Math.PI * 2);
+                    ctxT.fill();
+                    
+                    // Lightning bolts
+                    drawLightning(ctxT, src.x, src.y, src.radius);
+                } else if (src.type === 'cold') {
+                    // Cold - dark blue, almost black center
+                    const coldGrad = ctxT.createRadialGradient(src.x, src.y, 0, src.x, src.y, src.radius * 2);
+                    coldGrad.addColorStop(0, '#000033');
+                    coldGrad.addColorStop(0.5, '#001155');
+                    coldGrad.addColorStop(1, 'transparent');
+                    ctxT.fillStyle = coldGrad;
+                    ctxT.beginPath();
+                    ctxT.arc(src.x, src.y, src.radius * 2, 0, Math.PI * 2);
+                    ctxT.fill();
+                    
+                    // Frost crystals
+                    ctxT.strokeStyle = '#4fc3f7';
+                    ctxT.lineWidth = 2;
+                    for (let i = 0; i < 6; i++) {
+                        const angle = (i / 6) * Math.PI * 2 + game.time * 0.02;
+                        ctxT.beginPath();
+                        ctxT.moveTo(src.x, src.y);
+                        ctxT.lineTo(
+                            src.x + Math.cos(angle) * src.radius * 1.5,
+                            src.y + Math.sin(angle) * src.radius * 1.5
+                        );
+                        ctxT.stroke();
+                    }
+                }
+            });
+            
+            // Interactables in thermal
+            level.interactables.forEach(obj => {
+                if (obj.type === 'ice' && !obj.melted) {
+                    // Cold block
+                    ctxT.fillStyle = '#0a1a2a';
+                    ctxT.fillRect(obj.x, obj.y, obj.w, obj.h);
+                }
+                if (obj.type === 'door') {
+                    ctxT.fillStyle = obj.powered ? '#2a4a2a' : '#1a1a1a';
+                    ctxT.fillRect(obj.x, obj.y, obj.w, obj.h);
+                }
+                if (obj.type === 'switch') {
+                    ctxT.fillStyle = '#1a1a2a';
+                    ctxT.fillRect(obj.x, obj.y, obj.w, obj.h);
+                    if (obj.activated) {
+                        const switchGrad = ctxT.createRadialGradient(obj.x + obj.w/2, obj.y + 10, 0, obj.x + obj.w/2, obj.y + 10, 15);
+                        switchGrad.addColorStop(0, '#ffeb3b');
+                        switchGrad.addColorStop(1, 'transparent');
+                        ctxT.fillStyle = switchGrad;
+                        ctxT.beginPath();
+                        ctxT.arc(obj.x + obj.w/2, obj.y + 10, 15, 0, Math.PI * 2);
+                        ctxT.fill();
+                    }
+                }
+            });
+            
+            // Exit in thermal - warm glow
+            const exit = level.exit;
+            const exitGrad = ctxT.createRadialGradient(
+                exit.x + exit.width/2, exit.y + exit.height/2, 0,
+                exit.x + exit.width/2, exit.y + exit.height/2, 60
+            );
+            exitGrad.addColorStop(0, 'rgba(100, 255, 100, 0.5)');
+            exitGrad.addColorStop(1, 'transparent');
+            ctxT.fillStyle = exitGrad;
+            ctxT.fillRect(exit.x - 20, exit.y - 20, exit.width + 40, exit.height + 40);
+            
+            ctxT.fillStyle = '#2a4a2a';
+            ctxT.fillRect(exit.x, exit.y, exit.width, exit.height);
+            
+            // Tether
+            drawTether(ctxT, true);
+            
+            // Characters as heat signatures
+            drawCharacter(ctxT, characters[0], true);
+            drawCharacter(ctxT, characters[1], true);
+            
+            // Particles
+            game.particles.forEach(p => {
+                ctxT.globalAlpha = p.life / 60;
+                ctxT.fillStyle = p.color;
+                ctxT.beginPath();
+                ctxT.arc(p.x, p.y, p.size * 1.5, 0, Math.PI * 2);
+                ctxT.fill();
+            });
+            ctxT.globalAlpha = 1;
+            
+            // View label
+            ctxT.fillStyle = 'rgba(255, 100, 50, 0.3)';
+            ctxT.fillRect(10, H - 30, 90, 22);
+            ctxT.fillStyle = '#ff6b4a';
+            ctxT.font = 'bold 12px sans-serif';
+            ctxT.fillText("Ember's View", 15, H - 14);
+        }
+
+        function drawCloud(x, y, size) {
+            ctxN.beginPath();
+            ctxN.arc(x, y, size, 0, Math.PI * 2);
+            ctxN.arc(x + size * 0.8, y - size * 0.2, size * 0.7, 0, Math.PI * 2);
+            ctxN.arc(x + size * 1.5, y, size * 0.8, 0, Math.PI * 2);
+            ctxN.fill();
+        }
+
+        function drawFire(ctx, x, y, radius) {
+            for (let i = 0; i < 5; i++) {
+                const flicker = Math.random() * 5;
+                const grad = ctx.createRadialGradient(x, y - i * 3, 0, x, y - i * 3, radius + flicker);
+                grad.addColorStop(0, 'rgba(255, 255, 200, 0.9)');
+                grad.addColorStop(0.3, 'rgba(255, 150, 50, 0.7)');
+                grad.addColorStop(0.6, 'rgba(255, 50, 0, 0.4)');
+                grad.addColorStop(1, 'transparent');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(x + (Math.random() - 0.5) * 5, y - i * 4 - Math.random() * 10, radius - i * 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function drawLightning(ctx, x, y, radius) {
+            ctx.strokeStyle = '#ffeb3b';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 3; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const length = radius + Math.random() * radius;
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                let px = x, py = y;
+                for (let j = 0; j < 4; j++) {
+                    const nx = px + Math.cos(angle) * (length / 4) + (Math.random() - 0.5) * 10;
+                    const ny = py + Math.sin(angle) * (length / 4) + (Math.random() - 0.5) * 10;
+                    ctx.lineTo(nx, ny);
+                    px = nx; py = ny;
+                }
+                ctx.stroke();
+            }
+        }
+
+        function drawTether(ctx, thermal) {
+            const c1 = characters[0];
+            const c2 = characters[1];
+            const x1 = c1.x + c1.width / 2;
+            const y1 = c1.y + c1.height / 2;
+            const x2 = c2.x + c2.width / 2;
+            const y2 = c2.y + c2.height / 2;
+            
+            ctx.lineWidth = 3;
+            
+            // Base tether color
+            let color = thermal ? '#3a3a5a' : '#666';
+            
+            // Conducting effects
+            if (game.tether.conducting === 'fire') {
+                const grad = ctx.createLinearGradient(x1, y1, x2, y2);
+                grad.addColorStop(0, '#ff6b4a');
+                grad.addColorStop(0.5, '#ffeb3b');
+                grad.addColorStop(1, '#ff6b4a');
+                ctx.strokeStyle = grad;
+                ctx.shadowColor = '#ff6b4a';
+                ctx.shadowBlur = 10;
+            } else if (game.tether.conducting === 'electric') {
+                const grad = ctx.createLinearGradient(x1, y1, x2, y2);
+                grad.addColorStop(0, '#ffeb3b');
+                grad.addColorStop(0.5, '#fff');
+                grad.addColorStop(1, '#ffeb3b');
+                ctx.strokeStyle = grad;
+                ctx.shadowColor = '#ffeb3b';
+                ctx.shadowBlur = 15;
+            } else if (game.tether.conducting === 'cold') {
+                const grad = ctx.createLinearGradient(x1, y1, x2, y2);
+                grad.addColorStop(0, '#4fc3f7');
+                grad.addColorStop(0.5, '#e1f5fe');
+                grad.addColorStop(1, '#4fc3f7');
+                ctx.strokeStyle = grad;
+                ctx.shadowColor = '#4fc3f7';
+                ctx.shadowBlur = 10;
+            } else {
+                ctx.strokeStyle = color;
+                ctx.shadowBlur = 0;
+            }
+            
+            // Draw tether with slight curve
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            
+            const midX = (x1 + x2) / 2;
+            const midY = (y1 + y2) / 2 + 20; // Sag
+            ctx.quadraticCurveTo(midX, midY, x2, y2);
+            ctx.stroke();
+            
+            // Conducting particles along tether
+            if (game.tether.conducting) {
+                const particleColor = game.tether.conducting === 'fire' ? '#ff6b4a' :
+                                     game.tether.conducting === 'electric' ? '#ffeb3b' : '#4fc3f7';
+                for (let t = 0; t < 1; t += 0.15) {
+                    const offset = (game.time * 0.05 + t) % 1;
+                    const px = x1 + (x2 - x1) * offset;
+                    const py = y1 + (y2 - y1) * offset + Math.sin(offset * Math.PI) * 20;
+                    ctx.fillStyle = particleColor;
+                    ctx.beginPath();
+                    ctx.arc(px, py, 4 + Math.sin(game.time * 0.2 + t * 10) * 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            
+            ctx.shadowBlur = 0;
+        }
+
+        function drawCharacter(ctx, char, thermal) {
+            const isActive = characters[game.activeCharacter] === char;
+            
+            if (thermal) {
+                // Heat signature - warm colors
+                const heatGrad = ctx.createRadialGradient(
+                    char.x + char.width/2, char.y + char.height/2, 0,
+                    char.x + char.width/2, char.y + char.height/2, char.width
+                );
+                heatGrad.addColorStop(0, '#ffffff');
+                heatGrad.addColorStop(0.3, '#ffeb3b');
+                heatGrad.addColorStop(0.6, '#ff9800');
+                heatGrad.addColorStop(1, '#ff5722');
+                
+                ctx.fillStyle = heatGrad;
+                
+                // Body
+                ctx.beginPath();
+                ctx.ellipse(char.x + char.width/2, char.y + char.height * 0.6, 
+                           char.width/2, char.height * 0.4, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Head
+                ctx.beginPath();
+                ctx.arc(char.x + char.width/2, char.y + 8, 10, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Glow
+                ctx.shadowColor = '#ff9800';
+                ctx.shadowBlur = 20;
+                ctx.fillStyle = 'rgba(255, 152, 0, 0.3)';
+                ctx.beginPath();
+                ctx.ellipse(char.x + char.width/2, char.y + char.height/2, 
+                           char.width, char.height * 0.7, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            } else {
+                // Normal view - cute character
+                const baseColor = char.color;
+                
+                // Shadow
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                ctx.beginPath();
+                ctx.ellipse(char.x + char.width/2, char.y + char.height + 2, 
+                           char.width/2, 4, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Body
+                ctx.fillStyle = baseColor;
+                ctx.beginPath();
+                ctx.roundRect(char.x + 2, char.y + 10, char.width - 4, char.height - 10, 8);
+                ctx.fill();
+                
+                // Head
+                ctx.beginPath();
+                ctx.arc(char.x + char.width/2, char.y + 10, 12, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Eyes
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(char.x + 8, char.y + 8, 4, 0, Math.PI * 2);
+                ctx.arc(char.x + 16, char.y + 8, 4, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = '#333';
+                ctx.beginPath();
+                ctx.arc(char.x + 9, char.y + 9, 2, 0, Math.PI * 2);
+                ctx.arc(char.x + 17, char.y + 9, 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Smile
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(char.x + char.width/2, char.y + 12, 4, 0.1 * Math.PI, 0.9 * Math.PI);
+                ctx.stroke();
+            }
+            
+            // Active indicator
+            if (isActive) {
+                const bounce = Math.sin(game.time * 0.15) * 3;
+                ctx.fillStyle = '#4eff4e';
+                ctx.beginPath();
+                ctx.moveTo(char.x + char.width/2, char.y - 15 + bounce);
+                ctx.lineTo(char.x + char.width/2 - 6, char.y - 25 + bounce);
+                ctx.lineTo(char.x + char.width/2 + 6, char.y - 25 + bounce);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        // Game loop
+        function gameLoop() {
+            game.time++;
+            
+            updatePhysics();
+            updateParticles();
+            
+            drawNormal();
+            drawThermal();
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Initialize
+        document.getElementById('message').style.display = 'block';
+        loadLevel(0);
+        gameLoop();
+    </script>
+</body>
+</html>
