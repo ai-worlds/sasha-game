@@ -651,16 +651,29 @@
         function createNoise(x, y, radius) {
             game.noiseEvents.push({ x, y, radius, age: 0 });
             
-            // Alert enemies
+            // Alert enemies based on noise radius and their hearing
             for (const enemy of game.enemies) {
                 const dist = Math.sqrt((enemy.x - x) ** 2 + (enemy.y - y) ** 2);
-                if (dist <= enemy.hearing) {
-                    const alertIncrease = Math.floor((1 - dist / enemy.hearing) * 50);
-                    enemy.alertLevel = Math.min(100, enemy.alertLevel + alertIncrease);
-                    enemy.lastHeard = { x, y };
+                // Noise carries based on its radius, enemy hears based on their hearing stat
+                const effectiveRange = Math.max(radius, enemy.hearing);
+                
+                if (dist <= effectiveRange) {
+                    // Louder noises (bigger radius) cause more alert
+                    // Closer noises cause more alert
+                    const distanceFactor = 1 - (dist / effectiveRange);
+                    const noiseFactor = Math.min(radius / 5, 2); // Ping (12) = 2.4x, walk (2) = 0.4x
+                    const alertIncrease = Math.floor(distanceFactor * noiseFactor * 60);
                     
-                    if (enemy.alertLevel >= 80 && alertIncrease > 10) {
-                        addLog(`Something stirs in the darkness...`);
+                    if (alertIncrease > 0) {
+                        enemy.alertLevel = Math.min(100, enemy.alertLevel + alertIncrease);
+                        enemy.lastHeard = { x, y };
+                        
+                        if (enemy.alertLevel >= 100 && !enemy.wasFullyAlert) {
+                            addLog(`Something locks onto your position!`);
+                            enemy.wasFullyAlert = true;
+                        } else if (enemy.alertLevel >= 60 && alertIncrease > 15) {
+                            addLog(`Something stirs in the darkness...`);
+                        }
                     }
                 }
             }
@@ -718,12 +731,24 @@
         function attackEnemy(enemy) {
             const damage = 15 + Math.floor(Math.random() * 10);
             enemy.hp -= damage;
-            createNoise(enemy.x, enemy.y, 6); // Combat is loud
+            createNoise(enemy.x, enemy.y, 8); // Combat is loud
+            
+            // Enemy immediately becomes fully alert and knows where you are
+            enemy.alertLevel = 100;
+            enemy.lastHeard = { x: game.player.x, y: game.player.y };
+            
             addLog(`You strike the ${enemy.name}!`);
             
             if (enemy.hp <= 0) {
                 game.enemies = game.enemies.filter(e => e !== enemy);
                 addLog(`The ${enemy.name} dissolves into shadow.`);
+            } else {
+                // Enemy retaliates immediately if adjacent
+                if (Math.abs(enemy.x - game.player.x) <= 1 && 
+                    Math.abs(enemy.y - game.player.y) <= 1) {
+                    game.player.hp -= enemy.damage;
+                    addLog(`The ${enemy.name} strikes back! -${enemy.damage} HP`);
+                }
             }
         }
         
@@ -802,30 +827,44 @@
             
             // Enemy AI
             for (const enemy of game.enemies) {
-                // Decay alert if no recent noise
-                enemy.alertLevel = Math.max(0, enemy.alertLevel - 2);
+                // Decay alert slowly
+                enemy.alertLevel = Math.max(0, enemy.alertLevel - 1);
+                if (enemy.alertLevel < 80) {
+                    enemy.wasFullyAlert = false;
+                }
                 
-                // If fully alert, hunt
-                if (enemy.alertLevel >= 100 && enemy.lastHeard) {
+                // Always check if adjacent to player - attack regardless of alert!
+                const adjacentToPlayer = Math.abs(enemy.x - game.player.x) <= 1 && 
+                                         Math.abs(enemy.y - game.player.y) <= 1 &&
+                                         !(enemy.x === game.player.x && enemy.y === game.player.y);
+                
+                if (adjacentToPlayer) {
+                    game.player.hp -= enemy.damage;
+                    addLog(`The ${enemy.name} strikes from the darkness! -${enemy.damage} HP`);
+                    enemy.alertLevel = 100;
+                    enemy.lastHeard = { x: game.player.x, y: game.player.y };
+                    continue; // Already acted this turn
+                }
+                
+                // If alerted (60+), hunt toward last heard location
+                if (enemy.alertLevel >= 60 && enemy.lastHeard) {
                     // Move toward last heard location (fast if hunter)
                     for (let step = 0; step < enemy.speed; step++) {
                         const dx = Math.sign(enemy.lastHeard.x - enemy.x);
                         const dy = Math.sign(enemy.lastHeard.y - enemy.y);
                         
-                        // Adjacent to player? Attack!
-                        if (Math.abs(enemy.x - game.player.x) <= 1 && 
-                            Math.abs(enemy.y - game.player.y) <= 1) {
-                            game.player.hp -= enemy.damage;
-                            addLog(`The ${enemy.name} strikes from the darkness! -${enemy.damage} HP`);
-                            enemy.alertLevel = 100; // Stay alert
-                            break;
-                        }
-                        
                         // Move
                         const newX = enemy.x + dx;
                         const newY = enemy.y + dy;
+                        
+                        // Don't move onto player (we attack via adjacency check above)
+                        if (newX === game.player.x && newY === game.player.y) {
+                            break;
+                        }
+                        
                         if (game.map[newY] && 
                             game.map[newY][newX] !== TILE.WALL &&
+                            game.map[newY][newX] !== TILE.WATER &&
                             !game.enemies.some(e => e !== enemy && e.x === newX && e.y === newY)) {
                             enemy.x = newX;
                             enemy.y = newY;
@@ -834,13 +873,14 @@
                         // Reached target?
                         if (enemy.x === enemy.lastHeard.x && enemy.y === enemy.lastHeard.y) {
                             enemy.lastHeard = null;
-                            enemy.alertLevel = 50; // Searching
+                            enemy.alertLevel = 40; // Searching
                         }
                     }
-                } else if (enemy.alertLevel >= 50) {
+                } else if (enemy.alertLevel >= 30) {
                     // Patrol/search behavior
                     if (!enemy.patrolTarget || 
-                        (enemy.x === enemy.patrolTarget.x && enemy.y === enemy.patrolTarget.y)) {
+                        (enemy.x === enemy.patrolTarget.x && enemy.y === enemy.patrolTarget.y) ||
+                        Math.random() < 0.1) {
                         // Pick new patrol point
                         enemy.patrolTarget = {
                             x: enemy.x + Math.floor(Math.random() * 11) - 5,
@@ -853,9 +893,11 @@
                     const newX = enemy.x + dx;
                     const newY = enemy.y + dy;
                     
-                    if (game.map[newY] && game.map[newY][newX] !== TILE.WALL) {
-                        enemy.x = newX;
-                        enemy.y = newY;
+                    if (game.map[newY] && game.map[newY][newX] !== TILE.WALL && game.map[newY][newX] !== TILE.WATER) {
+                        if (!game.enemies.some(e => e !== enemy && e.x === newX && e.y === newY)) {
+                            enemy.x = newX;
+                            enemy.y = newY;
+                        }
                     }
                 }
             }
