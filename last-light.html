@@ -242,8 +242,8 @@
             PRISM_COST: 60,
             STARTING_STARDUST: 50,
             STAR_INITIAL_RADIUS: 80,
-            STAR_MIN_RADIUS: 15,
-            STAR_SHRINK_PER_WAVE: 5,
+            STAR_MIN_RADIUS: 20,
+            STAR_SHRINK_PER_WAVE: 8,
             LIGHT_RAY_COUNT: 24,
             LIGHT_RANGE: 400,
             CREATURE_BASE_SPEED: 0.5,
@@ -379,7 +379,12 @@
                 // Add slight variation for organic feel
                 const angle = baseAngle + Math.sin(gameState.time * 0.5 + i) * 0.05;
                 
-                traceLightRay(cx, cy, angle, CONFIG.LIGHT_RANGE, starColor, 1.0, 0);
+                // Light gets weaker as star dies - range and intensity scale with life
+                const lifeFactor = 0.3 + (gameState.starLife / 100) * 0.7; // 30% to 100%
+                const effectiveRange = CONFIG.LIGHT_RANGE * lifeFactor;
+                const effectiveIntensity = lifeFactor;
+                
+                traceLightRay(cx, cy, angle, effectiveRange, starColor, effectiveIntensity, 0);
             }
         }
         
@@ -1136,7 +1141,7 @@
                     CONFIG.STAR_MIN_RADIUS,
                     gameState.starRadius - CONFIG.STAR_SHRINK_PER_WAVE
                 );
-                gameState.starLife = Math.max(0, gameState.starLife - 3);
+                gameState.starLife = Math.max(0, gameState.starLife - 8);
                 
                 // Bonus stardust for completing wave
                 gameState.stardust += 20 + gameState.wave * 5;
