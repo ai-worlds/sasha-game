@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ash Walker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #0a0808;
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        #game {
+            position: relative;
+        }
+        
+        #gameCanvas {
+            display: block;
+            image-rendering: pixelated;
+            border: 2px solid #2a1a10;
+            box-shadow: 0 0 50px rgba(255, 100, 30, 0.2);
+        }
+        
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #ff9966;
+            font-size: 14px;
+            text-shadow: 0 0 10px rgba(255, 100, 30, 0.5);
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        #ui div {
+            margin-bottom: 5px;
+        }
+        
+        .bar {
+            width: 150px;
+            height: 12px;
+            background: rgba(30, 20, 10, 0.8);
+            border: 1px solid #553322;
+            margin-top: 2px;
+        }
+        
+        .bar-fill {
+            height: 100%;
+            transition: width 0.2s;
+        }
+        
+        #healthBar .bar-fill { background: linear-gradient(90deg, #882222, #cc4444); }
+        #warmthBar .bar-fill { background: linear-gradient(90deg, #884400, #ff8800); }
+        #torchBar .bar-fill { background: linear-gradient(90deg, #666633, #cccc66); }
+        
+        #log {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            color: #aa8866;
+            font-size: 12px;
+            max-width: 400px;
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        #log div {
+            margin-bottom: 3px;
+            opacity: 0.9;
+        }
+        
+        #log div:first-child { opacity: 1; }
+        #log div:nth-child(2) { opacity: 0.7; }
+        #log div:nth-child(3) { opacity: 0.4; }
+        
+        #controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #775544;
+            font-size: 11px;
+            text-align: right;
+            z-index: 10;
+        }
+        
+        #startScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, rgba(30, 15, 5, 0.95) 0%, rgba(5, 2, 0, 0.99) 70%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            color: #ff9966;
+            text-align: center;
+        }
+        
+        #startScreen h1 {
+            font-size: 48px;
+            font-weight: normal;
+            letter-spacing: 10px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 30px rgba(255, 100, 30, 0.6);
+            font-family: 'Georgia', serif;
+        }
+        
+        #startScreen .subtitle {
+            font-size: 14px;
+            opacity: 0.6;
+            margin-bottom: 50px;
+            font-style: italic;
+            letter-spacing: 3px;
+        }
+        
+        #startScreen .instructions {
+            font-size: 13px;
+            line-height: 2;
+            opacity: 0.7;
+            margin-bottom: 40px;
+            max-width: 450px;
+        }
+        
+        #startBtn {
+            background: transparent;
+            border: 1px solid rgba(255, 150, 100, 0.5);
+            color: #ff9966;
+            padding: 15px 50px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            cursor: pointer;
+            letter-spacing: 3px;
+            transition: all 0.3s ease;
+        }
+        
+        #startBtn:hover {
+            background: rgba(255, 100, 30, 0.2);
+            box-shadow: 0 0 30px rgba(255, 100, 30, 0.4);
+        }
+        
+        #gameOver {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            color: #aa6644;
+            text-align: center;
+        }
+        
+        #gameOver h2 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            letter-spacing: 5px;
+        }
+        
+        #gameOver p {
+            font-size: 16px;
+            opacity: 0.7;
+            margin-bottom: 30px;
+        }
+        
+        #restartBtn {
+            background: transparent;
+            border: 1px solid rgba(255, 150, 100, 0.5);
+            color: #ff9966;
+            padding: 12px 40px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            cursor: pointer;
+            letter-spacing: 2px;
+        }
+        
+        #restartBtn:hover {
+            background: rgba(255, 100, 30, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div id="game">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        
+        <div id="ui">
+            <div>Floor <span id="floor">1</span></div>
+            <div id="healthBar">HP <span id="health">100</span>
+                <div class="bar"><div class="bar-fill" style="width: 100%"></div></div>
+            </div>
+            <div id="warmthBar">Warmth <span id="warmth">100</span>
+                <div class="bar"><div class="bar-fill" style="width: 100%"></div></div>
+            </div>
+            <div id="torchBar">Torch <span id="torch">50</span>
+                <div class="bar"><div class="bar-fill" style="width: 50%"></div></div>
+            </div>
+        </div>
+        
+        <div id="controls">
+            WASD / Arrows - Move<br>
+            SPACE - Light/Extinguish Torch<br>
+            F - Light Fire (costs fuel)<br>
+            E - Interact / Pick Up<br>
+            . - Wait
+        </div>
+        
+        <div id="log"></div>
+    </div>
+    
+    <div id="startScreen">
+        <h1>ASH WALKER</h1>
+        <div class="subtitle">the world burns cold</div>
+        <div class="instructions">
+            The sun died. The cold took everything.<br>
+            You descend into the ruins, seeking warmth.<br><br>
+            Fire is life—it keeps the cold at bay.<br>
+            Fire is death—it draws them from the dark.<br><br>
+            Find the Eternal Ember on Floor 10.<br>
+            Or become another frozen corpse.
+        </div>
+        <button id="startBtn">DESCEND</button>
+    </div>
+    
+    <div id="gameOver">
+        <h2 id="gameOverTitle">THE COLD TAKES YOU</h2>
+        <p id="gameOverText">You froze on Floor 1</p>
+        <button id="restartBtn">TRY AGAIN</button>
+    </div>
+
+    <script>
+        // ========== CONFIGURATION ==========
+        const CONFIG = {
+            TILE_SIZE: 20,
+            MAP_WIDTH: 40,
+            MAP_HEIGHT: 30,
+            VISION_RADIUS: 8,
+            TORCH_LIGHT_RADIUS: 6,
+            FIRE_LIGHT_RADIUS: 4,
+            WARMTH_DECAY: 0.3,
+            WARMTH_FIRE_GAIN: 15,
+            WARMTH_TORCH_GAIN: 5,
+            TORCH_DECAY: 0.5,
+            COLD_DAMAGE_THRESHOLD: 20,
+            MAX_FLOORS: 10,
+        };
+
+        // ========== TILE TYPES ==========
+        const TILE = {
+            VOID: 0,
+            FLOOR: 1,
+            WALL: 2,
+            STAIRS: 3,
+            FIRE: 4,
+            EMBERS: 5,
+        };
+
+        // ========== CANVAS SETUP ==========
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = CONFIG.MAP_WIDTH * CONFIG.TILE_SIZE;
+        canvas.height = CONFIG.MAP_HEIGHT * CONFIG.TILE_SIZE;
+
+        // ========== GAME STATE ==========
+        let game = {
+            running: false,
+            floor: 1,
+            map: [],
+            revealed: [],
+            items: [],
+            enemies: [],
+            fires: [],
+            player: null,
+            log: [],
+            turnCount: 0,
+            won: false,
+        };
+
+        // ========== PLAYER ==========
+        class Player {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.hp = 100;
+                this.maxHp = 100;
+                this.warmth = 100;
+                this.maxWarmth = 100;
+                this.torchFuel = 50;
+                this.maxTorchFuel = 100;
+                this.torchLit = true;
+                this.fuel = 3;
+            }
+        }
+
+        // ========== ENEMY TYPES ==========
+        class Enemy {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.type = type;
+                this.awake = false;
+                this.lastSeenPlayer = null;
+                
+                switch(type) {
+                    case 'frostling':
+                        this.hp = 15;
+                        this.damage = 8;
+                        this.symbol = 'f';
+                        this.color = '#6688cc';
+                        this.name = 'Frostling';
+                        break;
+                    case 'shade':
+                        this.hp = 25;
+                        this.damage = 12;
+                        this.symbol = 's';
+                        this.color = '#555577';
+                        this.name = 'Shade';
+                        break;
+                    case 'cinder_wraith':
+                        this.hp = 40;
+                        this.damage = 18;
+                        this.symbol = 'W';
+                        this.color = '#ff6644';
+                        this.name = 'Cinder Wraith';
+                        break;
+                    case 'frozen_one':
+                        this.hp = 60;
+                        this.damage = 25;
+                        this.symbol = 'F';
+                        this.color = '#aaccff';
+                        this.name = 'Frozen One';
+                        break;
+                }
+                this.maxHp = this.hp;
+            }
+        }
+
+        // ========== ITEM TYPES ==========
+        class Item {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.type = type;
+                
+                switch(type) {
+                    case 'fuel':
+                        this.symbol = '~';
+                        this.color = '#aa6633';
+                        this.name = 'Fuel Bundle';
+                        break;
+                    case 'torch':
+                        this.symbol = '!';
+                        this.color = '#ffaa33';
+                        this.name = 'Torch Fuel';
+                        break;
+                    case 'medicine':
+                        this.symbol = '+';
+                        this.color = '#66aa66';
+                        this.name = 'Medicine';
+                        break;
+                    case 'ember':
+                        this.symbol = '✧';
+                        this.color = '#ffdd00';
+                        this.name = 'Eternal Ember';
+                        break;
+                }
+            }
+        }
+
+        // ========== MAP GENERATION ==========
+        function generateMap() {
+            // Initialize empty map
+            game.map = [];
+            game.revealed = [];
+            for (let y = 0; y < CONFIG.MAP_HEIGHT; y++) {
+                game.map[y] = [];
+                game.revealed[y] = [];
+                for (let x = 0; x < CONFIG.MAP_WIDTH; x++) {
+                    game.map[y][x] = TILE.WALL;
+                    game.revealed[y][x] = false;
+                }
+            }
+            
+            // Generate rooms using BSP
+            const rooms = [];
+            const roomCount = 6 + Math.floor(Math.random() * 4);
+            
+            for (let i = 0; i < roomCount; i++) {
+                const w = 5 + Math.floor(Math.random() * 6);
+                const h = 4 + Math.floor(Math.random() * 5);
+                const x = 1 + Math.floor(Math.random() * (CONFIG.MAP_WIDTH - w - 2));
+                const y = 1 + Math.floor(Math.random() * (CONFIG.MAP_HEIGHT - h - 2));
+                
+                // Check overlap
+                let overlap = false;
+                for (const room of rooms) {
+                    if (x < room.x + room.w + 1 && x + w + 1 > room.x &&
+                        y < room.y + room.h + 1 && y + h + 1 > room.y) {
+                        overlap = true;
+                        break;
+                    }
+                }
+                
+                if (!overlap) {
+                    rooms.push({ x, y, w, h });
+                    
+                    // Carve room
+                    for (let ry = y; ry < y + h; ry++) {
+                        for (let rx = x; rx < x + w; rx++) {
+                            game.map[ry][rx] = TILE.FLOOR;
+                        }
+                    }
+                }
+            }
+            
+            // Connect rooms with corridors
+            for (let i = 1; i < rooms.length; i++) {
+                const r1 = rooms[i - 1];
+                const r2 = rooms[i];
+                const x1 = Math.floor(r1.x + r1.w / 2);
+                const y1 = Math.floor(r1.y + r1.h / 2);
+                const x2 = Math.floor(r2.x + r2.w / 2);
+                const y2 = Math.floor(r2.y + r2.h / 2);
+                
+                // L-shaped corridor
+                if (Math.random() < 0.5) {
+                    carveCorridorH(x1, x2, y1);
+                    carveCorridorV(y1, y2, x2);
+                } else {
+                    carveCorridorV(y1, y2, x1);
+                    carveCorridorH(x1, x2, y2);
+                }
+            }
+            
+            // Place player in first room
+            const startRoom = rooms[0];
+            game.player = new Player(
+                startRoom.x + Math.floor(startRoom.w / 2),
+                startRoom.y + Math.floor(startRoom.h / 2)
+            );
+            
+            // Place stairs in last room (or ember on floor 10)
+            const endRoom = rooms[rooms.length - 1];
+            const stairX = endRoom.x + Math.floor(endRoom.w / 2);
+            const stairY = endRoom.y + Math.floor(endRoom.h / 2);
+            
+            if (game.floor === CONFIG.MAX_FLOORS) {
+                // Place Eternal Ember
+                game.items.push(new Item(stairX, stairY, 'ember'));
+            } else {
+                game.map[stairY][stairX] = TILE.STAIRS;
+            }
+            
+            // Place items
+            game.items = game.items.filter(i => i.type === 'ember'); // Keep ember if exists
+            for (const room of rooms.slice(1, -1)) {
+                if (Math.random() < 0.5) {
+                    const ix = room.x + Math.floor(Math.random() * room.w);
+                    const iy = room.y + Math.floor(Math.random() * room.h);
+                    const types = ['fuel', 'fuel', 'torch', 'torch', 'medicine'];
+                    game.items.push(new Item(ix, iy, types[Math.floor(Math.random() * types.length)]));
+                }
+            }
+            
+            // Place enemies
+            game.enemies = [];
+            const enemyCount = 3 + game.floor + Math.floor(Math.random() * 3);
+            for (let i = 0; i < enemyCount; i++) {
+                const room = rooms[1 + Math.floor(Math.random() * (rooms.length - 1))];
+                const ex = room.x + Math.floor(Math.random() * room.w);
+                const ey = room.y + Math.floor(Math.random() * room.h);
+                
+                // Enemy type based on floor
+                let type = 'frostling';
+                const roll = Math.random();
+                if (game.floor >= 7 && roll < 0.2) type = 'frozen_one';
+                else if (game.floor >= 5 && roll < 0.3) type = 'cinder_wraith';
+                else if (game.floor >= 3 && roll < 0.5) type = 'shade';
+                
+                game.enemies.push(new Enemy(ex, ey, type));
+            }
+            
+            // Place some starting fires (ember piles)
+            game.fires = [];
+            for (const room of rooms.slice(0, 3)) {
+                if (Math.random() < 0.4) {
+                    const fx = room.x + Math.floor(Math.random() * room.w);
+                    const fy = room.y + Math.floor(Math.random() * room.h);
+                    game.map[fy][fx] = TILE.EMBERS;
+                }
+            }
+        }
+        
+        function carveCorridorH(x1, x2, y) {
+            const minX = Math.min(x1, x2);
+            const maxX = Math.max(x1, x2);
+            for (let x = minX; x <= maxX; x++) {
+                if (y > 0 && y < CONFIG.MAP_HEIGHT - 1) {
+                    game.map[y][x] = TILE.FLOOR;
+                }
+            }
+        }
+        
+        function carveCorridorV(y1, y2, x) {
+            const minY = Math.min(y1, y2);
+            const maxY = Math.max(y1, y2);
+            for (let y = minY; y <= maxY; y++) {
+                if (x > 0 && x < CONFIG.MAP_WIDTH - 1) {
+                    game.map[y][x] = TILE.FLOOR;
+                }
+            }
+        }
+
+        // ========== VISIBILITY ==========
+        function updateVisibility() {
+            const px = game.player.x;
+            const py = game.player.y;
+            const baseRadius = CONFIG.VISION_RADIUS;
+            const torchBonus = game.player.torchLit ? CONFIG.TORCH_LIGHT_RADIUS : 0;
+            const radius = baseRadius + torchBonus;
+            
+            for (let dy = -radius; dy <= radius; dy++) {
+                for (let dx = -radius; dx <= radius; dx++) {
+                    const x = px + dx;
+                    const y = py + dy;
+                    if (x < 0 || x >= CONFIG.MAP_WIDTH || y < 0 || y >= CONFIG.MAP_HEIGHT) continue;
+                    
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist <= radius && hasLineOfSight(px, py, x, y)) {
+                        game.revealed[y][x] = true;
+                    }
+                }
+            }
+            
+            // Fires also reveal area
+            for (const fire of game.fires) {
+                if (fire.intensity > 0) {
+                    const fr = CONFIG.FIRE_LIGHT_RADIUS * (fire.intensity / 100);
+                    for (let dy = -fr; dy <= fr; dy++) {
+                        for (let dx = -fr; dx <= fr; dx++) {
+                            const x = fire.x + dx;
+                            const y = fire.y + dy;
+                            if (x < 0 || x >= CONFIG.MAP_WIDTH || y < 0 || y >= CONFIG.MAP_HEIGHT) continue;
+                            if (Math.sqrt(dx * dx + dy * dy) <= fr) {
+                                game.revealed[y][x] = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        function hasLineOfSight(x1, y1, x2, y2) {
+            const dx = Math.abs(x2 - x1);
+            const dy = Math.abs(y2 - y1);
+            const sx = x1 < x2 ? 1 : -1;
+            const sy = y1 < y2 ? 1 : -1;
+            let err = dx - dy;
+            let x = x1, y = y1;
+            
+            while (true) {
+                if (x === x2 && y === y2) return true;
+                if (game.map[y][x] === TILE.WALL) return false;
+                
+                const e2 = err * 2;
+                if (e2 > -dy) { err -= dy; x += sx; }
+                if (e2 < dx) { err += dx; y += sy; }
+            }
+        }
+        
+        function isVisible(x, y) {
+            const px = game.player.x;
+            const py = game.player.y;
+            const dist = Math.sqrt((x - px) ** 2 + (y - py) ** 2);
+            const baseRadius = CONFIG.VISION_RADIUS;
+            const torchBonus = game.player.torchLit ? CONFIG.TORCH_LIGHT_RADIUS : 0;
+            
+            if (dist <= baseRadius + torchBonus && hasLineOfSight(px, py, x, y)) {
+                return true;
+            }
+            
+            // Check fire visibility
+            for (const fire of game.fires) {
+                if (fire.intensity > 0) {
+                    const fd = Math.sqrt((x - fire.x) ** 2 + (y - fire.y) ** 2);
+                    if (fd <= CONFIG.FIRE_LIGHT_RADIUS * (fire.intensity / 100)) {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
+
+        // ========== PLAYER ACTIONS ==========
+        function movePlayer(dx, dy) {
+            const newX = game.player.x + dx;
+            const newY = game.player.y + dy;
+            
+            if (newX < 0 || newX >= CONFIG.MAP_WIDTH || newY < 0 || newY >= CONFIG.MAP_HEIGHT) return;
+            if (game.map[newY][newX] === TILE.WALL) return;
+            
+            // Check for enemy
+            const enemy = game.enemies.find(e => e.x === newX && e.y === newY);
+            if (enemy) {
+                attackEnemy(enemy);
+                processTurn();
+                return;
+            }
+            
+            game.player.x = newX;
+            game.player.y = newY;
+            
+            // Check stairs
+            if (game.map[newY][newX] === TILE.STAIRS) {
+                descend();
+                return;
+            }
+            
+            // Check embers
+            if (game.map[newY][newX] === TILE.EMBERS) {
+                game.player.warmth = Math.min(game.player.maxWarmth, game.player.warmth + 10);
+                addLog('The dying embers provide brief warmth.');
+            }
+            
+            processTurn();
+        }
+        
+        function attackEnemy(enemy) {
+            const damage = 10 + Math.floor(Math.random() * 10);
+            enemy.hp -= damage;
+            addLog(`You strike the ${enemy.name} for ${damage} damage!`);
+            
+            if (enemy.hp <= 0) {
+                game.enemies = game.enemies.filter(e => e !== enemy);
+                addLog(`The ${enemy.name} crumbles to ash!`);
+            }
+        }
+        
+        function toggleTorch() {
+            if (game.player.torchFuel <= 0) {
+                addLog('Your torch has no fuel.');
+                return;
+            }
+            
+            game.player.torchLit = !game.player.torchLit;
+            if (game.player.torchLit) {
+                addLog('You light your torch. The shadows retreat.');
+                wakeNearbyEnemies();
+            } else {
+                addLog('You extinguish the torch. Darkness returns.');
+            }
+        }
+        
+        function lightFire() {
+            if (game.player.fuel <= 0) {
+                addLog('You have no fuel to start a fire.');
+                return;
+            }
+            
+            // Check if standing on valid spot
+            const tile = game.map[game.player.y][game.player.x];
+            if (tile !== TILE.FLOOR && tile !== TILE.EMBERS) {
+                addLog("You can't light a fire here.");
+                return;
+            }
+            
+            game.player.fuel--;
+            game.fires.push({
+                x: game.player.x,
+                y: game.player.y,
+                intensity: 100,
+            });
+            game.map[game.player.y][game.player.x] = TILE.FIRE;
+            
+            addLog('You light a fire. Warmth spreads... but so does attention.');
+            wakeNearbyEnemies(true);
+            processTurn();
+        }
+        
+        function interact() {
+            const item = game.items.find(i => i.x === game.player.x && i.y === game.player.y);
+            if (item) {
+                game.items = game.items.filter(i => i !== item);
+                
+                switch(item.type) {
+                    case 'fuel':
+                        game.player.fuel++;
+                        addLog('You pick up a fuel bundle.');
+                        break;
+                    case 'torch':
+                        game.player.torchFuel = Math.min(game.player.maxTorchFuel, game.player.torchFuel + 30);
+                        addLog('You refuel your torch.');
+                        break;
+                    case 'medicine':
+                        game.player.hp = Math.min(game.player.maxHp, game.player.hp + 30);
+                        addLog('The medicine soothes your wounds.');
+                        break;
+                    case 'ember':
+                        game.won = true;
+                        victory();
+                        return;
+                }
+            }
+            processTurn();
+        }
+        
+        function wakeNearbyEnemies(isFireLight = false) {
+            const range = isFireLight ? 15 : 10;
+            for (const enemy of game.enemies) {
+                const dist = Math.sqrt((enemy.x - game.player.x) ** 2 + (enemy.y - game.player.y) ** 2);
+                if (dist <= range) {
+                    if (!enemy.awake) {
+                        enemy.awake = true;
+                        addLog(`A ${enemy.name} stirs in the darkness!`);
+                    }
+                }
+            }
+        }
+        
+        function descend() {
+            game.floor++;
+            addLog(`You descend to Floor ${game.floor}...`);
+            generateMap();
+            updateVisibility();
+        }
+
+        // ========== TURN PROCESSING ==========
+        function processTurn() {
+            game.turnCount++;
+            
+            // Warmth decay
+            game.player.warmth -= CONFIG.WARMTH_DECAY;
+            
+            // Torch decay
+            if (game.player.torchLit) {
+                game.player.torchFuel -= CONFIG.TORCH_DECAY;
+                if (game.player.torchFuel <= 0) {
+                    game.player.torchFuel = 0;
+                    game.player.torchLit = false;
+                    addLog('Your torch sputters and dies!');
+                }
+            }
+            
+            // Fire decay
+            for (let i = game.fires.length - 1; i >= 0; i--) {
+                game.fires[i].intensity -= 2;
+                if (game.fires[i].intensity <= 0) {
+                    game.map[game.fires[i].y][game.fires[i].x] = TILE.EMBERS;
+                    game.fires.splice(i, 1);
+                }
+            }
+            
+            // Warmth from fires
+            for (const fire of game.fires) {
+                const dist = Math.sqrt((game.player.x - fire.x) ** 2 + (game.player.y - fire.y) ** 2);
+                if (dist <= 2) {
+                    game.player.warmth = Math.min(game.player.maxWarmth, game.player.warmth + CONFIG.WARMTH_FIRE_GAIN);
+                }
+            }
+            
+            // Warmth from torch
+            if (game.player.torchLit) {
+                game.player.warmth = Math.min(game.player.maxWarmth, game.player.warmth + CONFIG.WARMTH_TORCH_GAIN * 0.2);
+            }
+            
+            // Cold damage
+            if (game.player.warmth < CONFIG.COLD_DAMAGE_THRESHOLD) {
+                const coldDamage = Math.ceil((CONFIG.COLD_DAMAGE_THRESHOLD - game.player.warmth) / 5);
+                game.player.hp -= coldDamage;
+                if (game.turnCount % 5 === 0) {
+                    addLog('The cold seeps into your bones...');
+                }
+            }
+            
+            // Enemy AI
+            for (const enemy of game.enemies) {
+                // Check if can see player
+                const dist = Math.sqrt((enemy.x - game.player.x) ** 2 + (enemy.y - game.player.y) ** 2);
+                const playerLit = game.player.torchLit || game.fires.some(f => 
+                    Math.sqrt((game.player.x - f.x) ** 2 + (game.player.y - f.y) ** 2) <= 3
+                );
+                
+                if (playerLit && dist <= 8) {
+                    enemy.awake = true;
+                    enemy.lastSeenPlayer = { x: game.player.x, y: game.player.y };
+                }
+                
+                if (enemy.awake && enemy.lastSeenPlayer) {
+                    // Move toward player
+                    const dx = Math.sign(enemy.lastSeenPlayer.x - enemy.x);
+                    const dy = Math.sign(enemy.lastSeenPlayer.y - enemy.y);
+                    
+                    // Adjacent? Attack!
+                    if (Math.abs(enemy.x - game.player.x) <= 1 && Math.abs(enemy.y - game.player.y) <= 1) {
+                        game.player.hp -= enemy.damage;
+                        addLog(`The ${enemy.name} strikes you for ${enemy.damage} damage!`);
+                    } else {
+                        // Try to move
+                        const newX = enemy.x + dx;
+                        const newY = enemy.y + dy;
+                        if (game.map[newY] && game.map[newY][newX] === TILE.FLOOR) {
+                            if (!game.enemies.some(e => e !== enemy && e.x === newX && e.y === newY)) {
+                                enemy.x = newX;
+                                enemy.y = newY;
+                            }
+                        }
+                    }
+                    
+                    // Clear last seen if reached
+                    if (enemy.x === enemy.lastSeenPlayer.x && enemy.y === enemy.lastSeenPlayer.y) {
+                        enemy.lastSeenPlayer = null;
+                        enemy.awake = false;
+                    }
+                }
+            }
+            
+            // Check death
+            game.player.warmth = Math.max(0, game.player.warmth);
+            if (game.player.hp <= 0 || game.player.warmth <= 0) {
+                gameOver();
+            }
+            
+            updateVisibility();
+            updateUI();
+            render();
+        }
+
+        // ========== RENDERING ==========
+        function render() {
+            ctx.fillStyle = '#050302';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            const ts = CONFIG.TILE_SIZE;
+            
+            // Draw tiles
+            for (let y = 0; y < CONFIG.MAP_HEIGHT; y++) {
+                for (let x = 0; x < CONFIG.MAP_WIDTH; x++) {
+                    const visible = isVisible(x, y);
+                    const revealed = game.revealed[y][x];
+                    
+                    if (!revealed) continue;
+                    
+                    const tile = game.map[y][x];
+                    let color = '#111';
+                    let char = '';
+                    
+                    switch(tile) {
+                        case TILE.FLOOR:
+                            color = visible ? '#1a1512' : '#0a0806';
+                            char = '.';
+                            break;
+                        case TILE.WALL:
+                            color = visible ? '#2a2420' : '#151210';
+                            char = '#';
+                            break;
+                        case TILE.STAIRS:
+                            color = visible ? '#332244' : '#1a1122';
+                            char = '>';
+                            break;
+                        case TILE.FIRE:
+                            const fire = game.fires.find(f => f.x === x && f.y === y);
+                            const intensity = fire ? fire.intensity / 100 : 0.5;
+                            color = `rgb(${Math.floor(50 + 150 * intensity)}, ${Math.floor(20 + 50 * intensity)}, 10)`;
+                            char = '*';
+                            break;
+                        case TILE.EMBERS:
+                            color = visible ? '#1a0a05' : '#0d0502';
+                            char = '~';
+                            break;
+                    }
+                    
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x * ts, y * ts, ts, ts);
+                    
+                    if (visible && char) {
+                        ctx.fillStyle = tile === TILE.FIRE ? '#ffaa33' : 
+                                       tile === TILE.STAIRS ? '#8866cc' :
+                                       tile === TILE.EMBERS ? '#663311' : '#333';
+                        ctx.font = `${ts - 4}px monospace`;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(char, x * ts + ts/2, y * ts + ts/2);
+                    }
+                }
+            }
+            
+            // Draw items
+            for (const item of game.items) {
+                if (isVisible(item.x, item.y)) {
+                    ctx.fillStyle = item.color;
+                    ctx.font = `bold ${ts - 2}px monospace`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(item.symbol, item.x * ts + ts/2, item.y * ts + ts/2);
+                }
+            }
+            
+            // Draw enemies
+            for (const enemy of game.enemies) {
+                if (isVisible(enemy.x, enemy.y)) {
+                    ctx.fillStyle = enemy.awake ? '#ff4444' : enemy.color;
+                    ctx.font = `bold ${ts - 2}px monospace`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(enemy.symbol, enemy.x * ts + ts/2, enemy.y * ts + ts/2);
+                }
+            }
+            
+            // Draw player
+            ctx.fillStyle = game.player.torchLit ? '#ffcc44' : '#aa8866';
+            ctx.font = `bold ${ts}px monospace`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('@', game.player.x * ts + ts/2, game.player.y * ts + ts/2);
+            
+            // Torch glow effect
+            if (game.player.torchLit) {
+                const gradient = ctx.createRadialGradient(
+                    game.player.x * ts + ts/2, game.player.y * ts + ts/2, 0,
+                    game.player.x * ts + ts/2, game.player.y * ts + ts/2, CONFIG.TORCH_LIGHT_RADIUS * ts
+                );
+                gradient.addColorStop(0, 'rgba(255, 150, 50, 0.1)');
+                gradient.addColorStop(1, 'rgba(255, 100, 30, 0)');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+            
+            // Fire glow effects
+            for (const fire of game.fires) {
+                const gradient = ctx.createRadialGradient(
+                    fire.x * ts + ts/2, fire.y * ts + ts/2, 0,
+                    fire.x * ts + ts/2, fire.y * ts + ts/2, CONFIG.FIRE_LIGHT_RADIUS * ts * (fire.intensity / 100)
+                );
+                gradient.addColorStop(0, `rgba(255, 100, 30, ${0.15 * fire.intensity / 100})`);
+                gradient.addColorStop(1, 'rgba(255, 50, 10, 0)');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        // ========== UI ==========
+        function updateUI() {
+            document.getElementById('floor').textContent = game.floor;
+            document.getElementById('health').textContent = Math.round(game.player.hp);
+            document.getElementById('warmth').textContent = Math.round(game.player.warmth);
+            document.getElementById('torch').textContent = Math.round(game.player.torchFuel);
+            
+            document.querySelector('#healthBar .bar-fill').style.width = (game.player.hp / game.player.maxHp * 100) + '%';
+            document.querySelector('#warmthBar .bar-fill').style.width = (game.player.warmth / game.player.maxWarmth * 100) + '%';
+            document.querySelector('#torchBar .bar-fill').style.width = (game.player.torchFuel / game.player.maxTorchFuel * 100) + '%';
+            
+            // Color warmth bar based on danger
+            const warmthFill = document.querySelector('#warmthBar .bar-fill');
+            if (game.player.warmth < CONFIG.COLD_DAMAGE_THRESHOLD) {
+                warmthFill.style.background = 'linear-gradient(90deg, #4466aa, #6688cc)';
+            } else {
+                warmthFill.style.background = 'linear-gradient(90deg, #884400, #ff8800)';
+            }
+            
+            // Update log
+            const logEl = document.getElementById('log');
+            logEl.innerHTML = game.log.slice(-3).reverse().map(msg => `<div>${msg}</div>`).join('');
+        }
+        
+        function addLog(msg) {
+            game.log.push(msg);
+            if (game.log.length > 50) game.log.shift();
+        }
+
+        // ========== GAME OVER ==========
+        function gameOver() {
+            game.running = false;
+            const cause = game.player.warmth <= 0 ? 'froze' : 'died';
+            document.getElementById('gameOverTitle').textContent = 
+                game.player.warmth <= 0 ? 'THE COLD TAKES YOU' : 'YOU HAVE FALLEN';
+            document.getElementById('gameOverText').textContent = 
+                `You ${cause} on Floor ${game.floor}`;
+            document.getElementById('gameOver').style.display = 'flex';
+        }
+        
+        function victory() {
+            game.running = false;
+            document.getElementById('gameOverTitle').textContent = 'THE EMBER IS YOURS';
+            document.getElementById('gameOverText').textContent = 
+                'You found the Eternal Ember. The cold will never touch you again.';
+            document.getElementById('gameOver').style.display = 'flex';
+        }
+
+        // ========== INPUT ==========
+        document.addEventListener('keydown', (e) => {
+            if (!game.running) return;
+            
+            switch(e.key) {
+                case 'ArrowUp': case 'w': case 'W': movePlayer(0, -1); break;
+                case 'ArrowDown': case 's': case 'S': movePlayer(0, 1); break;
+                case 'ArrowLeft': case 'a': case 'A': movePlayer(-1, 0); break;
+                case 'ArrowRight': case 'd': case 'D': movePlayer(1, 0); break;
+                case ' ': toggleTorch(); break;
+                case 'f': case 'F': lightFire(); break;
+                case 'e': case 'E': interact(); break;
+                case '.': processTurn(); break;
+            }
+        });
+
+        // ========== START ==========
+        document.getElementById('startBtn').addEventListener('click', () => {
+            document.getElementById('startScreen').style.display = 'none';
+            game.running = true;
+            generateMap();
+            updateVisibility();
+            addLog('You descend into the frozen ruins...');
+            updateUI();
+            render();
+        });
+        
+        document.getElementById('restartBtn').addEventListener('click', () => {
+            document.getElementById('gameOver').style.display = 'none';
+            game = {
+                running: true,
+                floor: 1,
+                map: [],
+                revealed: [],
+                items: [],
+                enemies: [],
+                fires: [],
+                player: null,
+                log: [],
+                turnCount: 0,
+                won: false,
+            };
+            generateMap();
+            updateVisibility();
+            addLog('You descend into the frozen ruins...');
+            updateUI();
+            render();
+        });
+    </script>
+</body>
+</html>

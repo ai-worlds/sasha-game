@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hollow Frequency</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #02050a;
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        #game {
+            position: relative;
+        }
+        
+        #gameCanvas {
+            display: block;
+            border: 1px solid #0a1520;
+            box-shadow: 0 0 80px rgba(0, 100, 180, 0.15);
+        }
+        
+        #ui {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: #4488aa;
+            font-size: 13px;
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        #ui div {
+            margin-bottom: 6px;
+        }
+        
+        .bar {
+            width: 140px;
+            height: 10px;
+            background: rgba(10, 30, 50, 0.8);
+            border: 1px solid #224455;
+            margin-top: 3px;
+        }
+        
+        .bar-fill {
+            height: 100%;
+            transition: width 0.2s;
+        }
+        
+        #hpBar .bar-fill { background: linear-gradient(90deg, #224466, #4488aa); }
+        #energyBar .bar-fill { background: linear-gradient(90deg, #226644, #44aa66); }
+        
+        #rightUI {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            color: #4488aa;
+            font-size: 11px;
+            text-align: right;
+            z-index: 10;
+        }
+        
+        #log {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            color: #336688;
+            font-size: 12px;
+            max-width: 450px;
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        #log div {
+            margin-bottom: 3px;
+            opacity: 0.9;
+        }
+        
+        #log div:first-child { opacity: 1; color: #5599bb; }
+        #log div:nth-child(2) { opacity: 0.6; }
+        #log div:nth-child(3) { opacity: 0.3; }
+        
+        #pingIndicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 5;
+        }
+        
+        #startScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, rgba(5, 20, 40, 0.98) 0%, rgba(0, 5, 15, 1) 70%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            color: #5599bb;
+            text-align: center;
+        }
+        
+        #startScreen h1 {
+            font-size: 42px;
+            font-weight: normal;
+            letter-spacing: 8px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 30px rgba(50, 150, 200, 0.5);
+            font-family: 'Georgia', serif;
+        }
+        
+        #startScreen .subtitle {
+            font-size: 13px;
+            opacity: 0.5;
+            margin-bottom: 50px;
+            font-style: italic;
+            letter-spacing: 4px;
+        }
+        
+        #startScreen .instructions {
+            font-size: 13px;
+            line-height: 2;
+            opacity: 0.7;
+            margin-bottom: 40px;
+            max-width: 480px;
+        }
+        
+        #startBtn {
+            background: transparent;
+            border: 1px solid rgba(80, 150, 200, 0.4);
+            color: #5599bb;
+            padding: 15px 50px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            cursor: pointer;
+            letter-spacing: 4px;
+            transition: all 0.3s ease;
+        }
+        
+        #startBtn:hover {
+            background: rgba(50, 150, 200, 0.15);
+            box-shadow: 0 0 30px rgba(50, 150, 200, 0.3);
+        }
+        
+        #gameOver {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 5, 15, 0.95);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            color: #5599bb;
+            text-align: center;
+        }
+        
+        #gameOver h2 {
+            font-size: 32px;
+            margin-bottom: 20px;
+            letter-spacing: 5px;
+        }
+        
+        #gameOver p {
+            font-size: 14px;
+            opacity: 0.6;
+            margin-bottom: 30px;
+        }
+        
+        #restartBtn {
+            background: transparent;
+            border: 1px solid rgba(80, 150, 200, 0.4);
+            color: #5599bb;
+            padding: 12px 40px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            cursor: pointer;
+            letter-spacing: 3px;
+        }
+        
+        #restartBtn:hover {
+            background: rgba(50, 150, 200, 0.15);
+        }
+        
+        @keyframes sonarPulse {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0.8; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+        }
+        
+        .sonar-ring {
+            position: absolute;
+            border: 2px solid #4488aa;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: sonarPulse 1s ease-out forwards;
+        }
+    </style>
+</head>
+<body>
+    <div id="game">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        
+        <div id="ui">
+            <div>Depth <span id="depth">1</span></div>
+            <div id="hpBar">Signal <span id="hp">100</span>%
+                <div class="bar"><div class="bar-fill" style="width: 100%"></div></div>
+            </div>
+            <div id="energyBar">Energy <span id="energy">100</span>%
+                <div class="bar"><div class="bar-fill" style="width: 100%"></div></div>
+            </div>
+            <div style="margin-top: 10px; opacity: 0.7;">Pings: <span id="pings">5</span></div>
+        </div>
+        
+        <div id="rightUI">
+            WASD / Arrows - Move<br>
+            SPACE - Ping (reveals area)<br>
+            SHIFT+Move - Sprint (loud)<br>
+            E - Interact<br>
+            . - Wait (listen)
+        </div>
+        
+        <div id="log"></div>
+        <div id="pingIndicator"></div>
+    </div>
+    
+    <div id="startScreen">
+        <h1>HOLLOW FREQUENCY</h1>
+        <div class="subtitle">what echoes in the deep</div>
+        <div class="instructions">
+            The submarine is dark. Power is failing.<br>
+            You cannot see. You can only listen.<br><br>
+            PING to send out a sonar pulse.<br>
+            The echoes reveal the world—but they also reveal you.<br><br>
+            Something lives in these depths.<br>
+            It hunts by sound.<br><br>
+            Reach the surface. Stay quiet. Stay alive.
+        </div>
+        <button id="startBtn">DESCEND</button>
+    </div>
+    
+    <div id="gameOver">
+        <h2 id="gameOverTitle">SIGNAL LOST</h2>
+        <p id="gameOverText">Something found you at Depth 1</p>
+        <button id="restartBtn">TRY AGAIN</button>
+    </div>
+
+    <script>
+        // ========== CONFIGURATION ==========
+        const CONFIG = {
+            TILE_SIZE: 20,
+            MAP_WIDTH: 40,
+            MAP_HEIGHT: 30,
+            PING_RADIUS: 12,
+            PING_COST: 1,
+            PING_FADE_TIME: 40,
+            HEARING_RADIUS: 3,
+            SPRINT_NOISE: 8,
+            WALK_NOISE: 2,
+            MAX_DEPTH: 8,
+            ENERGY_REGEN: 0.5,
+        };
+
+        // ========== TILE TYPES ==========
+        const TILE = {
+            VOID: 0,
+            FLOOR: 1,
+            WALL: 2,
+            WATER: 3,
+            STAIRS: 4,
+            VENT: 5,
+        };
+
+        // ========== CANVAS SETUP ==========
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = CONFIG.MAP_WIDTH * CONFIG.TILE_SIZE;
+        canvas.height = CONFIG.MAP_HEIGHT * CONFIG.TILE_SIZE;
+
+        // ========== GAME STATE ==========
+        let game = {
+            running: false,
+            depth: 1,
+            map: [],
+            visibility: [], // 0 = never seen, 0-1 = fading, 1 = visible
+            items: [],
+            enemies: [],
+            player: null,
+            log: [],
+            turnCount: 0,
+            won: false,
+            lastPingCenter: null,
+            pingTimer: 0,
+            noiseEvents: [],
+        };
+
+        // ========== PLAYER ==========
+        class Player {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.hp = 100;
+                this.maxHp = 100;
+                this.energy = 100;
+                this.maxEnergy = 100;
+                this.pings = 5;
+                this.maxPings = 5;
+            }
+        }
+
+        // ========== ENEMY ==========
+        class Enemy {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.type = type;
+                this.alertLevel = 0; // 0-100, attacks at 100
+                this.lastHeard = null;
+                this.patrolTarget = null;
+                
+                switch(type) {
+                    case 'lurker':
+                        this.hp = 30;
+                        this.damage = 20;
+                        this.symbol = 'L';
+                        this.color = '#446688';
+                        this.name = 'Lurker';
+                        this.hearing = 6;
+                        this.speed = 1;
+                        break;
+                    case 'hunter':
+                        this.hp = 50;
+                        this.damage = 30;
+                        this.symbol = 'H';
+                        this.color = '#668888';
+                        this.name = 'Hunter';
+                        this.hearing = 10;
+                        this.speed = 2;
+                        break;
+                    case 'leviathan':
+                        this.hp = 100;
+                        this.damage = 50;
+                        this.symbol = 'Ω';
+                        this.color = '#88aacc';
+                        this.name = 'Leviathan';
+                        this.hearing = 15;
+                        this.speed = 1;
+                        break;
+                }
+            }
+        }
+
+        // ========== ITEMS ==========
+        class Item {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.type = type;
+                
+                switch(type) {
+                    case 'battery':
+                        this.symbol = '■';
+                        this.color = '#44aa66';
+                        this.name = 'Battery';
+                        break;
+                    case 'ping_charge':
+                        this.symbol = '◎';
+                        this.color = '#4488cc';
+                        this.name = 'Ping Charge';
+                        break;
+                    case 'medkit':
+                        this.symbol = '+';
+                        this.color = '#aa4444';
+                        this.name = 'Repair Kit';
+                        break;
+                    case 'beacon':
+                        this.symbol = '☆';
+                        this.color = '#ffdd44';
+                        this.name = 'Rescue Beacon';
+                        break;
+                }
+            }
+        }
+
+        // ========== MAP GENERATION ==========
+        function generateMap() {
+            game.map = [];
+            game.visibility = [];
+            for (let y = 0; y < CONFIG.MAP_HEIGHT; y++) {
+                game.map[y] = [];
+                game.visibility[y] = [];
+                for (let x = 0; x < CONFIG.MAP_WIDTH; x++) {
+                    game.map[y][x] = TILE.WALL;
+                    game.visibility[y][x] = 0;
+                }
+            }
+            
+            // Generate submarine/station layout with corridors
+            const rooms = [];
+            const roomCount = 5 + Math.floor(Math.random() * 3);
+            
+            for (let i = 0; i < roomCount; i++) {
+                const w = 4 + Math.floor(Math.random() * 6);
+                const h = 3 + Math.floor(Math.random() * 4);
+                const x = 2 + Math.floor(Math.random() * (CONFIG.MAP_WIDTH - w - 4));
+                const y = 2 + Math.floor(Math.random() * (CONFIG.MAP_HEIGHT - h - 4));
+                
+                let overlap = false;
+                for (const room of rooms) {
+                    if (x < room.x + room.w + 2 && x + w + 2 > room.x &&
+                        y < room.y + room.h + 2 && y + h + 2 > room.y) {
+                        overlap = true;
+                        break;
+                    }
+                }
+                
+                if (!overlap) {
+                    rooms.push({ x, y, w, h });
+                    for (let ry = y; ry < y + h; ry++) {
+                        for (let rx = x; rx < x + w; rx++) {
+                            game.map[ry][rx] = TILE.FLOOR;
+                        }
+                    }
+                }
+            }
+            
+            // Connect with corridors
+            for (let i = 1; i < rooms.length; i++) {
+                const r1 = rooms[i - 1];
+                const r2 = rooms[i];
+                let x1 = Math.floor(r1.x + r1.w / 2);
+                let y1 = Math.floor(r1.y + r1.h / 2);
+                let x2 = Math.floor(r2.x + r2.w / 2);
+                let y2 = Math.floor(r2.y + r2.h / 2);
+                
+                // Corridor width of 1-2
+                const corridorWidth = Math.random() < 0.7 ? 1 : 2;
+                
+                while (x1 !== x2) {
+                    for (let w = 0; w < corridorWidth; w++) {
+                        if (y1 + w < CONFIG.MAP_HEIGHT - 1) {
+                            game.map[y1 + w][x1] = TILE.FLOOR;
+                        }
+                    }
+                    x1 += x1 < x2 ? 1 : -1;
+                }
+                while (y1 !== y2) {
+                    for (let w = 0; w < corridorWidth; w++) {
+                        if (x1 + w < CONFIG.MAP_WIDTH - 1) {
+                            game.map[y1][x1 + w] = TILE.FLOOR;
+                        }
+                    }
+                    y1 += y1 < y2 ? 1 : -1;
+                }
+            }
+            
+            // Add some water hazards
+            for (let i = 0; i < 3 + game.depth; i++) {
+                const wx = 2 + Math.floor(Math.random() * (CONFIG.MAP_WIDTH - 4));
+                const wy = 2 + Math.floor(Math.random() * (CONFIG.MAP_HEIGHT - 4));
+                if (game.map[wy][wx] === TILE.FLOOR) {
+                    game.map[wy][wx] = TILE.WATER;
+                    // Spread water a bit
+                    for (let dy = -1; dy <= 1; dy++) {
+                        for (let dx = -1; dx <= 1; dx++) {
+                            if (Math.random() < 0.4 && 
+                                game.map[wy + dy] && 
+                                game.map[wy + dy][wx + dx] === TILE.FLOOR) {
+                                game.map[wy + dy][wx + dx] = TILE.WATER;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Player start
+            const startRoom = rooms[0];
+            game.player = new Player(
+                startRoom.x + Math.floor(startRoom.w / 2),
+                startRoom.y + Math.floor(startRoom.h / 2)
+            );
+            
+            // Stairs/beacon
+            const endRoom = rooms[rooms.length - 1];
+            const stairX = endRoom.x + Math.floor(endRoom.w / 2);
+            const stairY = endRoom.y + Math.floor(endRoom.h / 2);
+            
+            if (game.depth === CONFIG.MAX_DEPTH) {
+                game.items.push(new Item(stairX, stairY, 'beacon'));
+            } else {
+                game.map[stairY][stairX] = TILE.STAIRS;
+            }
+            
+            // Items
+            game.items = game.items.filter(i => i.type === 'beacon');
+            for (const room of rooms.slice(1)) {
+                if (Math.random() < 0.6) {
+                    const ix = room.x + Math.floor(Math.random() * room.w);
+                    const iy = room.y + Math.floor(Math.random() * room.h);
+                    if (game.map[iy][ix] === TILE.FLOOR) {
+                        const types = ['battery', 'ping_charge', 'ping_charge', 'medkit'];
+                        game.items.push(new Item(ix, iy, types[Math.floor(Math.random() * types.length)]));
+                    }
+                }
+            }
+            
+            // Enemies
+            game.enemies = [];
+            const enemyCount = 2 + Math.floor(game.depth * 1.5);
+            for (let i = 0; i < enemyCount; i++) {
+                const room = rooms[1 + Math.floor(Math.random() * (rooms.length - 1))];
+                const ex = room.x + Math.floor(Math.random() * room.w);
+                const ey = room.y + Math.floor(Math.random() * room.h);
+                
+                let type = 'lurker';
+                if (game.depth >= 6 && Math.random() < 0.2) type = 'leviathan';
+                else if (game.depth >= 3 && Math.random() < 0.4) type = 'hunter';
+                
+                game.enemies.push(new Enemy(ex, ey, type));
+            }
+            
+            // Vents (noise points)
+            for (const room of rooms) {
+                if (Math.random() < 0.3) {
+                    const vx = room.x + Math.floor(Math.random() * room.w);
+                    const vy = room.y + Math.floor(Math.random() * room.h);
+                    if (game.map[vy][vx] === TILE.FLOOR) {
+                        game.map[vy][vx] = TILE.VENT;
+                    }
+                }
+            }
+        }
+
+        // ========== VISIBILITY ==========
+        function ping() {
+            if (game.player.pings <= 0) {
+                addLog('No ping charges remaining.');
+                return false;
+            }
+            
+            game.player.pings--;
+            game.lastPingCenter = { x: game.player.x, y: game.player.y };
+            game.pingTimer = CONFIG.PING_FADE_TIME;
+            
+            // Reveal area
+            const px = game.player.x;
+            const py = game.player.y;
+            
+            for (let dy = -CONFIG.PING_RADIUS; dy <= CONFIG.PING_RADIUS; dy++) {
+                for (let dx = -CONFIG.PING_RADIUS; dx <= CONFIG.PING_RADIUS; dx++) {
+                    const x = px + dx;
+                    const y = py + dy;
+                    if (x < 0 || x >= CONFIG.MAP_WIDTH || y < 0 || y >= CONFIG.MAP_HEIGHT) continue;
+                    
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist <= CONFIG.PING_RADIUS && hasLineOfSight(px, py, x, y)) {
+                        game.visibility[y][x] = 1;
+                    }
+                }
+            }
+            
+            // Create noise
+            createNoise(px, py, CONFIG.PING_RADIUS + 5);
+            addLog('PING— echoes ripple through the dark.');
+            
+            // Visual effect
+            showPingEffect();
+            
+            return true;
+        }
+        
+        function showPingEffect() {
+            const indicator = document.getElementById('pingIndicator');
+            const ring = document.createElement('div');
+            ring.className = 'sonar-ring';
+            ring.style.width = (CONFIG.PING_RADIUS * CONFIG.TILE_SIZE * 2) + 'px';
+            ring.style.height = (CONFIG.PING_RADIUS * CONFIG.TILE_SIZE * 2) + 'px';
+            ring.style.left = (game.player.x * CONFIG.TILE_SIZE + CONFIG.TILE_SIZE / 2) + 'px';
+            ring.style.top = (game.player.y * CONFIG.TILE_SIZE + CONFIG.TILE_SIZE / 2) + 'px';
+            indicator.appendChild(ring);
+            
+            setTimeout(() => ring.remove(), 1000);
+        }
+        
+        function hasLineOfSight(x1, y1, x2, y2) {
+            const dx = Math.abs(x2 - x1);
+            const dy = Math.abs(y2 - y1);
+            const sx = x1 < x2 ? 1 : -1;
+            const sy = y1 < y2 ? 1 : -1;
+            let err = dx - dy;
+            let x = x1, y = y1;
+            
+            while (true) {
+                if (x === x2 && y === y2) return true;
+                if (game.map[y][x] === TILE.WALL) return false;
+                
+                const e2 = err * 2;
+                if (e2 > -dy) { err -= dy; x += sx; }
+                if (e2 < dx) { err += dx; y += sy; }
+            }
+        }
+        
+        function fadeVisibility() {
+            const fadeRate = 1 / CONFIG.PING_FADE_TIME;
+            for (let y = 0; y < CONFIG.MAP_HEIGHT; y++) {
+                for (let x = 0; x < CONFIG.MAP_WIDTH; x++) {
+                    if (game.visibility[y][x] > 0) {
+                        game.visibility[y][x] = Math.max(0, game.visibility[y][x] - fadeRate);
+                    }
+                }
+            }
+            
+            // Always see immediate surroundings dimly (hearing range)
+            const px = game.player.x;
+            const py = game.player.y;
+            for (let dy = -CONFIG.HEARING_RADIUS; dy <= CONFIG.HEARING_RADIUS; dy++) {
+                for (let dx = -CONFIG.HEARING_RADIUS; dx <= CONFIG.HEARING_RADIUS; dx++) {
+                    const x = px + dx;
+                    const y = py + dy;
+                    if (x < 0 || x >= CONFIG.MAP_WIDTH || y < 0 || y >= CONFIG.MAP_HEIGHT) continue;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist <= CONFIG.HEARING_RADIUS) {
+                        game.visibility[y][x] = Math.max(game.visibility[y][x], 0.15);
+                    }
+                }
+            }
+        }
+
+        // ========== NOISE SYSTEM ==========
+        function createNoise(x, y, radius) {
+            game.noiseEvents.push({ x, y, radius, age: 0 });
+            
+            // Alert enemies
+            for (const enemy of game.enemies) {
+                const dist = Math.sqrt((enemy.x - x) ** 2 + (enemy.y - y) ** 2);
+                if (dist <= enemy.hearing) {
+                    const alertIncrease = Math.floor((1 - dist / enemy.hearing) * 50);
+                    enemy.alertLevel = Math.min(100, enemy.alertLevel + alertIncrease);
+                    enemy.lastHeard = { x, y };
+                    
+                    if (enemy.alertLevel >= 80 && alertIncrease > 10) {
+                        addLog(`Something stirs in the darkness...`);
+                    }
+                }
+            }
+        }
+
+        // ========== PLAYER ACTIONS ==========
+        function movePlayer(dx, dy, sprint = false) {
+            const newX = game.player.x + dx;
+            const newY = game.player.y + dy;
+            
+            if (newX < 0 || newX >= CONFIG.MAP_WIDTH || newY < 0 || newY >= CONFIG.MAP_HEIGHT) return;
+            if (game.map[newY][newX] === TILE.WALL) return;
+            
+            // Check for enemy
+            const enemy = game.enemies.find(e => e.x === newX && e.y === newY);
+            if (enemy) {
+                attackEnemy(enemy);
+                processTurn();
+                return;
+            }
+            
+            // Energy cost for sprinting
+            if (sprint) {
+                if (game.player.energy < 10) {
+                    addLog('Not enough energy to sprint.');
+                    return;
+                }
+                game.player.energy -= 10;
+            }
+            
+            game.player.x = newX;
+            game.player.y = newY;
+            
+            // Noise from movement
+            const noiseLevel = sprint ? CONFIG.SPRINT_NOISE : CONFIG.WALK_NOISE;
+            createNoise(newX, newY, noiseLevel);
+            
+            // Water makes extra noise
+            if (game.map[newY][newX] === TILE.WATER) {
+                createNoise(newX, newY, noiseLevel + 3);
+                if (Math.random() < 0.3) {
+                    addLog('Water splashes underfoot.');
+                }
+            }
+            
+            // Stairs
+            if (game.map[newY][newX] === TILE.STAIRS) {
+                ascend();
+                return;
+            }
+            
+            processTurn();
+        }
+        
+        function attackEnemy(enemy) {
+            const damage = 15 + Math.floor(Math.random() * 10);
+            enemy.hp -= damage;
+            createNoise(enemy.x, enemy.y, 6); // Combat is loud
+            addLog(`You strike the ${enemy.name}!`);
+            
+            if (enemy.hp <= 0) {
+                game.enemies = game.enemies.filter(e => e !== enemy);
+                addLog(`The ${enemy.name} dissolves into shadow.`);
+            }
+        }
+        
+        function interact() {
+            const item = game.items.find(i => i.x === game.player.x && i.y === game.player.y);
+            if (item) {
+                game.items = game.items.filter(i => i !== item);
+                
+                switch(item.type) {
+                    case 'battery':
+                        game.player.energy = Math.min(game.player.maxEnergy, game.player.energy + 40);
+                        addLog('Battery installed. Energy restored.');
+                        break;
+                    case 'ping_charge':
+                        game.player.pings = Math.min(game.player.maxPings, game.player.pings + 2);
+                        addLog('Ping charges acquired.');
+                        break;
+                    case 'medkit':
+                        game.player.hp = Math.min(game.player.maxHp, game.player.hp + 35);
+                        addLog('Systems repaired.');
+                        break;
+                    case 'beacon':
+                        game.won = true;
+                        victory();
+                        return;
+                }
+            } else {
+                addLog('Nothing to interact with.');
+            }
+            processTurn();
+        }
+        
+        function wait() {
+            addLog('You listen carefully...');
+            // Reveal nearby enemies briefly
+            for (const enemy of game.enemies) {
+                const dist = Math.sqrt((enemy.x - game.player.x) ** 2 + (enemy.y - game.player.y) ** 2);
+                if (dist <= 6) {
+                    game.visibility[enemy.y][enemy.x] = Math.max(game.visibility[enemy.y][enemy.x], 0.5);
+                    addLog(`You hear something at bearing ${getDirection(game.player, enemy)}.`);
+                }
+            }
+            processTurn();
+        }
+        
+        function getDirection(from, to) {
+            const dx = to.x - from.x;
+            const dy = to.y - from.y;
+            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+            
+            if (angle > -22.5 && angle <= 22.5) return 'EAST';
+            if (angle > 22.5 && angle <= 67.5) return 'SE';
+            if (angle > 67.5 && angle <= 112.5) return 'SOUTH';
+            if (angle > 112.5 && angle <= 157.5) return 'SW';
+            if (angle > 157.5 || angle <= -157.5) return 'WEST';
+            if (angle > -157.5 && angle <= -112.5) return 'NW';
+            if (angle > -112.5 && angle <= -67.5) return 'NORTH';
+            return 'NE';
+        }
+        
+        function ascend() {
+            game.depth++;
+            addLog(`Ascending to Depth ${game.depth}...`);
+            generateMap();
+        }
+
+        // ========== TURN PROCESSING ==========
+        function processTurn() {
+            game.turnCount++;
+            
+            // Energy regen
+            game.player.energy = Math.min(game.player.maxEnergy, game.player.energy + CONFIG.ENERGY_REGEN);
+            
+            // Fade visibility
+            fadeVisibility();
+            
+            // Enemy AI
+            for (const enemy of game.enemies) {
+                // Decay alert if no recent noise
+                enemy.alertLevel = Math.max(0, enemy.alertLevel - 2);
+                
+                // If fully alert, hunt
+                if (enemy.alertLevel >= 100 && enemy.lastHeard) {
+                    // Move toward last heard location (fast if hunter)
+                    for (let step = 0; step < enemy.speed; step++) {
+                        const dx = Math.sign(enemy.lastHeard.x - enemy.x);
+                        const dy = Math.sign(enemy.lastHeard.y - enemy.y);
+                        
+                        // Adjacent to player? Attack!
+                        if (Math.abs(enemy.x - game.player.x) <= 1 && 
+                            Math.abs(enemy.y - game.player.y) <= 1) {
+                            game.player.hp -= enemy.damage;
+                            addLog(`The ${enemy.name} strikes from the darkness! -${enemy.damage} HP`);
+                            enemy.alertLevel = 100; // Stay alert
+                            break;
+                        }
+                        
+                        // Move
+                        const newX = enemy.x + dx;
+                        const newY = enemy.y + dy;
+                        if (game.map[newY] && 
+                            game.map[newY][newX] !== TILE.WALL &&
+                            !game.enemies.some(e => e !== enemy && e.x === newX && e.y === newY)) {
+                            enemy.x = newX;
+                            enemy.y = newY;
+                        }
+                        
+                        // Reached target?
+                        if (enemy.x === enemy.lastHeard.x && enemy.y === enemy.lastHeard.y) {
+                            enemy.lastHeard = null;
+                            enemy.alertLevel = 50; // Searching
+                        }
+                    }
+                } else if (enemy.alertLevel >= 50) {
+                    // Patrol/search behavior
+                    if (!enemy.patrolTarget || 
+                        (enemy.x === enemy.patrolTarget.x && enemy.y === enemy.patrolTarget.y)) {
+                        // Pick new patrol point
+                        enemy.patrolTarget = {
+                            x: enemy.x + Math.floor(Math.random() * 11) - 5,
+                            y: enemy.y + Math.floor(Math.random() * 11) - 5,
+                        };
+                    }
+                    
+                    const dx = Math.sign(enemy.patrolTarget.x - enemy.x);
+                    const dy = Math.sign(enemy.patrolTarget.y - enemy.y);
+                    const newX = enemy.x + dx;
+                    const newY = enemy.y + dy;
+                    
+                    if (game.map[newY] && game.map[newY][newX] !== TILE.WALL) {
+                        enemy.x = newX;
+                        enemy.y = newY;
+                    }
+                }
+            }
+            
+            // Vent noises (ambient)
+            if (game.turnCount % 10 === 0) {
+                for (let y = 0; y < CONFIG.MAP_HEIGHT; y++) {
+                    for (let x = 0; x < CONFIG.MAP_WIDTH; x++) {
+                        if (game.map[y][x] === TILE.VENT && Math.random() < 0.1) {
+                            createNoise(x, y, 3);
+                        }
+                    }
+                }
+            }
+            
+            // Clean up old noise events
+            game.noiseEvents = game.noiseEvents.filter(n => {
+                n.age++;
+                return n.age < 10;
+            });
+            
+            // Check death
+            if (game.player.hp <= 0) {
+                gameOver();
+            }
+            
+            updateUI();
+            render();
+        }
+
+        // ========== RENDERING ==========
+        function render() {
+            ctx.fillStyle = '#02050a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            const ts = CONFIG.TILE_SIZE;
+            
+            // Draw tiles
+            for (let y = 0; y < CONFIG.MAP_HEIGHT; y++) {
+                for (let x = 0; x < CONFIG.MAP_WIDTH; x++) {
+                    const vis = game.visibility[y][x];
+                    if (vis <= 0) continue;
+                    
+                    const tile = game.map[y][x];
+                    let color, char;
+                    
+                    switch(tile) {
+                        case TILE.FLOOR:
+                            color = `rgba(20, 40, 60, ${vis * 0.6})`;
+                            char = '.';
+                            break;
+                        case TILE.WALL:
+                            color = `rgba(30, 50, 70, ${vis * 0.8})`;
+                            char = '█';
+                            break;
+                        case TILE.WATER:
+                            color = `rgba(20, 50, 80, ${vis * 0.7})`;
+                            char = '≈';
+                            break;
+                        case TILE.STAIRS:
+                            color = `rgba(40, 60, 80, ${vis * 0.8})`;
+                            char = '△';
+                            break;
+                        case TILE.VENT:
+                            color = `rgba(25, 45, 65, ${vis * 0.6})`;
+                            char = '○';
+                            break;
+                    }
+                    
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x * ts, y * ts, ts, ts);
+                    
+                    ctx.fillStyle = `rgba(80, 140, 180, ${vis * 0.5})`;
+                    ctx.font = `${ts - 4}px monospace`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(char, x * ts + ts/2, y * ts + ts/2);
+                }
+            }
+            
+            // Draw items
+            for (const item of game.items) {
+                const vis = game.visibility[item.y][item.x];
+                if (vis > 0.1) {
+                    ctx.fillStyle = item.color;
+                    ctx.globalAlpha = vis;
+                    ctx.font = `bold ${ts - 2}px monospace`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(item.symbol, item.x * ts + ts/2, item.y * ts + ts/2);
+                    ctx.globalAlpha = 1;
+                }
+            }
+            
+            // Draw enemies
+            for (const enemy of game.enemies) {
+                const vis = game.visibility[enemy.y][enemy.x];
+                if (vis > 0.1) {
+                    // Alert state coloring
+                    let color = enemy.color;
+                    if (enemy.alertLevel >= 100) {
+                        color = '#ff4444';
+                    } else if (enemy.alertLevel >= 50) {
+                        color = '#ffaa44';
+                    }
+                    
+                    ctx.fillStyle = color;
+                    ctx.globalAlpha = vis;
+                    ctx.font = `bold ${ts}px monospace`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(enemy.symbol, enemy.x * ts + ts/2, enemy.y * ts + ts/2);
+                    ctx.globalAlpha = 1;
+                }
+            }
+            
+            // Draw noise ripples
+            for (const noise of game.noiseEvents) {
+                const alpha = Math.max(0, 0.3 - noise.age * 0.03);
+                ctx.strokeStyle = `rgba(100, 180, 220, ${alpha})`;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(
+                    noise.x * ts + ts/2,
+                    noise.y * ts + ts/2,
+                    noise.radius * ts * (noise.age / 10 + 0.2),
+                    0, Math.PI * 2
+                );
+                ctx.stroke();
+            }
+            
+            // Draw player
+            ctx.fillStyle = '#88ccff';
+            ctx.font = `bold ${ts}px monospace`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('@', game.player.x * ts + ts/2, game.player.y * ts + ts/2);
+            
+            // Player glow
+            const gradient = ctx.createRadialGradient(
+                game.player.x * ts + ts/2, game.player.y * ts + ts/2, 0,
+                game.player.x * ts + ts/2, game.player.y * ts + ts/2, CONFIG.HEARING_RADIUS * ts
+            );
+            gradient.addColorStop(0, 'rgba(100, 180, 220, 0.08)');
+            gradient.addColorStop(1, 'rgba(100, 180, 220, 0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // ========== UI ==========
+        function updateUI() {
+            document.getElementById('depth').textContent = game.depth;
+            document.getElementById('hp').textContent = Math.round(game.player.hp);
+            document.getElementById('energy').textContent = Math.round(game.player.energy);
+            document.getElementById('pings').textContent = game.player.pings;
+            
+            document.querySelector('#hpBar .bar-fill').style.width = (game.player.hp / game.player.maxHp * 100) + '%';
+            document.querySelector('#energyBar .bar-fill').style.width = (game.player.energy / game.player.maxEnergy * 100) + '%';
+            
+            const logEl = document.getElementById('log');
+            logEl.innerHTML = game.log.slice(-3).reverse().map(msg => `<div>${msg}</div>`).join('');
+        }
+        
+        function addLog(msg) {
+            game.log.push(msg);
+            if (game.log.length > 50) game.log.shift();
+        }
+
+        // ========== GAME OVER ==========
+        function gameOver() {
+            game.running = false;
+            document.getElementById('gameOverTitle').textContent = 'SIGNAL LOST';
+            document.getElementById('gameOverText').textContent = 
+                `Something found you at Depth ${game.depth}`;
+            document.getElementById('gameOver').style.display = 'flex';
+        }
+        
+        function victory() {
+            game.running = false;
+            document.getElementById('gameOverTitle').textContent = 'BEACON ACTIVATED';
+            document.getElementById('gameOverText').textContent = 
+                'Rescue is coming. You survived the hollow depths.';
+            document.getElementById('gameOver').style.display = 'flex';
+        }
+
+        // ========== INPUT ==========
+        let shiftHeld = false;
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Shift') shiftHeld = true;
+            if (!game.running) return;
+            
+            switch(e.key) {
+                case 'ArrowUp': case 'w': case 'W': movePlayer(0, -1, shiftHeld); break;
+                case 'ArrowDown': case 's': case 'S': movePlayer(0, 1, shiftHeld); break;
+                case 'ArrowLeft': case 'a': case 'A': movePlayer(-1, 0, shiftHeld); break;
+                case 'ArrowRight': case 'd': case 'D': movePlayer(1, 0, shiftHeld); break;
+                case ' ': if (ping()) processTurn(); break;
+                case 'e': case 'E': interact(); break;
+                case '.': wait(); break;
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'Shift') shiftHeld = false;
+        });
+
+        // ========== START ==========
+        document.getElementById('startBtn').addEventListener('click', () => {
+            document.getElementById('startScreen').style.display = 'none';
+            game.running = true;
+            generateMap();
+            addLog('The darkness is absolute. SPACE to ping.');
+            updateUI();
+            render();
+        });
+        
+        document.getElementById('restartBtn').addEventListener('click', () => {
+            document.getElementById('gameOver').style.display = 'none';
+            game = {
+                running: true,
+                depth: 1,
+                map: [],
+                visibility: [],
+                items: [],
+                enemies: [],
+                player: null,
+                log: [],
+                turnCount: 0,
+                won: false,
+                lastPingCenter: null,
+                pingTimer: 0,
+                noiseEvents: [],
+            };
+            generateMap();
+            addLog('The darkness is absolute. SPACE to ping.');
+            updateUI();
+            render();
+        });
+    </script>
+</body>
+</html>
