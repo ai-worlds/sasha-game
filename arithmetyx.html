@@ -2821,6 +2821,7 @@ let screenShake = 0;
 
 // Old drawCharacter wrapper — calls the new shared function on the main canvas ctx
 function drawCharacter(cx, cy, zone) {
+  if (!CFG || !CFG.character) return;
   drawCharacterOnCtx(ctx, cx, cy, zone, playerBob);
 }
 
