@@ -1297,7 +1297,7 @@ function updateKidCreateButton() {
 
 // ============ VIVIDNESS ============
 function applyVividness(hexColor, vividnessPercent) {
-  if (vividnessPercent === 100) return hexColor;
+  if (vividnessPercent === 50) return hexColor; // 50 on slider = vf 1.0 = no change
   const hex = hexColor.replace('#','');
   const r = parseInt(hex.substring(0,2),16)/255;
   const g = parseInt(hex.substring(2,4),16)/255;
@@ -2194,19 +2194,20 @@ function handleAnswer(val, btn) {
 
     let shielded = false;
     if (S.shields > 0) { S.shields--; shielded = true; AudioEngine.playShieldBreak(); }
-    else { S.karma = Math.max(0, S.karma - 1); }
-
-    const floor = S.floor || 0;
-    const zoneBefore = getZone(S.height).name;
-    const heightBefore = S.height;
-    S.height = Math.max(floor, 0);
-    const zoneAfter = getZone(S.height).name;
+    else {
+      S.karma = Math.max(0, S.karma - 1);
+      const floor = S.floor || 0;
+      const zoneBefore = getZone(S.height).name;
+      const heightBefore = S.height;
+      S.height = Math.max(floor, 0);
+      const zoneAfter = getZone(S.height).name;
+      if (zoneBefore !== zoneAfter) AudioEngine.playVoice('zone_retreat', 5000);
+      if (heightBefore - S.height > 5) AudioEngine.playFall();
+    }
 
     AudioEngine.playWrong();
     AudioEngine.playRandomVoice('wrong', 8, 0.50, 3000);
-    if (zoneBefore !== zoneAfter) AudioEngine.playVoice('zone_retreat', 5000);
-    if (heightBefore - S.height > 5) AudioEngine.playFall();
-    screenShake = Math.min(25, 5 + S.height * 0.02);
+    screenShake = Math.min(25, shielded ? 3 : 5 + S.height * 0.02);
 
     showFeedback(false, shielded);
     saveSlot();
