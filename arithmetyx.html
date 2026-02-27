@@ -1248,6 +1248,7 @@ function applyVividness(hexColor, vividnessPercent) {
 }
 
 function updateVividnessCSS() {
+  if (!CFG || !CFG.vividness) return;
   const root = document.documentElement.style;
   const iv = CFG.vividness.info;
   const fv = CFG.vividness.foreground;
