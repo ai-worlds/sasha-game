@@ -3177,7 +3177,13 @@ document.getElementById('minrate-input').addEventListener('blur', (e) => {
   if (!CFG) return;
   const newRate = Math.max(0.50, Math.min(50, parseFloat(e.target.value) || 0.50));
   e.target.value = newRate.toFixed(2);
+  const oldRate = CFG.minRate || 10.00;
   CFG.minRate = newRate;
+  if (oldRate !== newRate) {
+    if (!CFG.multiplierLog) CFG.multiplierLog = [];
+    CFG.multiplierLog.push({ date: new Date().toISOString(), field: 'minRate', from: oldRate.toFixed(2), to: newRate.toFixed(2) });
+    if (CFG.multiplierLog.length > 50) CFG.multiplierLog = CFG.multiplierLog.slice(-50);
+  }
   saveKid();
 });
 
@@ -3185,7 +3191,13 @@ document.getElementById('maxrate-input').addEventListener('blur', (e) => {
   if (!CFG) return;
   const newRate = Math.max(1, Math.min(500, parseFloat(e.target.value) || 100.00));
   e.target.value = newRate.toFixed(2);
+  const oldRate = CFG.maxRate || 40.00;
   CFG.maxRate = newRate;
+  if (oldRate !== newRate) {
+    if (!CFG.multiplierLog) CFG.multiplierLog = [];
+    CFG.multiplierLog.push({ date: new Date().toISOString(), field: 'maxRate', from: oldRate.toFixed(2), to: newRate.toFixed(2) });
+    if (CFG.multiplierLog.length > 50) CFG.multiplierLog = CFG.multiplierLog.slice(-50);
+  }
   saveKid();
 });
 
