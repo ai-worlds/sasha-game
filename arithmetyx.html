@@ -2144,11 +2144,16 @@ function handleAnswer(val, btn) {
       if (zoneBefore !== zoneAfter) AudioEngine.playVoice('zone_advance');
       
       // Start jump animation for height increase
+      const oldPlat = getPlatform(oldHeight);
+      const newPlat = getPlatform(S.height);
+      const W_ = document.getElementById('game-canvas').width;
       jumpAnim = {
         active: true,
         startY: oldHeight,
         endY: S.height,
-        peakY: oldHeight + 1.5, // Peak above new position for nice arc
+        peakY: S.height + 1.5,
+        startX: oldPlat.x * W_ + oldPlat.width * W_ * 0.5,
+        endX: newPlat.x * W_ + newPlat.width * W_ * 0.5,
         startTime: performance.now(),
         duration: 450
       };
@@ -3081,19 +3086,15 @@ function render(timestamp) {
     const progress = Math.min(1, elapsed / jumpAnim.duration);
     
     if (progress >= 1) {
-      // Animation complete
       jumpAnim.active = false;
       playerY = jumpAnim.endY;
+      playerX = jumpAnim.endX;
     } else {
-      // Compute parabolic arc position
-      // Use quadratic bezier curve: start -> peak -> end
       const t = progress;
-      const startY = jumpAnim.startY;
-      const peakY = jumpAnim.peakY;
-      const endY = jumpAnim.endY;
-      
-      // Parabolic interpolation: y = (1-t)²*start + 2*(1-t)*t*peak + t²*end
-      playerY = Math.pow(1-t, 2) * startY + 2 * (1-t) * t * peakY + t * t * endY;
+      // Parabolic arc for Y
+      playerY = Math.pow(1-t, 2) * jumpAnim.startY + 2 * (1-t) * t * jumpAnim.peakY + t * t * jumpAnim.endY;
+      // Linear interpolation for X (simultaneous with Y arc)
+      playerX = jumpAnim.startX + (jumpAnim.endX - jumpAnim.startX) * t;
     }
   } else {
     // Normal smooth movement when not jumping
@@ -3196,7 +3197,9 @@ function render(timestamp) {
   const currentPlat = getPlatform(Math.floor(playerY));
   const charScreenY = H - (playerY * platH - cameraY);
   targetPlayerX = currentPlat.x * W + currentPlat.width * W * 0.5;
-  playerX += (targetPlayerX - playerX) * Math.min(1, dt * 8);
+  if (!jumpAnim.active) {
+    playerX += (targetPlayerX - playerX) * Math.min(1, dt * 8);
+  }
   const charX = playerX;
   drawCharacter(charX, charScreenY - 10, zone);
 
