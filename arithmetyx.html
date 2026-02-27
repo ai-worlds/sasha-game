@@ -720,7 +720,7 @@ const DEFAULT_SLOT = {
   idleTimeMs: 0,
   deathSpiralMax: 0,
   deathSpiralCurrent: 0,
-  deathSpiralLastTick: 0
+  wrongStreak: 0
 };
 
 const TARGET_HEIGHT = 600;
@@ -2014,11 +2014,15 @@ function renderKarmaPopup() {
   html += `<div style="margin:4px 0;color:var(--fg-dim);font-size:15px;">• −1 karma on wrong answer (when no shields)</div>`;
   html += `<div style="margin:4px 0;color:var(--fg-dim);font-size:15px;">• Karma sets your safety net: floor = karma × 5</div>`;
   html += `<div style="margin:4px 0;color:var(--fg-dim);font-size:15px;">• You can never fall below your karma floor</div>`;
+  const wrongStreak = S.wrongStreak || 0;
   html += `<div style="margin:8px 0 4px;color:var(--cyan);font-size:14px;font-family:var(--font-display)">DEATH SPIRAL PROTECTION</div>`;
-  html += `<div style="margin:4px 0;color:var(--fg-dim);font-size:15px;">• When you lose karma, you gain protection</div>`;
-  html += `<div style="margin:4px 0;color:var(--fg-dim);font-size:15px;">• Protection timer = (current max + 1) × 2 seconds</div>`;
+  if (wrongStreak > 0) {
+    html += `<div class="kp-row"><span class="kp-label">Wrong Streak</span><span class="kp-val" style="color:var(--red-bright)">${wrongStreak}</span></div>`;
+  }
+  html += `<div style="margin:4px 0;color:var(--fg-dim);font-size:15px;">• On karma loss: protection = wrong streak seconds</div>`;
   html += `<div style="margin:4px 0;color:var(--fg-dim);font-size:15px;">• While active: wrong answers still drop height, but karma is safe</div>`;
-  html += `<div style="margin:4px 0;color:var(--fg-dim);font-size:15px;">• Rapid losses = exponentially longer protection</div>`;
+  html += `<div style="margin:4px 0;color:var(--fg-dim);font-size:15px;">• Longer wrong streaks = longer protection</div>`;
+  html += `<div style="margin:4px 0;color:var(--fg-dim);font-size:15px;">• First correct answer resets protection and wrong streak</div>`;
   
   popup.innerHTML = html;
 }
@@ -2316,9 +2320,10 @@ function handleAnswer(val, btn) {
     S.totalCorrect++;
     S.streak++;
     if (S.streak > S.bestStreak) S.bestStreak = S.streak;
-    // Correct answer resets death spiral protection
+    // Correct answer resets death spiral and wrong streak
     S.deathSpiralMax = 0;
     S.deathSpiralCurrent = 0;
+    S.wrongStreak = 0;
     AudioEngine.playStreak(S.streak);
     if (S.streak > 0 && S.streak % 10 === 0) AudioEngine.playRandomFromList(['streak','streak_2','streak_3'], 8000);
 
@@ -2394,6 +2399,8 @@ function handleAnswer(val, btn) {
     }
 
     let shielded = false;
+    if (!S.wrongStreak) S.wrongStreak = 0;
+    S.wrongStreak++;
     if (S.shields > 0) { S.shields--; shielded = true; AudioEngine.playShieldBreak(); }
     else {
       // Death spiral protection: protects karma but NOT height
@@ -2403,9 +2410,9 @@ function handleAnswer(val, btn) {
         AudioEngine.playVoice('death_spiral_karma_safe', 5000);
       } else {
         S.karma = Math.max(0, S.karma - 1);
-        // Activate death spiral protection
-        S.deathSpiralMax = (S.deathSpiralMax + 1) * 2;
-        S.deathSpiralCurrent = S.deathSpiralMax;
+        // Activate death spiral protection = wrong streak length
+        S.deathSpiralMax = S.wrongStreak;
+        S.deathSpiralCurrent = S.wrongStreak;
         AudioEngine.playVoice('death_spiral_activate', 5000);
       }
       const karmaFloor = S.karma * 5;
