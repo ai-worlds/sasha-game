@@ -667,9 +667,9 @@ const DEFAULT_KID_PROFILE = {
   createdAt: null,
   birthYear: 2016,
   birthYearSet: false,
-  baseRate: 5.00,
-  minRate: 0.50,
-  maxRate: 100.00,
+  baseRate: 20.00,
+  minRate: 10.00,
+  maxRate: 40.00,
   idleTimeoutSec: 10,
   multipliers: {
     opsAvg:        { min: 100, max: 150 },
@@ -2282,8 +2282,8 @@ function handleAnswer(val, btn) {
       let clampType = null;
       let clampAmount = 0;
       const originalRate = effectiveRate;
-      const minRate = CFG.minRate || 0.50;
-      const maxRate = CFG.maxRate || 100.00;
+      const minRate = CFG.minRate || 10.00;
+      const maxRate = CFG.maxRate || 40.00;
       
       if (effectiveRate < minRate) {
         clampAmount = minRate - effectiveRate;
@@ -3006,8 +3006,8 @@ function renderParentMenu() {
   document.getElementById('birth-year-input').value = CFG.birthYear;
   document.getElementById('age-display').textContent = 'Age: ' + getAge();
   document.getElementById('baserate-input').value = CFG.baseRate.toFixed(2);
-  document.getElementById('minrate-input').value = (CFG.minRate || 0.50).toFixed(2);
-  document.getElementById('maxrate-input').value = (CFG.maxRate || 100.00).toFixed(2);
+  document.getElementById('minrate-input').value = (CFG.minRate || 10.00).toFixed(2);
+  document.getElementById('maxrate-input').value = (CFG.maxRate || 40.00).toFixed(2);
   document.getElementById('idletimeout-input').value = CFG.idleTimeoutSec || 10;
 
   // Build multiplier range inputs
