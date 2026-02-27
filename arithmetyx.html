@@ -717,7 +717,10 @@ const DEFAULT_SLOT = {
   bonusProblemsLeft: 0,
   bonusCorrect: 0,
   playTimeMs: 0,
-  idleTimeMs: 0
+  idleTimeMs: 0,
+  deathSpiralMax: 0,
+  deathSpiralCurrent: 0,
+  deathSpiralLastTick: 0
 };
 
 const TARGET_HEIGHT = 600;
@@ -1452,6 +1455,11 @@ function updateTimeDisplay() {
   if (!S) return;
   const el = document.getElementById('stat-time');
   if (el) el.textContent = formatTime(S.playTimeMs || 0);
+  // Tick death spiral protection down by 1 per second
+  if (S.deathSpiralMax > 0) { S.deathSpiralMax--; }
+  if (S.deathSpiralCurrent > 0) { S.deathSpiralCurrent--; }
+  // Clamp current to max
+  if (S.deathSpiralCurrent > S.deathSpiralMax) S.deathSpiralCurrent = S.deathSpiralMax;
 }
 
 // Add idle detection listeners
@@ -1864,16 +1872,25 @@ function renderHeightPopup() {
   const height = S.height;
   const zone = getZone(height);
 
+  const dsCurrent = S.deathSpiralCurrent || 0;
+  const dsMax = S.deathSpiralMax || 0;
+
   // Calculate what happens on wrong answer (mirrors actual game logic)
   let fallResult;
   if (shields > 0) {
-    fallResult = { shielded: true, fallDist: 0, newHeight: height, lostKarma: 0, karmaFloor: karma * 5, effectiveFloor: Math.max(karma * 5, manualFloor) };
+    fallResult = { shielded: true, fallDist: 0, newHeight: height, lostKarma: 0, karmaFloor: karma * 5, effectiveFloor: Math.max(karma * 5, manualFloor), karmaProtected: false };
+  } else if (dsCurrent > 0) {
+    // Death spiral protects karma but NOT height
+    const karmaFloor = karma * 5;
+    const effectiveFloor = Math.max(karmaFloor, manualFloor);
+    const newHeight = Math.max(effectiveFloor, 0);
+    fallResult = { shielded: false, karmaProtected: true, fallDist: height - newHeight, newHeight, lostKarma: 0, karmaFloor, effectiveFloor, postKarma: karma };
   } else {
     const postKarma = Math.max(0, karma - 1);
     const karmaFloor = postKarma * 5;
     const effectiveFloor = Math.max(karmaFloor, manualFloor);
     const newHeight = Math.max(effectiveFloor, 0);
-    fallResult = { shielded: false, fallDist: height - newHeight, newHeight, lostKarma: Math.min(1, karma), karmaFloor, effectiveFloor, postKarma };
+    fallResult = { shielded: false, karmaProtected: false, fallDist: height - newHeight, newHeight, lostKarma: Math.min(1, karma), karmaFloor, effectiveFloor, postKarma };
   }
 
   const newZone = getZone(fallResult.newHeight);
@@ -1884,10 +1901,27 @@ function renderHeightPopup() {
   html += `<div style="height:4px"></div>`;
   html += `<div class="hp-row"><span class="hp-label">Shields</span><span class="hp-val">${'●'.repeat(shields)}${'○'.repeat(5 - shields)} (${shields}/5)</span></div>`;
   html += `<div class="hp-row"><span class="hp-label">Karma</span><span class="hp-val">${karma}</span></div>`;
+  if (dsCurrent > 0) {
+    html += `<div class="hp-row"><span class="hp-label">🌀 Death Spiral Protection</span><span class="hp-val" style="color:var(--cyan)">${dsCurrent}s (max ${dsMax}s)</span></div>`;
+  }
 
   if (fallResult.shielded) {
     html += `<div style="height:4px"></div>`;
     html += `<div class="hp-result hp-safe">🛡 Shield absorbs the fall — no height lost, no karma lost</div>`;
+  } else if (fallResult.karmaProtected) {
+    html += `<div style="height:6px"></div>`;
+    html += `<div style="font-size:13px;color:var(--fg-dim);margin-bottom:4px">FLOOR CALCULATION (karma protected):</div>`;
+    html += `<div class="hp-row"><span class="hp-label">Karma Floor (${karma} × 5)</span><span class="hp-val">${fallResult.karmaFloor}</span></div>`;
+    html += `<div class="hp-row"><span class="hp-label">Manual Floor</span><span class="hp-val">${manualFloor}</span></div>`;
+    html += `<div class="hp-row"><span class="hp-label">Effective Floor (max)</span><span class="hp-val" style="color:var(--gold)">${fallResult.effectiveFloor}</span></div>`;
+    html += `<div style="height:4px"></div>`;
+    if (fallResult.fallDist === 0) {
+      html += `<div class="hp-result hp-safe">Already at or below floor — no fall</div>`;
+    } else {
+      html += `<div class="hp-result">💀 Fall: ${height} → ${fallResult.newHeight} (−${fallResult.fallDist} height)</div>`;
+      if (zone.name !== newZone.name) html += `<div class="hp-result">Zone: ${zone.name} → ${newZone.name}</div>`;
+    }
+    html += `<div class="hp-result hp-safe">🌀 Karma protected by death spiral (${dsCurrent}s remaining)</div>`;
   } else {
     html += `<div style="height:6px"></div>`;
     html += `<div style="font-size:13px;color:var(--fg-dim);margin-bottom:4px">FLOOR CALCULATION (after −1 karma):</div>`;
@@ -1969,13 +2003,23 @@ function renderKarmaPopup() {
   const karma = S.karma || 0;
   
   const karmaFloor = karma * 5;
+  const dsCurrent = S.deathSpiralCurrent || 0;
+  const dsMax = S.deathSpiralMax || 0;
   let html = `<div class="kp-title">KARMA INFO<button class="popup-close" onclick="toggleKarmaPopup()">✕</button></div>`;
   html += `<div class="kp-row"><span class="kp-label">Current Karma</span><span class="kp-val">${karma}</span></div>`;
   html += `<div class="kp-row"><span class="kp-label">Karma Floor (${karma} × 5)</span><span class="kp-val" style="color:var(--gold)">${karmaFloor}</span></div>`;
+  if (dsCurrent > 0) {
+    html += `<div class="kp-row"><span class="kp-label">🌀 Death Spiral Protection</span><span class="kp-val" style="color:var(--cyan)">${dsCurrent}s (max ${dsMax}s)</span></div>`;
+  }
   html += `<div style="margin:10px 0 4px;color:var(--fg-dim);font-size:15px;">• +1 karma every 10 correct answers</div>`;
   html += `<div style="margin:4px 0;color:var(--fg-dim);font-size:15px;">• −1 karma on wrong answer (when no shields)</div>`;
   html += `<div style="margin:4px 0;color:var(--fg-dim);font-size:15px;">• Karma sets your safety net: floor = karma × 5</div>`;
   html += `<div style="margin:4px 0;color:var(--fg-dim);font-size:15px;">• You can never fall below your karma floor</div>`;
+  html += `<div style="margin:8px 0 4px;color:var(--cyan);font-size:14px;font-family:var(--font-display)">DEATH SPIRAL PROTECTION</div>`;
+  html += `<div style="margin:4px 0;color:var(--fg-dim);font-size:15px;">• When you lose karma, you gain protection</div>`;
+  html += `<div style="margin:4px 0;color:var(--fg-dim);font-size:15px;">• Protection timer = (current max + 1) × 2 seconds</div>`;
+  html += `<div style="margin:4px 0;color:var(--fg-dim);font-size:15px;">• While active: wrong answers still drop height, but karma is safe</div>`;
+  html += `<div style="margin:4px 0;color:var(--fg-dim);font-size:15px;">• Rapid losses = exponentially longer protection</div>`;
   
   popup.innerHTML = html;
 }
@@ -2350,7 +2394,16 @@ function handleAnswer(val, btn) {
     let shielded = false;
     if (S.shields > 0) { S.shields--; shielded = true; AudioEngine.playShieldBreak(); }
     else {
-      S.karma = Math.max(0, S.karma - 1);
+      // Death spiral protection: protects karma but NOT height
+      let karmaProtected = false;
+      if (S.deathSpiralCurrent > 0) {
+        karmaProtected = true; // karma safe, but still fall
+      } else {
+        S.karma = Math.max(0, S.karma - 1);
+        // Activate death spiral protection
+        S.deathSpiralMax = (S.deathSpiralMax + 1) * 2;
+        S.deathSpiralCurrent = S.deathSpiralMax;
+      }
       const karmaFloor = S.karma * 5;
       const manualFloor = S.floor || 0;
       const floor = Math.max(karmaFloor, manualFloor);
