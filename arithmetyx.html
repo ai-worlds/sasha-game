@@ -1858,21 +1858,22 @@ function toggleHeightPopup() {
 function renderHeightPopup() {
   if (!S) return;
   const popup = document.getElementById('height-popup-content');
-  const floor = S.floor || 0;
+  const manualFloor = S.floor || 0;
   const shields = S.shields || 0;
   const karma = S.karma || 0;
   const height = S.height;
   const zone = getZone(height);
 
-  // Calculate what happens on wrong answer
+  // Calculate what happens on wrong answer (mirrors actual game logic)
   let fallResult;
   if (shields > 0) {
-    // Shield absorbs — no fall
-    fallResult = { shielded: true, fallDist: 0, newHeight: height, lostKarma: 0 };
+    fallResult = { shielded: true, fallDist: 0, newHeight: height, lostKarma: 0, karmaFloor: karma * 5, effectiveFloor: Math.max(karma * 5, manualFloor) };
   } else {
-    // Falls to floor, loses 1 karma
-    const newHeight = Math.max(floor, 0);
-    fallResult = { shielded: false, fallDist: height - newHeight, newHeight, lostKarma: Math.min(1, karma) };
+    const postKarma = Math.max(0, karma - 1);
+    const karmaFloor = postKarma * 5;
+    const effectiveFloor = Math.max(karmaFloor, manualFloor);
+    const newHeight = Math.max(effectiveFloor, 0);
+    fallResult = { shielded: false, fallDist: height - newHeight, newHeight, lostKarma: Math.min(1, karma), karmaFloor, effectiveFloor, postKarma };
   }
 
   const newZone = getZone(fallResult.newHeight);
@@ -1880,19 +1881,26 @@ function renderHeightPopup() {
   let html = `<div class="hp-title">FALL FORECAST<button class="popup-close" onclick="toggleHeightPopup()">✕</button></div>`;
   html += `<div class="hp-row"><span class="hp-label">Current Height</span><span class="hp-val">${height}</span></div>`;
   html += `<div class="hp-row"><span class="hp-label">Current Zone</span><span class="hp-val">${zone.name}</span></div>`;
-  html += `<div class="hp-row"><span class="hp-label">Floor</span><span class="hp-val">${floor}</span></div>`;
+  html += `<div style="height:4px"></div>`;
   html += `<div class="hp-row"><span class="hp-label">Shields</span><span class="hp-val">${'●'.repeat(shields)}${'○'.repeat(5 - shields)} (${shields}/5)</span></div>`;
   html += `<div class="hp-row"><span class="hp-label">Karma</span><span class="hp-val">${karma}</span></div>`;
 
   if (fallResult.shielded) {
+    html += `<div style="height:4px"></div>`;
     html += `<div class="hp-result hp-safe">🛡 Shield absorbs the fall — no height lost, no karma lost</div>`;
-  } else if (fallResult.fallDist === 0) {
-    html += `<div class="hp-result hp-safe">Already at floor — no fall possible</div>`;
   } else {
-    html += `<div class="hp-result">💀 Fall: ${height} → ${fallResult.newHeight} (−${fallResult.fallDist} height)</div>`;
-    html += `<div class="hp-result">Zone: ${zone.name} → ${newZone.name}</div>`;
-    if (fallResult.lostKarma > 0) {
-      html += `<div class="hp-result">Karma: ${karma} → ${karma - fallResult.lostKarma} (−${fallResult.lostKarma})</div>`;
+    html += `<div style="height:6px"></div>`;
+    html += `<div style="font-size:13px;color:var(--fg-dim);margin-bottom:4px">FLOOR CALCULATION (after −1 karma):</div>`;
+    html += `<div class="hp-row"><span class="hp-label">Karma Floor (${fallResult.postKarma} × 5)</span><span class="hp-val">${fallResult.karmaFloor}</span></div>`;
+    html += `<div class="hp-row"><span class="hp-label">Manual Floor</span><span class="hp-val">${manualFloor}</span></div>`;
+    html += `<div class="hp-row"><span class="hp-label">Effective Floor (max)</span><span class="hp-val" style="color:var(--gold)">${fallResult.effectiveFloor}</span></div>`;
+    html += `<div style="height:4px"></div>`;
+    if (fallResult.fallDist === 0) {
+      html += `<div class="hp-result hp-safe">Already at or below floor — no fall</div>`;
+    } else {
+      html += `<div class="hp-result">💀 Fall: ${height} → ${fallResult.newHeight} (−${fallResult.fallDist} height)</div>`;
+      if (zone.name !== newZone.name) html += `<div class="hp-result">Zone: ${zone.name} → ${newZone.name}</div>`;
+      html += `<div class="hp-result">Karma: ${karma} → ${karma - fallResult.lostKarma}</div>`;
     }
   }
 
@@ -2340,7 +2348,9 @@ function handleAnswer(val, btn) {
     if (S.shields > 0) { S.shields--; shielded = true; AudioEngine.playShieldBreak(); }
     else {
       S.karma = Math.max(0, S.karma - 1);
-      const floor = S.floor || 0;
+      const karmaFloor = S.karma * 5;
+      const manualFloor = S.floor || 0;
+      const floor = Math.max(karmaFloor, manualFloor);
       const zoneBefore = getZone(S.height).name;
       const heightBefore = S.height;
       S.height = Math.max(floor, 0);
@@ -2413,6 +2423,7 @@ function updateUI() {
   document.getElementById('stat-time').textContent = formatTime(S.playTimeMs || 0);
   updateIdleIndicator();
   if (ratePopupVisible) renderRatePopup();
+  if (heightPopupVisible) renderHeightPopup();
   if (shieldPopupVisible) renderShieldPopup();
   if (karmaPopupVisible) renderKarmaPopup();
   if (timePopupVisible) renderTimePopup();
