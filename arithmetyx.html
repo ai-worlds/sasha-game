@@ -16,32 +16,28 @@
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-family:var(--font-body)}
 #app{height:100%;display:flex;flex-direction:column;position:relative;overflow:hidden}
 
-/* Scanlines */
 #app::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;
   background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px);
   pointer-events:none;z-index:9999}
 
-/* Background game canvas */
 #game-canvas{position:absolute;top:0;left:0;width:100%;height:100%;z-index:0}
 
-/* Overlay for readability */
 #overlay{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;
   background:radial-gradient(ellipse at center,rgba(18,18,26,0.2) 0%,rgba(18,18,26,0.45) 100%);
   pointer-events:none}
 
-/* Top bar */
 #top-bar{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;
   padding:8px 12px;background:rgba(18,18,26,0.9);border-bottom:1px solid rgba(210,64,64,0.35);min-height:48px}
 #top-bar .title{font-family:var(--font-display);font-size:14px;color:var(--accent2);letter-spacing:2px}
 #top-bar .stats{display:flex;gap:12px;font-size:18px;color:var(--fg)}
 #top-bar .stats span{display:flex;align-items:center;gap:3px}
 #top-bar .stats .val{color:var(--fg)}
+.top-btns{display:flex;gap:6px}
 .menu-btn{background:rgba(210,64,64,0.1);border:1px solid var(--accent);color:var(--accent2);
   font-family:var(--font-display);font-size:12px;padding:6px 12px;cursor:pointer;
   letter-spacing:1px;transition:all .2s}
 .menu-btn:hover,.menu-btn:active{background:var(--accent);color:#fff}
 
-/* Main question area */
 #question-area{position:relative;z-index:10;flex:1;display:flex;flex-direction:column;
   align-items:center;justify-content:center;padding:16px;gap:12px}
 
@@ -52,7 +48,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
   animation:pulse-glow 3s ease-in-out infinite}
 @keyframes pulse-glow{0%,100%{box-shadow:0 0 15px rgba(184,48,48,0.15)}50%{box-shadow:0 0 25px rgba(184,48,48,0.3)}}
 
-/* Feedback flash */
 #feedback{position:fixed;top:0;left:0;right:0;bottom:0;z-index:50;pointer-events:none;
   display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s}
 #feedback.correct{background:rgba(42,122,58,0.25);opacity:1}
@@ -62,7 +57,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 #feedback.correct .fb-text{color:var(--green-bright)}
 #feedback.wrong .fb-text{color:var(--red-bright)}
 
-/* Answer grid */
 #answers{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;width:100%;max-width:420px;
   padding:0 8px}
 #answers.cols-3{grid-template-columns:repeat(3,1fr)}
@@ -77,7 +71,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 .answer-btn.correct-flash{background:rgba(42,122,58,0.5)!important;border-color:var(--green-bright)!important;color:#fff!important}
 .answer-btn.wrong-flash{background:rgba(138,26,26,0.5)!important;border-color:var(--red-bright)!important;color:#fff!important}
 
-/* Height / nerf info */
 #climb-info{position:relative;z-index:10;display:flex;justify-content:space-between;align-items:center;
   padding:6px 12px;background:rgba(18,18,26,0.9);border-top:1px solid rgba(210,64,64,0.25);
   font-size:16px;color:var(--fg);min-height:36px}
@@ -86,11 +79,10 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 #progress-bar{position:relative;z-index:10;height:4px;background:rgba(184,48,48,0.15)}
 #progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));transition:width .3s;width:0%}
 
-/* Menu overlay */
-#menu-overlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:100;
+#menu-overlay,#slots-overlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:100;
   background:rgba(5,5,8,0.95);display:none;overflow-y:auto;-webkit-overflow-scrolling:touch}
-#menu-overlay.open{display:flex;flex-direction:column;align-items:center}
-#menu-content{width:100%;max-width:480px;padding:20px 16px 40px}
+#menu-overlay.open,#slots-overlay.open{display:flex;flex-direction:column;align-items:center}
+#menu-content,#slots-content{width:100%;max-width:480px;padding:20px 16px 40px}
 #menu-content h2{font-family:var(--font-display);color:var(--accent2);font-size:18px;
   margin:20px 0 12px;letter-spacing:2px;border-bottom:1px solid rgba(184,48,48,0.3);padding-bottom:6px}
 #menu-content h3{font-family:var(--font-display);color:var(--gold);font-size:14px;margin:14px 0 8px}
@@ -113,7 +105,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 .btn-close{background:rgba(200,192,184,0.08);border:1px solid rgba(200,192,184,0.2);color:var(--fg)}
 .btn-close:hover,.btn-close:active{background:rgba(200,192,184,0.15)}
 
-/* Hard problems list */
 .hard-list{max-height:320px;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .hard-item{display:flex;justify-content:space-between;align-items:center;padding:8px 6px;
   border-bottom:1px solid rgba(200,192,184,0.05);font-size:17px}
@@ -122,14 +113,12 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 .hard-item .hstats .bad{color:var(--red-bright)}
 .hard-item .hstats .slow{color:var(--gold)}
 
-/* Mode selector in menu */
 .mode-btns{display:flex;gap:8px;margin:8px 0}
 .mode-btn{flex:1;padding:10px;font-family:var(--font-display);font-size:12px;
   cursor:pointer;border-radius:4px;text-align:center;letter-spacing:1px;transition:all .2s;
   border:1px solid rgba(200,192,184,0.15);background:rgba(20,18,22,0.8);color:var(--fg-dim)}
 .mode-btn.active{border-color:var(--accent2);color:var(--accent2);background:rgba(184,48,48,0.12)}
 
-/* Intro screen */
 #intro-screen{position:fixed;top:0;left:0;right:0;bottom:0;z-index:200;
   background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:20px;text-align:center}
@@ -143,7 +132,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
   cursor:pointer;letter-spacing:3px;transition:all .3s;border-radius:4px}
 .start-btn:hover,.start-btn:active{background:var(--accent);color:#fff;transform:scale(1.05)}
 
-/* Victory */
 #victory-screen{position:fixed;top:0;left:0;right:0;bottom:0;z-index:200;
   background:rgba(5,5,8,0.97);display:none;flex-direction:column;align-items:center;justify-content:center;
   padding:20px;text-align:center}
@@ -152,7 +140,36 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
   letter-spacing:3px;margin-bottom:12px;text-shadow:0 0 30px rgba(201,168,76,0.6)}
 #victory-screen p{font-size:20px;color:var(--fg-dim);margin:6px 0;max-width:340px}
 
-/* Responsive */
+/* Slot cards */
+.slot-card{background:rgba(30,28,38,0.85);border:1px solid rgba(200,192,184,0.15);border-radius:6px;
+  padding:14px;margin:8px 0;cursor:pointer;transition:all .2s}
+.slot-card:hover{border-color:var(--accent)}
+.slot-card.active{border-color:var(--accent2);box-shadow:0 0 12px rgba(210,64,64,0.2)}
+.slot-card .slot-ops{font-size:22px;margin-bottom:4px}
+.slot-card .slot-range{font-size:16px;color:var(--fg-dim)}
+.slot-card .slot-mastery{height:6px;background:rgba(200,192,184,0.1);border-radius:3px;margin:8px 0}
+.slot-card .slot-mastery-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));border-radius:3px;transition:width .3s}
+.slot-card .slot-earnings{font-size:16px;color:var(--gold);font-family:var(--font-mono)}
+.slot-card .slot-info{display:flex;justify-content:space-between;align-items:center;margin-top:4px}
+
+/* Report card */
+.report-section{background:rgba(20,18,28,0.8);border:1px solid rgba(200,192,184,0.1);border-radius:4px;padding:12px;margin:8px 0;font-size:15px;color:var(--fg-dim);line-height:1.8}
+.report-section .rpt-label{color:var(--fg-dim)}
+.report-section .rpt-val{color:var(--fg);font-family:var(--font-mono)}
+.report-section .rpt-money{color:var(--gold);font-family:var(--font-mono)}
+
+/* Slot switch note */
+#slot-note{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);z-index:110;
+  background:rgba(18,18,26,0.95);border:1px solid var(--accent);color:var(--accent2);
+  font-family:var(--font-display);font-size:12px;padding:8px 16px;border-radius:4px;
+  opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+#slot-note.show{opacity:1}
+
+/* Number input style */
+.num-input{background:rgba(30,28,38,0.85);border:1px solid rgba(200,192,184,0.25);color:var(--fg);
+  font-family:var(--font-mono);font-size:16px;padding:6px 10px;width:70px;text-align:center;border-radius:4px}
+.num-input:focus{outline:none;border-color:var(--accent2)}
+
 @media(max-width:360px){
   #problem-display{font-size:24px;padding:12px 16px;min-width:auto}
   .answer-btn{font-size:20px;padding:10px 6px;min-height:46px}
@@ -171,8 +188,12 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
       <span>⚡<span class="val" id="stat-streak">0</span></span>
       <span>✓<span class="val" id="stat-correct">0</span></span>
       <span>✗<span class="val" id="stat-wrong">0</span></span>
+      <span>💰<span class="val" id="stat-money">$0.00</span></span>
     </div>
-    <button class="menu-btn" id="menu-open-btn">☰ MENU</button>
+    <div class="top-btns">
+      <button class="menu-btn" id="slots-open-btn">📋 SLOTS</button>
+      <button class="menu-btn" id="menu-open-btn">☰ MENU</button>
+    </div>
   </div>
 
   <div id="question-area">
@@ -190,6 +211,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
   <div id="feedback"><span class="fb-text"></span></div>
 </div>
 
+<div id="slot-note"></div>
+
 <!-- Intro -->
 <div id="intro-screen">
   <h1>ARITHMETYX</h1>
@@ -200,10 +223,23 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 
 <!-- Victory -->
 <div id="victory-screen">
-  <h1>THE TOWER IS CONQUERED</h1>
-  <p>You have escaped the arithmetic void.</p>
+  <h1 id="victory-title">THE TOWER IS CONQUERED</h1>
+  <p id="victory-msg">You have escaped the arithmetic void.</p>
   <p id="victory-stats"></p>
+  <p id="victory-payout" style="color:var(--gold);font-family:var(--font-display);font-size:18px;margin-top:8px"></p>
   <button class="start-btn" style="margin-top:20px" id="continue-btn">CONTINUE CLIMBING</button>
+</div>
+
+<!-- Slots Overlay -->
+<div id="slots-overlay">
+  <div id="slots-content">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h2 style="margin:0;border:none;padding:0;font-family:var(--font-display);color:var(--accent2);font-size:18px;letter-spacing:2px">SLOTS</h2>
+      <button class="menu-btn" id="slots-close-btn">✕ CLOSE</button>
+    </div>
+    <div id="slots-list"></div>
+    <button class="menu-btn-big btn-close" id="new-slot-btn" style="margin-top:12px">+ NEW SLOT</button>
+  </div>
 </div>
 
 <!-- Menu -->
@@ -212,6 +248,22 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <h2 style="margin:0;border:none;padding:0">CONFIGURATION</h2>
       <button class="menu-btn" id="menu-close-btn">✕ CLOSE</button>
+    </div>
+
+    <h3>PLAYER</h3>
+    <div class="menu-row">
+      <label>Birth Year</label>
+      <div style="display:flex;align-items:center;gap:10px">
+        <input type="number" min="2005" max="2024" value="2016" class="num-input" id="birth-year-input">
+        <span style="color:var(--fg-dim);font-size:16px" id="age-display">Age: 10</span>
+      </div>
+    </div>
+    <div class="menu-row">
+      <label>Money Scaler</label>
+      <div style="display:flex;align-items:center;gap:10px">
+        <input type="range" min="0" max="100" value="25" id="scaler-range" style="width:100px;accent-color:var(--accent2)">
+        <span class="range-val" id="scaler-val">25%</span>
+      </div>
     </div>
 
     <h3>OPERATIONS</h3>
@@ -239,8 +291,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
     <h3>NUMBER RANGE</h3>
     <div class="range-row">
       <span style="font-size:16px;color:var(--fg-dim)">Max:</span>
-      <input type="range" min="6" max="20" value="12" id="maxnum-range">
-      <span class="range-val" id="maxnum-val">12</span>
+      <input type="range" min="6" max="20" value="10" id="maxnum-range">
+      <span class="range-val" id="maxnum-val">10</span>
     </div>
 
     <h2>KARMA &amp; FLOOR</h2>
@@ -268,46 +320,358 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
       <span class="range-val" id="volume-val">50</span>
     </div>
 
+    <h2>📊 REPORT CARD</h2>
+    <div id="report-card"></div>
+
     <h2>ACTIONS</h2>
+    <button class="menu-btn-big btn-danger" id="reset-slot-btn">⚠ RESET CURRENT SLOT</button>
     <button class="menu-btn-big btn-danger" id="reset-btn">⚠ RESET ALL PROGRESS</button>
     <button class="menu-btn-big btn-close" id="menu-close-btn2">BACK TO THE VOID</button>
   </div>
 </div>
 
 <script>
-// ============ STATE ============
-const DEFAULT_STATE = {
+// ============ CONFIG & SLOT SYSTEM ============
+const DEFAULT_CONFIG = {
+  birthYear: 2016,
+  globalMoneyScaler: 0.25,
+  sfxEnabled: true,
+  musicEnabled: true,
+  volume: 0.5,
+  currentSlotKey: null
+};
+
+const DEFAULT_SLOT = {
   ops: { add: true, sub: true, mul: true, div: true },
   mode: 'answer',
   numChoices: 4,
-  maxNum: 12,
+  maxNum: 10,
   totalCorrect: 0,
   totalWrong: 0,
   streak: 0,
   bestStreak: 0,
   height: 0,
   maxHeight: 0,
-  karma: 0, // karma level: +1 per 10 correct, -1 per wrong, no cap
-  shields: 0, // earned by correct streaks, absorb karma loss. +1 per 5 streak, max 5
-  karmaLog: [], // [{date, karma, note}] - manual adjustments log
-  problems: {}, // key -> {correct, wrong, lastTime, attempts}
-  gameBeaten: false
+  karma: 0,
+  shields: 0,
+  karmaLog: [],
+  problems: {},
+  gameBeaten: false,
+  bonusRound: 0,
+  bonusRoundsCompleted: 0,
+  slotEarnings: 0,
+  last50: [],
+  bonusActive: false,
+  bonusProblemsLeft: 0,
+  bonusCorrect: 0
 };
 
-let S;
-const TARGET_HEIGHT = 600; // platforms to "beat" the game
+const TARGET_HEIGHT = 600;
 
-function loadState() {
+let CFG, S; // CFG = global config, S = current slot state
+
+function loadConfig() {
+  try {
+    const raw = localStorage.getItem('arithmetyx_config');
+    CFG = raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    for (const k in DEFAULT_CONFIG) { if (!(k in CFG)) CFG[k] = DEFAULT_CONFIG[k]; }
+  } catch(e) { CFG = JSON.parse(JSON.stringify(DEFAULT_CONFIG)); }
+}
+
+function saveConfig() { try { localStorage.setItem('arithmetyx_config', JSON.stringify(CFG)); } catch(e){} }
+
+function getSlotKey(ops, maxNum) {
+  const names = [];
+  if (ops.add) names.push('add');
+  if (ops.sub) names.push('sub');
+  if (ops.mul) names.push('mul');
+  if (ops.div) names.push('div');
+  if (names.length === 0) names.push('add');
+  return names.join('_') + '_' + maxNum;
+}
+
+function loadSlot(key) {
+  try {
+    const raw = localStorage.getItem('arithmetyx_slot_' + key);
+    if (raw) {
+      S = JSON.parse(raw);
+      for (const k in DEFAULT_SLOT) { if (!(k in S)) S[k] = typeof DEFAULT_SLOT[k]==='object'? JSON.parse(JSON.stringify(DEFAULT_SLOT[k])) : DEFAULT_SLOT[k]; }
+    } else {
+      S = JSON.parse(JSON.stringify(DEFAULT_SLOT));
+      // Parse ops and maxNum from key
+      const parts = key.split('_');
+      const maxNum = parseInt(parts[parts.length - 1]);
+      const opNames = parts.slice(0, -1);
+      S.ops = { add: false, sub: false, mul: false, div: false };
+      for (const n of opNames) S.ops[n] = true;
+      S.maxNum = maxNum;
+    }
+    CFG.currentSlotKey = key;
+    saveConfig();
+    saveSlot();
+  } catch(e) {
+    S = JSON.parse(JSON.stringify(DEFAULT_SLOT));
+  }
+}
+
+function saveSlot() {
+  if (!CFG.currentSlotKey) return;
+  try { localStorage.setItem('arithmetyx_slot_' + CFG.currentSlotKey, JSON.stringify(S)); } catch(e){}
+}
+
+function getAllSlotKeys() {
+  const keys = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k.startsWith('arithmetyx_slot_')) keys.push(k.replace('arithmetyx_slot_', ''));
+  }
+  return keys;
+}
+
+function getTotalEarnings() {
+  let total = 0;
+  for (const key of getAllSlotKeys()) {
+    try {
+      const raw = localStorage.getItem('arithmetyx_slot_' + key);
+      if (raw) { const s = JSON.parse(raw); total += (s.slotEarnings || 0); }
+    } catch(e){}
+  }
+  return total;
+}
+
+// Migrate old state if exists
+function migrateOldState() {
   try {
     const raw = localStorage.getItem('arithmetyx_state');
-    if (raw) { S = JSON.parse(raw); } else { S = JSON.parse(JSON.stringify(DEFAULT_STATE)); }
-    // patch missing fields
-    for (const k in DEFAULT_STATE) { if (!(k in S)) S[k] = typeof DEFAULT_STATE[k]==='object'? JSON.parse(JSON.stringify(DEFAULT_STATE[k])) : DEFAULT_STATE[k]; }
-  } catch(e) { S = JSON.parse(JSON.stringify(DEFAULT_STATE)); }
+    if (!raw) return;
+    const old = JSON.parse(raw);
+    // Create config
+    CFG.sfxEnabled = true;
+    CFG.musicEnabled = true;
+    CFG.volume = 0.5;
+    // Create slot from old state
+    const key = getSlotKey(old.ops || {add:true,sub:true,mul:true,div:true}, old.maxNum || 10);
+    const slot = JSON.parse(JSON.stringify(DEFAULT_SLOT));
+    for (const k of ['ops','mode','numChoices','maxNum','totalCorrect','totalWrong','streak','bestStreak','height','maxHeight','karma','shields','karmaLog','problems','gameBeaten']) {
+      if (k in old) slot[k] = old[k];
+    }
+    localStorage.setItem('arithmetyx_slot_' + key, JSON.stringify(slot));
+    CFG.currentSlotKey = key;
+    saveConfig();
+    localStorage.removeItem('arithmetyx_state');
+  } catch(e){}
 }
-function saveState() { try { localStorage.setItem('arithmetyx_state', JSON.stringify(S)); } catch(e){} }
 
-loadState();
+loadConfig();
+migrateOldState();
+
+// Load current slot or create default
+if (CFG.currentSlotKey) {
+  loadSlot(CFG.currentSlotKey);
+} else {
+  const key = 'add_sub_mul_div_10';
+  loadSlot(key);
+}
+
+function switchSlot(ops, maxNum) {
+  saveSlot();
+  const key = getSlotKey(ops, maxNum);
+  const isNew = !localStorage.getItem('arithmetyx_slot_' + key);
+  loadSlot(key);
+  showSlotNote(isNew ? 'Created new slot: ' + key : 'Switched to slot: ' + key);
+}
+
+function showSlotNote(text) {
+  const el = document.getElementById('slot-note');
+  el.textContent = text;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ============ DIFFICULTY & MASTERY ============
+function calcProblemDifficulty(a, op, b, maxNum) {
+  const opBase = { '+': 1.0, '-': 1.2, '×': 1.5, '÷': 1.8 };
+  const size = (a + b) / (2 * maxNum);
+  const interference = (a >= 6 && b >= 6) ? 1.5 : 1.0;
+  let trick = 1.0;
+  if (op === '×' && (a <= 1 || b <= 1 || a === 0 || b === 0 || a === 2 || b === 2 || a === 5 || b === 5 || a === 10 || b === 10)) trick = 0.3;
+  if (op === '+' && (a === 0 || b === 0)) trick = 0.3;
+  if (op === '-' && b === 0) trick = 0.3;
+  if (op === '÷' && b === 1) trick = 0.3;
+  let crossing = 1.0;
+  if (op === '+' && a % 10 + b % 10 >= 10) crossing = 1.3;
+  if (op === '-' && a % 10 < b % 10) crossing = 1.3;
+  let score = opBase[op] * (0.3 + 0.7 * size) * interference * trick * crossing;
+  const NOTORIOUS = {
+    '6×7':3.5,'7×6':3.5,'6×8':3.3,'8×6':3.3,'7×8':3.5,'8×7':3.5,
+    '8×9':3.2,'9×8':3.2,'7×9':3.2,'9×7':3.2,'6×9':3.0,'9×6':3.0,
+    '48÷6':3.5,'48÷8':3.5,'42÷6':3.5,'42÷7':3.5,'56÷7':3.5,'56÷8':3.5,
+    '72÷8':3.3,'72÷9':3.3,'63÷7':3.2,'63÷9':3.2,'54÷6':3.0,'54÷9':3.0,
+    '15-7':2.5,'15-8':2.5,'13-7':2.5,'12-9':2.5,'16-8':2.5,'17-9':2.5,
+    '14-6':2.3,'14-8':2.3,'11-7':2.3,'13-8':2.3,
+    '7+8':2.2,'8+7':2.2,'6+7':2.0,'7+6':2.0,'8+9':2.2,'9+8':2.2,'9+6':2.0,'6+9':2.0
+  };
+  const key = `${a}${op}${b}`;
+  if (NOTORIOUS[key]) score = Math.max(score, NOTORIOUS[key]);
+  return Math.round(score * 100) / 100;
+}
+
+function getAge() {
+  return Math.floor((Date.now() - new Date(CFG.birthYear, 0, 1)) / (365.25 * 24 * 60 * 60 * 1000));
+}
+
+function getAgeThresholds(age) {
+  if (age <= 6) return { speedGate: 12, masterySpeed: 8, last50Acc: 0.75, minUnique: 30, minHard: 10 };
+  if (age <= 8) return { speedGate: 9, masterySpeed: 6, last50Acc: 0.80, minUnique: 80, minHard: 30 };
+  if (age <= 10) return { speedGate: 7, masterySpeed: 5, last50Acc: 0.85, minUnique: 150, minHard: 50 };
+  if (age <= 12) return { speedGate: 5, masterySpeed: 4, last50Acc: 0.88, minUnique: 200, minHard: 60 };
+  return { speedGate: 4, masterySpeed: 3, last50Acc: 0.90, minUnique: 200, minHard: 70 };
+}
+
+// Enumerate all possible problems for a slot
+function enumerateSlotProblems(ops, maxNum) {
+  const problems = [];
+  if (ops.add) {
+    for (let a = 0; a <= maxNum; a++)
+      for (let b = 0; b <= maxNum; b++)
+        problems.push({ a, b, op: '+', key: a+'+'+b });
+  }
+  if (ops.sub) {
+    for (let a = 0; a <= maxNum; a++)
+      for (let b = 0; b <= a; b++)
+        problems.push({ a, b, op: '-', key: a+'-'+b });
+  }
+  if (ops.mul) {
+    for (let a = 0; a <= maxNum; a++)
+      for (let b = 0; b <= maxNum; b++)
+        problems.push({ a, b, op: '×', key: a+'×'+b });
+  }
+  if (ops.div) {
+    for (let b = 1; b <= maxNum; b++)
+      for (let a = b; a <= maxNum * maxNum; a += b) {
+        if (a / b <= maxNum)
+          problems.push({ a, b, op: '÷', key: a+'÷'+b });
+      }
+  }
+  return problems;
+}
+
+function getSlotMasteryInfo() {
+  const age = getAge();
+  const th = getAgeThresholds(age);
+  const allProbs = enumerateSlotProblems(S.ops, S.maxNum);
+  let masteredCount = 0, masteredValue = 0, totalValue = 0;
+  for (const p of allProbs) {
+    const diff = calcProblemDifficulty(p.a, p.op, p.b, S.maxNum);
+    totalValue += diff;
+    const d = S.problems[p.key];
+    if (d && d.correct >= 2 && d.lastCorrect === true && (d.lastTime || 99999) < th.masterySpeed * 1000) {
+      masteredCount++;
+      masteredValue += diff;
+    }
+  }
+  return { masteredCount, totalCount: allProbs.length, masteredValue, totalValue, masteryPct: allProbs.length > 0 ? masteredCount / allProbs.length : 0 };
+}
+
+function checkCompletionRequirements() {
+  const age = getAge();
+  const th = getAgeThresholds(age);
+  const mi = getSlotMasteryInfo();
+
+  // 1. >= 80% mastered
+  if (mi.masteryPct < 0.80) return false;
+  // 2. >= minUnique distinct problems answered
+  const uniqueAnswered = Object.keys(S.problems).length;
+  if (uniqueAnswered < th.minUnique) return false;
+  // 3. >= minHard with operand >= maxNum * 0.7
+  const hardThreshold = S.maxNum * 0.7;
+  let hardCount = 0;
+  for (const key in S.problems) {
+    const parts = key.match(/^(\d+)([+\-×÷])(\d+)$/);
+    if (parts) {
+      const a = parseInt(parts[1]), b = parseInt(parts[3]);
+      if (a >= hardThreshold || b >= hardThreshold) hardCount++;
+    }
+  }
+  if (hardCount < th.minHard) return false;
+  // 4. Last 50 accuracy
+  if (S.last50.length >= 50) {
+    const acc = S.last50.filter(e => e.firstTryCorrect).length / S.last50.length;
+    if (acc < th.last50Acc) return false;
+  } else return false;
+  // 5. Last 50 avg response time
+  const avgTime = S.last50.reduce((s, e) => s + e.responseTime, 0) / S.last50.length / 1000;
+  if (avgTime >= th.speedGate) return false;
+  // 6. <= 3 problems with 0% lifetime accuracy
+  let zeroAccCount = 0;
+  for (const key in S.problems) {
+    const d = S.problems[key];
+    if (d.attempts > 0 && d.correct === 0) zeroAccCount++;
+  }
+  if (zeroAccCount > 3) return false;
+  return true;
+}
+
+// ============ PAYOUT ============
+const OP_WEIGHTS = { add: 1.0, sub: 1.2, mul: 1.5, div: 1.8 };
+
+function getSlotDifficulty(ops, maxNum) {
+  const rangeMult = maxNum / 10;
+  let sum = 0;
+  for (const op in ops) { if (ops[op]) sum += OP_WEIGHTS[op]; }
+  return sum * rangeMult;
+}
+
+function getAgeExpected(age) {
+  if (age <= 5) return 0.5;
+  if (age <= 6) return 1.1;
+  if (age <= 7) return 2.2;
+  if (age <= 8) return 3.7;
+  if (age <= 9) return 3.7;
+  if (age <= 10) return 5.5;
+  if (age <= 11) return 6.6;
+  return 6.6;
+}
+
+function getBasePayout(slotDiff, ageExpected) {
+  const ratio = slotDiff / ageExpected;
+  if (ratio < 0.25) return 2;
+  if (ratio < 0.5) return 5;
+  if (ratio < 0.75) return 15;
+  if (ratio < 1.0) return 30;
+  if (ratio < 1.25) return 50;
+  if (ratio < 1.5) return 65;
+  if (ratio < 2.0) return 80;
+  return 100;
+}
+
+function calculateSlotPayout() {
+  const mi = getSlotMasteryInfo();
+  const slotDiff = getSlotDifficulty(S.ops, S.maxNum);
+  const age = getAge();
+  const ageExp = getAgeExpected(age);
+  const basePay = getBasePayout(slotDiff, ageExp);
+  const mq = mi.totalValue > 0 ? mi.masteredValue / mi.totalValue : 0;
+  return basePay * mq * CFG.globalMoneyScaler;
+}
+
+function getBonusRoundPayout(round) {
+  let base;
+  if (round <= 5) base = 1.00;
+  else if (round <= 10) base = 1.50;
+  else if (round <= 20) base = 2.00;
+  else if (round <= 50) base = 2.50;
+  else base = 3.00;
+  return base * CFG.globalMoneyScaler;
+}
+
+function getBonusRequiredAccuracy(round) {
+  if (round <= 5) return 0.90;
+  if (round <= 10) return 0.92;
+  if (round <= 20) return 0.94;
+  if (round <= 50) return 0.95;
+  return 0.95;
+}
 
 // ============ PROBLEM GENERATION ============
 function getOps() {
@@ -326,16 +690,11 @@ function generateProblem() {
   const op = ops[randInt(0, ops.length - 1)];
   const mx = S.maxNum;
   let a, b, answer;
-
   switch(op) {
-    case '+':
-      a = randInt(1, mx); b = randInt(1, mx); answer = a + b; break;
-    case '-':
-      a = randInt(1, mx); b = randInt(1, a); answer = a - b; break;
-    case '×':
-      a = randInt(2, mx); b = randInt(2, mx); answer = a * b; break;
-    case '÷':
-      b = randInt(2, mx); answer = randInt(1, mx); a = b * answer; break;
+    case '+': a = randInt(0, mx); b = randInt(0, mx); answer = a + b; break;
+    case '-': a = randInt(0, mx); b = randInt(0, a); answer = a - b; break;
+    case '×': a = randInt(0, mx); b = randInt(0, mx); answer = a * b; break;
+    case '÷': b = randInt(1, mx); answer = randInt(0, mx); a = b * answer; break;
   }
   return { a, b, op, answer };
 }
@@ -344,19 +703,16 @@ function problemKey(p) { return `${p.a}${p.op}${p.b}`; }
 
 function getProblemWeight(key) {
   const d = S.problems[key];
-  if (!d) return 1.0; // never seen = normal weight
+  if (!d) return 1.0;
   const lastTime = d.lastTime || 5000;
   const wrongRate = d.attempts > 0 ? d.wrong / d.attempts : 0;
-  // Hard = slow last answer or high wrong rate => higher weight
-  // Easy = fast last answer and no wrongs => lower weight
-  const timeScore = Math.min(lastTime / 3000, 3); // 3s baseline, max 3x
+  const timeScore = Math.min(lastTime / 3000, 3);
   const wrongScore = 1 + wrongRate * 3;
   const easyPenalty = (d.correct >= 3 && d.wrong === 0 && lastTime < 3000) ? 0.2 : 1;
   return timeScore * wrongScore * easyPenalty;
 }
 
 function selectProblem() {
-  // Generate a pool of candidates and weight them
   const candidates = [];
   for (let i = 0; i < 20; i++) {
     const p = generateProblem();
@@ -364,14 +720,29 @@ function selectProblem() {
     const w = getProblemWeight(key);
     candidates.push({ p, key, w });
   }
-  // Weighted random selection
   const totalW = candidates.reduce((s, c) => s + c.w, 0);
   let r = Math.random() * totalW;
-  for (const c of candidates) {
-    r -= c.w;
-    if (r <= 0) return c.p;
-  }
+  for (const c of candidates) { r -= c.w; if (r <= 0) return c.p; }
   return candidates[candidates.length - 1].p;
+}
+
+function selectBonusProblem() {
+  // Weight toward highest-difficulty problems
+  const allProbs = enumerateSlotProblems(S.ops, S.maxNum);
+  const weighted = allProbs.map(p => ({ ...p, diff: calcProblemDifficulty(p.a, p.op, p.b, S.maxNum) }));
+  weighted.sort((a, b) => b.diff - a.diff);
+  // Top 30% get heavy weight
+  const top = Math.max(10, Math.floor(weighted.length * 0.3));
+  const pool = weighted.slice(0, top);
+  const totalW = pool.reduce((s, p) => s + p.diff, 0);
+  let r = Math.random() * totalW;
+  for (const p of pool) { r -= p.diff; if (r <= 0) { const ans = evalProblem(p.a, p.op, p.b); return { a: p.a, b: p.b, op: p.op, answer: ans }; } }
+  const last = pool[pool.length - 1];
+  return { a: last.a, b: last.b, op: last.op, answer: evalProblem(last.a, last.op, last.b) };
+}
+
+function evalProblem(a, op, b) {
+  switch(op) { case '+': return a+b; case '-': return a-b; case '×': return a*b; case '÷': return a/b; }
 }
 
 // ============ GAME LOGIC ============
@@ -381,12 +752,7 @@ let wrongThisProblem = 0;
 let answersLocked = false;
 
 function formatProblem(p) {
-  if (S.mode === 'answer') {
-    return `${p.a} ${p.op} ${p.b} = ?`;
-  } else {
-    // question mode: hide b
-    return `${p.a} ${p.op} __ = ${p.answer}`;
-  }
+  return S.mode === 'answer' ? `${p.a} ${p.op} ${p.b} = ?` : `${p.a} ${p.op} __ = ${p.answer}`;
 }
 
 function getCorrectValue(p) {
@@ -396,50 +762,36 @@ function getCorrectValue(p) {
 function generateDistractors(correct, count, p) {
   const distractors = new Set();
   distractors.add(correct);
-
-  // Smart distractors near the correct answer
-  const tryAdd = (v) => { if (v > 0 && v !== correct && Number.isInteger(v)) distractors.add(v); };
-
-  // Near misses
-  for (let d = 1; d <= 5; d++) {
-    tryAdd(correct + d);
-    tryAdd(correct - d);
-  }
-  // Common mistakes
-  if (p.op === '×') {
-    tryAdd(p.a + p.b);
-    tryAdd(correct + p.a);
-    tryAdd(correct - p.b);
-  }
-  if (p.op === '+') {
-    tryAdd(p.a * p.b);
-  }
-
-  // Fill remaining randomly
+  const tryAdd = (v) => { if (v >= 0 && v !== correct && Number.isInteger(v)) distractors.add(v); };
+  for (let d = 1; d <= 5; d++) { tryAdd(correct + d); tryAdd(correct - d); }
+  if (p.op === '×') { tryAdd(p.a + p.b); tryAdd(correct + p.a); tryAdd(correct - p.b); }
+  if (p.op === '+') { tryAdd(p.a * p.b); }
   let tries = 0;
   while (distractors.size < count && tries < 200) {
     const range = Math.max(correct, 20);
-    const v = randInt(Math.max(1, correct - range), correct + range);
-    if (v > 0 && Number.isInteger(v)) distractors.add(v);
+    const v = randInt(Math.max(0, correct - range), correct + range);
+    if (v >= 0 && Number.isInteger(v)) distractors.add(v);
     tries++;
   }
-
   const arr = Array.from(distractors).slice(0, count);
-  // Shuffle
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = randInt(0, i);
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
+  for (let i = arr.length - 1; i > 0; i--) { const j = randInt(0, i); [arr[i], arr[j]] = [arr[j], arr[i]]; }
   return arr;
 }
 
 function presentProblem() {
-  currentProblem = selectProblem();
+  if (S.bonusActive) {
+    currentProblem = selectBonusProblem();
+  } else {
+    currentProblem = selectProblem();
+  }
   problemStartTime = Date.now();
   wrongThisProblem = 0;
   answersLocked = false;
 
   document.getElementById('problem-display').textContent = formatProblem(currentProblem);
+  if (S.bonusActive) {
+    document.getElementById('problem-display').textContent = `[BONUS ${S.bonusRound}] ` + formatProblem(currentProblem);
+  }
 
   const correctVal = getCorrectValue(currentProblem);
   const choices = generateDistractors(correctVal, S.numChoices, currentProblem);
@@ -464,42 +816,63 @@ function handleAnswer(val, btn) {
   const key = problemKey(currentProblem);
   const elapsed = Date.now() - problemStartTime;
 
-  if (!S.problems[key]) S.problems[key] = { correct: 0, wrong: 0, lastTime: 0, attempts: 0 };
+  if (!S.problems[key]) S.problems[key] = { correct: 0, wrong: 0, lastTime: 0, attempts: 0, lastCorrect: false, mastered: false };
+  const pd = S.problems[key];
 
   if (val === correctVal) {
     answersLocked = true;
     btn.classList.add('correct-flash');
-    Audio.playCorrect();
-    S.problems[key].correct++;
-    S.problems[key].lastTime = elapsed;
-    S.problems[key].attempts++;
+    AudioEngine.playCorrect();
+
+    pd.correct++;
+    pd.lastTime = elapsed;
+    pd.attempts++;
+    pd.lastCorrect = true;
+
+    // Update mastery
+    const age = getAge();
+    const th = getAgeThresholds(age);
+    pd.mastered = pd.correct >= 2 && pd.lastCorrect && elapsed < th.masterySpeed * 1000;
+
+    // Track last50 (only if >= 1.5s)
+    if (elapsed >= 1500) {
+      S.last50.push({ firstTryCorrect: wrongThisProblem === 0, responseTime: elapsed });
+      if (S.last50.length > 50) S.last50.shift();
+    }
+
     S.totalCorrect++;
     S.streak++;
     if (S.streak > S.bestStreak) S.bestStreak = S.streak;
-    Audio.playStreak(S.streak);
+    AudioEngine.playStreak(S.streak);
 
-    // Update karma: +1 every 10 correct answers
     if (S.totalCorrect % 10 === 0) S.karma++;
+    if (S.streak % 5 === 0 && S.shields < 5) { S.shields++; AudioEngine.playShieldGain(); }
 
-    // Shields: +1 every 5 streak, max 5
-    if (S.streak % 5 === 0 && S.shields < 5) {
-      S.shields++;
-      Audio.playShieldGain();
+    // Bonus round tracking
+    if (S.bonusActive) {
+      S.bonusProblemsLeft--;
+      if (wrongThisProblem === 0) S.bonusCorrect++;
+      if (S.bonusProblemsLeft <= 0) {
+        finishBonusRound();
+        saveSlot();
+        updateUI();
+        return;
+      }
     }
 
-    // Climb
-    S.height++;
-    if (S.height > S.maxHeight) S.maxHeight = S.height;
+    if (!S.bonusActive) {
+      S.height++;
+      if (S.height > S.maxHeight) S.maxHeight = S.height;
+    }
 
     showFeedback(true);
-    saveState();
+    saveSlot();
     updateUI();
 
-    // Check victory
-    if (S.height >= TARGET_HEIGHT && !S.gameBeaten) {
+    if (!S.bonusActive && S.height >= TARGET_HEIGHT && !S.gameBeaten) {
       S.gameBeaten = true;
-      saveState();
-      Audio.playVictory();
+      saveSlot();
+      AudioEngine.playVictory();
       setTimeout(showVictory, 600);
       return;
     }
@@ -508,39 +881,70 @@ function handleAnswer(val, btn) {
   } else {
     btn.classList.add('wrong-flash');
     wrongThisProblem++;
-    S.problems[key].wrong++;
-    S.problems[key].attempts++;
+    pd.wrong++;
+    pd.attempts++;
+    pd.lastCorrect = false;
+    pd.mastered = false;
     S.totalWrong++;
     S.streak = 0;
 
-    // Shields absorb karma loss
-    let shielded = false;
-    if (S.shields > 0) {
-      S.shields--;
-      shielded = true;
-      Audio.playShieldBreak();
-      // No karma loss — shield absorbed it
-    } else {
-      // No shield: lose 1 karma
-      S.karma = Math.max(0, S.karma - 1);
+    // Bonus round: track but don't fall
+    if (S.bonusActive) {
+      AudioEngine.playWrong();
+      showFeedback(false, false);
+      saveSlot();
+      updateUI();
+      setTimeout(() => { btn.classList.remove('wrong-flash'); }, 300);
+      return;
     }
 
-    // Fall: drop to floor of karma * 5
+    let shielded = false;
+    if (S.shields > 0) { S.shields--; shielded = true; AudioEngine.playShieldBreak(); }
+    else { S.karma = Math.max(0, S.karma - 1); }
+
     const floor = S.karma * 5;
     const heightBefore = S.height;
     S.height = Math.max(floor, 0);
 
-    Audio.playWrong();
-    if (heightBefore - S.height > 5) Audio.playFall();
-    // Screen shake — more intense at higher heights
+    AudioEngine.playWrong();
+    if (heightBefore - S.height > 5) AudioEngine.playFall();
     screenShake = Math.min(25, 5 + S.height * 0.02);
 
     showFeedback(false, shielded);
-    saveState();
+    saveSlot();
     updateUI();
-
     setTimeout(() => { btn.classList.remove('wrong-flash'); }, 300);
   }
+}
+
+function finishBonusRound() {
+  const reqAcc = getBonusRequiredAccuracy(S.bonusRound);
+  const acc = S.bonusCorrect / 20;
+  S.bonusActive = false;
+  if (acc >= reqAcc) {
+    const payout = getBonusRoundPayout(S.bonusRound);
+    S.slotEarnings += payout;
+    S.bonusRoundsCompleted++;
+    showSlotNote(`Bonus Round ${S.bonusRound} PASSED! +$${payout.toFixed(2)} (${Math.round(acc*100)}%)`);
+    AudioEngine.playVictory();
+  } else {
+    showSlotNote(`Bonus Round ${S.bonusRound} FAILED (${Math.round(acc*100)}% < ${Math.round(reqAcc*100)}%) — retry available`);
+    S.bonusRound--; // Allow retry of same round
+    AudioEngine.playWrong();
+  }
+  S.bonusRound++;
+  saveSlot();
+  updateUI();
+  setTimeout(presentProblem, 1500);
+}
+
+function startBonusRound() {
+  S.bonusActive = true;
+  S.bonusProblemsLeft = 20;
+  S.bonusCorrect = 0;
+  saveSlot();
+  showSlotNote(`Bonus Round ${S.bonusRound} started! 20 problems.`);
+  presentProblem();
 }
 
 function showFeedback(correct, shielded) {
@@ -554,26 +958,23 @@ function updateUI() {
   document.getElementById('stat-streak').textContent = S.streak;
   document.getElementById('stat-correct').textContent = S.totalCorrect;
   document.getElementById('stat-wrong').textContent = S.totalWrong;
+  document.getElementById('stat-money').textContent = '$' + getTotalEarnings().toFixed(2);
   document.getElementById('height-display').textContent = `HEIGHT: ${S.height} / ${TARGET_HEIGHT}`;
   document.getElementById('nerf-display').textContent = `KARMA: ${S.karma}`;
-  // Shield display with orb icons
   const shieldIcons = '●'.repeat(S.shields) + '○'.repeat(5 - S.shields);
   document.getElementById('shield-display').textContent = shieldIcons;
-  // Progress bar: before 600 shows progress to 600; after 600, shows progress within current 100-level milestone
   if (S.height < TARGET_HEIGHT) {
     document.getElementById('progress-fill').style.width = `${(S.height / TARGET_HEIGHT) * 100}%`;
   } else {
     const milestone = Math.floor(S.height / 100) * 100;
     document.getElementById('progress-fill').style.width = `${((S.height - milestone) / 100) * 100}%`;
   }
-  // Intensity-driven visual escalation
   const zone = getZone(S.height);
   const intens = zone.intensity || 0;
   const pd = document.getElementById('problem-display');
   const glowStr = Math.round(20 + intens * 30);
   pd.style.textShadow = `0 0 ${glowStr}px rgba(184,48,48,${0.5 + intens * 0.4}), 0 2px 8px rgba(0,0,0,0.8)`;
   pd.style.borderColor = `rgba(184,48,48,${0.25 + intens * 0.4})`;
-  // Progress bar color shifts
   const pf = document.getElementById('progress-fill');
   if (S.height >= TARGET_HEIGHT) {
     pf.style.background = `linear-gradient(90deg, ${zone.charGlow || '#d44'}, ${zone.edgeColor || '#c9a84c'})`;
@@ -582,15 +983,17 @@ function updateUI() {
 
 // ============ MENU ============
 function openMenu() {
-  Audio.playMenuOpen();
+  AudioEngine.playMenuOpen();
   document.getElementById('menu-overlay').classList.add('open');
   renderMenu();
   renderHardList();
+  renderReportCard();
 }
 function closeMenu() {
-  Audio.playMenuClose();
+  AudioEngine.playMenuClose();
   document.getElementById('menu-overlay').classList.remove('open');
-  saveState();
+  saveSlot();
+  saveConfig();
   presentProblem();
 }
 
@@ -605,6 +1008,14 @@ function renderMenu() {
   document.getElementById('choices-val').textContent = S.numChoices;
   document.getElementById('maxnum-range').value = S.maxNum;
   document.getElementById('maxnum-val').textContent = S.maxNum;
+  document.getElementById('birth-year-input').value = CFG.birthYear;
+  document.getElementById('age-display').textContent = 'Age: ' + getAge();
+  document.getElementById('scaler-range').value = Math.round(CFG.globalMoneyScaler * 100);
+  document.getElementById('scaler-val').textContent = Math.round(CFG.globalMoneyScaler * 100) + '%';
+  document.getElementById('toggle-sfx').classList.toggle('on', CFG.sfxEnabled);
+  document.getElementById('toggle-music').classList.toggle('on', CFG.musicEnabled);
+  document.getElementById('volume-range').value = Math.round(CFG.volume * 100);
+  document.getElementById('volume-val').textContent = Math.round(CFG.volume * 100);
   renderKarmaUI();
 }
 
@@ -638,19 +1049,160 @@ function renderHardList() {
   }).join('');
 }
 
+function renderReportCard() {
+  const el = document.getElementById('report-card');
+  const age = getAge();
+  const ageExp = getAgeExpected(age);
+  const allSlotKeys = getAllSlotKeys();
+  let totalEarnings = 0;
+
+  let rows = '';
+  for (const key of allSlotKeys) {
+    try {
+      const raw = localStorage.getItem('arithmetyx_slot_' + key);
+      if (!raw) continue;
+      const slot = JSON.parse(raw);
+      const allProbs = enumerateSlotProblems(slot.ops, slot.maxNum);
+      const th = getAgeThresholds(age);
+      let mc = 0, mv = 0, tv = 0;
+      for (const p of allProbs) {
+        const diff = calcProblemDifficulty(p.a, p.op, p.b, slot.maxNum);
+        tv += diff;
+        const d = slot.problems[p.key];
+        if (d && d.correct >= 2 && d.lastCorrect && (d.lastTime||99999) < th.masterySpeed*1000) { mc++; mv += diff; }
+      }
+      const mPct = allProbs.length > 0 ? mc / allProbs.length : 0;
+      const mq = tv > 0 ? mv / tv : 0;
+      const sd = getSlotDifficulty(slot.ops, slot.maxNum);
+      const bp = getBasePayout(sd, ageExp);
+      const actual = bp * mq * CFG.globalMoneyScaler;
+      // Bonus earnings
+      let bonusEarnings = 0;
+      for (let r = 1; r <= (slot.bonusRoundsCompleted || 0); r++) {
+        let base; if (r<=5) base=1; else if(r<=10) base=1.5; else if(r<=20) base=2; else if(r<=50) base=2.5; else base=3;
+        bonusEarnings += base * CFG.globalMoneyScaler;
+      }
+      totalEarnings += (slot.slotEarnings || 0);
+      const isCurrent = key === CFG.currentSlotKey;
+      rows += `<div style="padding:6px 0;border-bottom:1px solid rgba(200,192,184,0.05);${isCurrent?'color:var(--accent2)':''}">
+        <strong>${key}</strong> — Mastery: ${Math.round(mPct*100)}% · Base: $${bp} · MQ: ${Math.round(mq*100)}% · Payout: $${actual.toFixed(2)} · Bonus: ${slot.bonusRoundsCompleted||0} ($${bonusEarnings.toFixed(2)})
+      </div>`;
+    } catch(e){}
+  }
+
+  // Current slot detail
+  const sd = getSlotDifficulty(S.ops, S.maxNum);
+  const bp = getBasePayout(sd, ageExp);
+  const mi = getSlotMasteryInfo();
+  const mq = mi.totalValue > 0 ? mi.masteredValue / mi.totalValue : 0;
+  const actual = bp * mq * CFG.globalMoneyScaler;
+  const ratio = sd / ageExp;
+
+  el.innerHTML = `
+    <div class="report-section">${rows || '<div style="color:var(--fg-dim)">No slots yet</div>'}</div>
+    <div class="report-section">
+      <div><span class="rpt-label">TOTAL EARNINGS:</span> <span class="rpt-money">$${getTotalEarnings().toFixed(2)}</span></div>
+    </div>
+    <div class="report-section">
+      <div style="font-size:14px;color:var(--gold);margin-bottom:6px">MONEY CALCULATION (current slot)</div>
+      <div><span class="rpt-label">Slot Difficulty:</span> <span class="rpt-val">${sd.toFixed(1)}</span> (ops × range)</div>
+      <div><span class="rpt-label">Age Expected:</span> <span class="rpt-val">${ageExp.toFixed(1)}</span> (age ${age})</div>
+      <div><span class="rpt-label">Ratio:</span> <span class="rpt-val">${ratio.toFixed(2)}</span> → Base: <span class="rpt-money">$${bp}</span></div>
+      <div><span class="rpt-label">Mastery Quality:</span> <span class="rpt-val">${Math.round(mq*100)}%</span> → Adjusted: <span class="rpt-money">$${(bp*mq).toFixed(2)}</span></div>
+      <div><span class="rpt-label">× Global Scaler (${Math.round(CFG.globalMoneyScaler*100)}%):</span> → Final: <span class="rpt-money">$${actual.toFixed(2)}</span></div>
+      <div><span class="rpt-label">Bonus Rounds:</span> <span class="rpt-val">${S.bonusRoundsCompleted||0}</span> completed</div>
+      <div><span class="rpt-label">Slot Total:</span> <span class="rpt-money">$${(S.slotEarnings||0).toFixed(2)}</span></div>
+    </div>
+    <div class="report-section">
+      <div style="font-size:14px;color:var(--gold);margin-bottom:6px">THEORETICAL MAXIMUM</div>
+      <div><span class="rpt-label">This slot base max:</span> <span class="rpt-money">$${(bp * CFG.globalMoneyScaler).toFixed(2)}</span></div>
+      <div><span class="rpt-label">All ops max (range ${S.maxNum}):</span> <span class="rpt-money">$${(getBasePayout(getSlotDifficulty({add:true,sub:true,mul:true,div:true}, S.maxNum), ageExp) * CFG.globalMoneyScaler).toFixed(2)}</span></div>
+      <div style="color:var(--fg-dim);font-size:13px">(Plus unlimited bonus rounds)</div>
+    </div>
+  `;
+}
+
+// Slots overlay
+function openSlots() {
+  AudioEngine.playMenuOpen();
+  document.getElementById('slots-overlay').classList.add('open');
+  renderSlotsList();
+}
+function closeSlots() {
+  AudioEngine.playMenuClose();
+  document.getElementById('slots-overlay').classList.remove('open');
+}
+
+function renderSlotsList() {
+  const list = document.getElementById('slots-list');
+  const keys = getAllSlotKeys();
+  const opSymbols = { add: '+', sub: '−', mul: '×', div: '÷' };
+
+  if (keys.length === 0) {
+    list.innerHTML = '<div style="padding:20px;color:var(--fg-dim);text-align:center">No slots yet. Start playing!</div>';
+    return;
+  }
+
+  list.innerHTML = keys.map(key => {
+    try {
+      const raw = localStorage.getItem('arithmetyx_slot_' + key);
+      if (!raw) return '';
+      const slot = JSON.parse(raw);
+      const isCurrent = key === CFG.currentSlotKey;
+      const ops = Object.entries(slot.ops).filter(([,v])=>v).map(([k])=>opSymbols[k]||k).join(' ');
+      const allProbs = enumerateSlotProblems(slot.ops, slot.maxNum);
+      const th = getAgeThresholds(getAge());
+      let mc = 0;
+      for (const p of allProbs) {
+        const d = slot.problems[p.key];
+        if (d && d.correct >= 2 && d.lastCorrect && (d.lastTime||99999) < th.masterySpeed*1000) mc++;
+      }
+      const mPct = allProbs.length > 0 ? Math.round(mc / allProbs.length * 100) : 0;
+      return `<div class="slot-card ${isCurrent?'active':''}" data-slot-key="${key}">
+        <div class="slot-ops">${ops}</div>
+        <div class="slot-range">Range: 0-${slot.maxNum} · ${slot.totalCorrect||0} correct</div>
+        <div class="slot-mastery"><div class="slot-mastery-fill" style="width:${mPct}%"></div></div>
+        <div class="slot-info">
+          <span style="color:var(--fg-dim);font-size:14px">Mastery: ${mPct}%</span>
+          <span class="slot-earnings">$${(slot.slotEarnings||0).toFixed(2)}</span>
+        </div>
+      </div>`;
+    } catch(e) { return ''; }
+  }).join('');
+
+  list.querySelectorAll('.slot-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const key = card.dataset.slotKey;
+      saveSlot();
+      loadSlot(key);
+      closeSlots();
+      updateUI();
+      presentProblem();
+      showSlotNote('Switched to slot: ' + key);
+    });
+  });
+}
+
 // Menu events
 document.getElementById('menu-open-btn').addEventListener('click', openMenu);
 document.getElementById('menu-close-btn').addEventListener('click', closeMenu);
 document.getElementById('menu-close-btn2').addEventListener('click', closeMenu);
+document.getElementById('slots-open-btn').addEventListener('click', openSlots);
+document.getElementById('slots-close-btn').addEventListener('click', closeSlots);
+document.getElementById('new-slot-btn').addEventListener('click', () => {
+  closeSlots();
+  openMenu();
+});
 
 document.querySelectorAll('.toggle[data-op]').forEach(el => {
   el.addEventListener('click', () => {
     const op = el.dataset.op;
-    S.ops[op] = !S.ops[op];
-    // Ensure at least one is on
-    if (!Object.values(S.ops).some(v => v)) S.ops[op] = true;
-    el.classList.toggle('on', S.ops[op]);
-    saveState();
+    const newOps = { ...S.ops };
+    newOps[op] = !newOps[op];
+    if (!Object.values(newOps).some(v => v)) newOps[op] = true;
+    el.classList.toggle('on', newOps[op]);
+    switchSlot(newOps, S.maxNum);
+    renderMenu();
   });
 });
 
@@ -658,43 +1210,85 @@ document.querySelectorAll('.mode-btn').forEach(el => {
   el.addEventListener('click', () => {
     S.mode = el.dataset.mode;
     document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === S.mode));
-    saveState();
+    saveSlot();
   });
 });
 
 document.getElementById('choices-range').addEventListener('input', (e) => {
   S.numChoices = parseInt(e.target.value);
   document.getElementById('choices-val').textContent = S.numChoices;
-  saveState();
+  saveSlot();
 });
 
 document.getElementById('maxnum-range').addEventListener('input', (e) => {
-  S.maxNum = parseInt(e.target.value);
-  document.getElementById('maxnum-val').textContent = S.maxNum;
-  saveState();
+  const newMax = parseInt(e.target.value);
+  document.getElementById('maxnum-val').textContent = newMax;
+  switchSlot(S.ops, newMax);
+  renderMenu();
+});
+
+document.getElementById('birth-year-input').addEventListener('change', (e) => {
+  CFG.birthYear = Math.max(2005, Math.min(2024, parseInt(e.target.value) || 2016));
+  e.target.value = CFG.birthYear;
+  document.getElementById('age-display').textContent = 'Age: ' + getAge();
+  saveConfig();
+});
+
+document.getElementById('scaler-range').addEventListener('input', (e) => {
+  CFG.globalMoneyScaler = parseInt(e.target.value) / 100;
+  document.getElementById('scaler-val').textContent = parseInt(e.target.value) + '%';
+  saveConfig();
 });
 
 document.getElementById('toggle-sfx').addEventListener('click', function() {
   this.classList.toggle('on');
-  Audio.setSfxEnabled(this.classList.contains('on'));
+  CFG.sfxEnabled = this.classList.contains('on');
+  AudioEngine.setSfxEnabled(CFG.sfxEnabled);
+  saveConfig();
 });
 
 document.getElementById('toggle-music').addEventListener('click', function() {
   this.classList.toggle('on');
-  Audio.setMusicEnabled(this.classList.contains('on'));
+  CFG.musicEnabled = this.classList.contains('on');
+  AudioEngine.setMusicEnabled(CFG.musicEnabled);
+  saveConfig();
 });
 
 document.getElementById('volume-range').addEventListener('input', (e) => {
   const v = parseInt(e.target.value);
   document.getElementById('volume-val').textContent = v;
-  Audio.setVolume(v / 100);
+  CFG.volume = v / 100;
+  AudioEngine.setVolume(CFG.volume);
+  saveConfig();
+});
+
+document.getElementById('reset-slot-btn').addEventListener('click', () => {
+  if (confirm('Reset current slot? This cannot be undone.')) {
+    const key = CFG.currentSlotKey;
+    const ops = { ...S.ops };
+    const maxNum = S.maxNum;
+    localStorage.removeItem('arithmetyx_slot_' + key);
+    loadSlot(key);
+    S.ops = ops;
+    S.maxNum = maxNum;
+    saveSlot();
+    renderMenu();
+    renderHardList();
+    updateUI();
+    playerY = 0;
+    targetPlayerY = 0;
+  }
 });
 
 document.getElementById('reset-btn').addEventListener('click', () => {
-  if (confirm('Destroy all progress? This cannot be undone.')) {
-    localStorage.removeItem('arithmetyx_state');
-    S = JSON.parse(JSON.stringify(DEFAULT_STATE));
-    saveState();
+  if (confirm('Destroy ALL progress across ALL slots? This cannot be undone.')) {
+    const keys = getAllSlotKeys();
+    for (const k of keys) localStorage.removeItem('arithmetyx_slot_' + k);
+    localStorage.removeItem('arithmetyx_config');
+    CFG = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    saveConfig();
+    const key = 'add_sub_mul_div_10';
+    loadSlot(key);
     renderMenu();
     renderHardList();
     updateUI();
@@ -712,14 +1306,9 @@ document.getElementById('apply-karma-btn').addEventListener('click', () => {
   const oldKarma = S.karma;
   S.karma = newKarma;
   if (!S.karmaLog) S.karmaLog = [];
-  S.karmaLog.push({
-    date: new Date().toISOString(),
-    from: oldKarma,
-    to: newKarma
-  });
-  // Keep last 20 entries
+  S.karmaLog.push({ date: new Date().toISOString(), from: oldKarma, to: newKarma });
   if (S.karmaLog.length > 20) S.karmaLog = S.karmaLog.slice(-20);
-  saveState();
+  saveSlot();
   renderKarmaUI();
   updateUI();
 });
@@ -732,10 +1321,7 @@ function renderKarmaUI() {
 
   const log = document.getElementById('karma-log');
   const entries = (S.karmaLog || []).slice().reverse();
-  if (entries.length === 0) {
-    log.innerHTML = '';
-    return;
-  }
+  if (entries.length === 0) { log.innerHTML = ''; return; }
   log.innerHTML = entries.map(e => {
     const d = new Date(e.date);
     const dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
@@ -749,13 +1335,41 @@ function renderKarmaUI() {
 
 // ============ VICTORY ============
 function showVictory() {
+  const complete = checkCompletionRequirements();
+  const title = document.getElementById('victory-title');
+  const msg = document.getElementById('victory-msg');
+  const payoutEl = document.getElementById('victory-payout');
+
+  if (complete) {
+    title.textContent = 'THE TOWER IS CONQUERED';
+    msg.textContent = 'You have escaped the arithmetic void.';
+    // Award payout
+    const payout = calculateSlotPayout();
+    if (S.slotEarnings === 0) { // Only award base payout once
+      S.slotEarnings = payout;
+      saveSlot();
+    }
+    payoutEl.textContent = `Slot Payout: $${S.slotEarnings.toFixed(2)} · Bonus Rounds Unlocked!`;
+  } else {
+    title.textContent = 'TOWER CONQUERED';
+    msg.textContent = 'Tower conquered but mastery incomplete — keep practicing for payout';
+    payoutEl.textContent = '';
+  }
+
   document.getElementById('victory-stats').textContent =
     `${S.totalCorrect} correct · ${S.totalWrong} wrong · Best streak: ${S.bestStreak}`;
   document.getElementById('victory-screen').classList.add('show');
 }
+
 document.getElementById('continue-btn').addEventListener('click', () => {
   document.getElementById('victory-screen').classList.remove('show');
-  presentProblem();
+  // If completion met and game beaten, offer bonus rounds
+  if (S.gameBeaten && checkCompletionRequirements() && !S.bonusActive) {
+    if (S.bonusRound === 0) S.bonusRound = 1;
+    startBonusRound();
+  } else {
+    presentProblem();
+  }
 });
 
 // ============ BACKGROUND GAME (ROGUE CLIMBING) ============
@@ -763,33 +1377,22 @@ const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
 let W, H;
 
-function resize() {
-  W = canvas.width = window.innerWidth;
-  H = canvas.height = window.innerHeight;
-}
+function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
 window.addEventListener('resize', resize);
 resize();
 
-// Platforms - generated procedurally based on height
 const platformCache = {};
 function getPlatform(index) {
   if (platformCache[index]) return platformCache[index];
-  // Seeded pseudo-random
   const seed = index * 2654435761 & 0xFFFFFFFF;
   const r1 = ((seed >> 16) & 0xFFFF) / 0xFFFF;
   const r2 = ((seed >> 8) & 0xFFFF) / 0xFFFF;
   const r3 = (seed & 0xFFFF) / 0xFFFF;
-  
-  const plat = {
-    x: 0.1 + r1 * 0.5,
-    width: 0.15 + r2 * 0.25,
-    decoration: r3
-  };
+  const plat = { x: 0.1 + r1 * 0.5, width: 0.15 + r2 * 0.25, decoration: r3 };
   platformCache[index] = plat;
   return plat;
 }
 
-// Environment zones — endless past 600 with escalating intensity
 function getZone(h) {
   if (h < 60) return { name: 'THE ABYSS', bg1: '#0e0e14', bg2: '#16151e', platColor: '#3a3550', edgeColor: '#5a5470', fogColor: 'rgba(10,10,14,0.25)', particles: 'ash', charGlow: '#6a6090', intensity: 0 };
   if (h < 150) return { name: 'CRIMSON DEPTHS', bg1: '#180a0a', bg2: '#221010', platColor: '#5a2020', edgeColor: '#8a3535', fogColor: 'rgba(20,8,8,0.2)', particles: 'embers', charGlow: '#dd4444', intensity: 0.1 };
@@ -797,14 +1400,11 @@ function getZone(h) {
   if (h < 420) return { name: 'VOID SPIRE', bg1: '#0c0c1a', bg2: '#101028', platColor: '#2a2a5a', edgeColor: '#4a4a8a', fogColor: 'rgba(8,8,20,0.2)', particles: 'void', charGlow: '#8a6ad0', intensity: 0.35 };
   if (h < 550) return { name: 'STORM REACH', bg1: '#081414', bg2: '#0e2020', platColor: '#1a4a4a', edgeColor: '#2a7a7a', fogColor: 'rgba(6,14,14,0.15)', particles: 'lightning', charGlow: '#4ad4d4', intensity: 0.5 };
   if (h < 700) return { name: 'THE APEX', bg1: '#141006', bg2: '#2a2210', platColor: '#4a3d15', edgeColor: '#8a7530', fogColor: 'rgba(20,18,8,0.1)', particles: 'gold', charGlow: '#f0d060', intensity: 0.65 };
-
-  // Endless post-game zones — cycle through increasingly intense variants
   const postH = h - 700;
   const cycle = Math.floor(postH / 200);
-  const tier = cycle + 1; // 1, 2, 3...
+  const tier = cycle + 1;
   const phase = cycle % 5;
   const intensity = Math.min(1.0, 0.7 + tier * 0.05);
-
   const postZones = [
     { name: `BLOOD ZENITH ${tier > 1 ? 'x'+tier : ''}`, bg1: '#1a0606', bg2: '#2a0808', platColor: '#6a1a1a', edgeColor: '#cc3333', fogColor: 'rgba(30,5,5,0.12)', particles: 'embers', charGlow: '#ff4444' },
     { name: `NULL DIMENSION ${tier > 1 ? 'x'+tier : ''}`, bg1: '#04040e', bg2: '#08081a', platColor: '#1a1a4a', edgeColor: '#5555cc', fogColor: 'rgba(4,4,15,0.12)', particles: 'void', charGlow: '#8888ff' },
@@ -815,7 +1415,6 @@ function getZone(h) {
   return { ...postZones[phase], intensity };
 }
 
-// Particles
 const particles = [];
 function spawnParticle(zone) {
   const p = { x: Math.random() * W, y: Math.random() * H, vx: 0, vy: 0, life: 1, maxLife: 1, size: 2, color: '#444' };
@@ -830,37 +1429,33 @@ function spawnParticle(zone) {
   particles.push(p);
 }
 
-let playerY = S.height; // in platform units
+let playerY = S.height;
 let targetPlayerY = S.height;
 let playerBob = 0;
 let cameraY = 0;
 let lastTime = 0;
 let frameCount = 0;
-let screenShake = 0; // decays over time
+let screenShake = 0;
 
 function drawCharacter(cx, cy, zone) {
   const bob = Math.sin(playerBob) * 4;
   const y = cy + bob;
   const glow = zone.charGlow || '#dd4444';
-  // Expand shorthand hex (#d44 -> #dd4444) for alpha concatenation
   const expandHex = (c) => c.length === 4 ? '#' + c[1]+c[1]+c[2]+c[2]+c[3]+c[3] : c;
   const glowFull = expandHex(glow);
-  
-  // Large glow aura behind character
+
   const auraGrad = ctx.createRadialGradient(cx, y - 6, 0, cx, y - 6, 40);
   auraGrad.addColorStop(0, glowFull + '40');
   auraGrad.addColorStop(0.5, glowFull + '15');
   auraGrad.addColorStop(1, 'transparent');
   ctx.fillStyle = auraGrad;
   ctx.fillRect(cx - 50, y - 50, 100, 80);
-  
-  // Shadow
+
   ctx.fillStyle = 'rgba(0,0,0,0.6)';
   ctx.beginPath();
   ctx.ellipse(cx, y + 26, 14, 4, 0, 0, Math.PI * 2);
   ctx.fill();
-  
-  // Cape (behind body, bigger)
+
   ctx.fillStyle = 'rgba(130,25,25,0.7)';
   ctx.beginPath();
   ctx.moveTo(cx - 9, y - 14);
@@ -868,51 +1463,42 @@ function drawCharacter(cx, cy, zone) {
   ctx.lineTo(cx + 14, y + 18 + Math.sin(playerBob * 0.7 + 1) * 3);
   ctx.lineTo(cx + 9, y - 14);
   ctx.fill();
-  
-  // Legs
+
   ctx.fillStyle = '#4a4550';
   ctx.fillRect(cx - 6, y + 8, 4, 12);
   ctx.fillRect(cx + 2, y + 8, 4, 12);
-  
-  // Boots
+
   ctx.fillStyle = '#3a3035';
   ctx.fillRect(cx - 7, y + 18, 5, 4);
   ctx.fillRect(cx + 1, y + 18, 5, 4);
-  
-  // Body (bigger)
+
   ctx.fillStyle = '#b8b0a8';
   ctx.fillRect(cx - 8, y - 12, 16, 20);
-  
-  // Belt
+
   ctx.fillStyle = '#5a4530';
   ctx.fillRect(cx - 8, y + 2, 16, 3);
   ctx.fillStyle = glow;
-  ctx.fillRect(cx - 2, y + 2, 4, 3); // belt buckle
-  
-  // Arms
+  ctx.fillRect(cx - 2, y + 2, 4, 3);
+
   ctx.fillStyle = '#a8a098';
   ctx.fillRect(cx - 12, y - 10, 4, 14);
   ctx.fillRect(cx + 8, y - 10, 4, 14);
-  
-  // Head (bigger)
+
   ctx.fillStyle = '#d0c8c0';
   ctx.fillRect(cx - 6, y - 24, 12, 12);
-  
-  // Hair/helmet
+
   ctx.fillStyle = '#3a3035';
   ctx.fillRect(cx - 7, y - 26, 14, 5);
   ctx.fillRect(cx - 7, y - 24, 2, 8);
   ctx.fillRect(cx + 5, y - 24, 2, 8);
-  
-  // Eyes (glowing!)
+
   ctx.fillStyle = glow;
   ctx.shadowColor = glow;
   ctx.shadowBlur = 12;
   ctx.fillRect(cx - 4, y - 20, 3, 3);
   ctx.fillRect(cx + 1, y - 20, 3, 3);
   ctx.shadowBlur = 0;
-  
-  // Eye glow trails (when moving)
+
   if (Math.abs(targetPlayerY - playerY) > 0.5) {
     ctx.globalAlpha = 0.4;
     ctx.fillStyle = glow;
@@ -921,7 +1507,6 @@ function drawCharacter(cx, cy, zone) {
     ctx.globalAlpha = 1;
   }
 
-  // Shield orbs — orbit around character
   const shields = S.shields || 0;
   if (shields > 0) {
     const orbitRadius = 22;
@@ -929,8 +1514,7 @@ function drawCharacter(cx, cy, zone) {
     for (let si = 0; si < shields; si++) {
       const angle = orbitSpeed + (si / shields) * Math.PI * 2;
       const ox = cx + Math.cos(angle) * orbitRadius;
-      const oy = y - 5 + Math.sin(angle) * orbitRadius * 0.4; // flattened orbit
-      // Outer glow
+      const oy = y - 5 + Math.sin(angle) * orbitRadius * 0.4;
       ctx.fillStyle = '#4ad4d4';
       ctx.shadowColor = '#4ad4d4';
       ctx.shadowBlur = 10;
@@ -938,7 +1522,6 @@ function drawCharacter(cx, cy, zone) {
       ctx.beginPath();
       ctx.arc(ox, oy, 3, 0, Math.PI * 2);
       ctx.fill();
-      // Inner bright core
       ctx.fillStyle = '#aaffff';
       ctx.globalAlpha = 0.9;
       ctx.beginPath();
@@ -955,19 +1538,14 @@ function render(timestamp) {
   lastTime = timestamp;
   frameCount++;
 
-  // Update target from state
   targetPlayerY = S.height;
   playerY += (targetPlayerY - playerY) * Math.min(1, dt * 5);
   playerBob += dt * 3;
 
   const zone = getZone(playerY);
-
-  // Camera follows player
   const targetCam = playerY * 40 - H * 0.6;
   cameraY += (targetCam - cameraY) * Math.min(1, dt * 3);
 
-  // Background gradient
-  // Apply screen shake
   if (screenShake > 0.5) {
     ctx.save();
     const sx = (Math.random() - 0.5) * screenShake;
@@ -982,7 +1560,6 @@ function render(timestamp) {
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
-  // Distant structures (parallax)
   ctx.globalAlpha = 0.2;
   for (let i = 0; i < 8; i++) {
     const bx = (i * W / 5 + 30) % (W + 100) - 50;
@@ -990,7 +1567,6 @@ function render(timestamp) {
     const by = H - bh + cameraY * 0.1;
     ctx.fillStyle = zone.platColor;
     ctx.fillRect(bx, by, 30 + i * 7, bh);
-    // Window lights
     ctx.fillStyle = zone.edgeColor || '#444';
     ctx.globalAlpha = 0.15;
     for (let wy = by + 15; wy < by + bh - 10; wy += 20) {
@@ -1001,8 +1577,7 @@ function render(timestamp) {
   }
   ctx.globalAlpha = 1;
 
-  // Draw platforms
-  const platH = 40; // spacing in px between platforms
+  const platH = 40;
   const startIdx = Math.max(0, Math.floor((cameraY - 100) / platH));
   const endIdx = Math.ceil((cameraY + H + 100) / platH);
 
@@ -1012,33 +1587,27 @@ function render(timestamp) {
     const px = p.x * W;
     const pw = p.width * W;
 
-    // Platform glow underneath
     ctx.fillStyle = zone.edgeColor || zone.platColor;
     ctx.globalAlpha = 0.15;
     ctx.fillRect(px - 2, screenY + 2, pw + 4, 12);
     ctx.globalAlpha = 1;
 
-    // Main platform body (much thicker)
     ctx.fillStyle = zone.platColor;
     ctx.fillRect(px, screenY, pw, 10);
-    
-    // Platform top edge highlight (bright)
+
     ctx.fillStyle = zone.edgeColor || 'rgba(200,192,184,0.3)';
     ctx.fillRect(px, screenY, pw, 2);
-    
-    // Platform side edges
+
     ctx.fillStyle = zone.edgeColor || 'rgba(200,192,184,0.2)';
     ctx.fillRect(px, screenY, 2, 10);
     ctx.fillRect(px + pw - 2, screenY, 2, 10);
-    
-    // Occasional decoration - taller and brighter
+
     if (p.decoration > 0.8 && i > 0) {
       ctx.fillStyle = zone.edgeColor || 'rgba(184,48,48,0.4)';
       ctx.fillRect(px + pw * 0.3, screenY - 14, 4, 14);
       ctx.fillRect(px + pw * 0.6, screenY - 10, 3, 10);
     }
-    
-    // Grass/moss tufts on some platforms
+
     if (p.decoration > 0.5 && p.decoration < 0.7) {
       ctx.fillStyle = zone.edgeColor || '#4a4a4a';
       ctx.globalAlpha = 0.5;
@@ -1048,10 +1617,8 @@ function render(timestamp) {
       }
       ctx.globalAlpha = 1;
     }
-    
-    // Zone markers — both pre-game and post-game zone boundaries
+
     const zoneMarkers = [60, 150, 280, 420, 550, 700];
-    // Add post-game markers every 200 past 700
     for (let zm = 900; zm <= i + 200; zm += 200) { if (!zoneMarkers.includes(zm)) zoneMarkers.push(zm); }
     if (zoneMarkers.includes(i)) {
       ctx.fillStyle = 'rgba(184,48,48,0.45)';
@@ -1063,30 +1630,22 @@ function render(timestamp) {
     }
   }
 
-  // Draw character on current platform
   const currentPlat = getPlatform(Math.floor(playerY));
   const charScreenY = H - (playerY * platH - cameraY);
   const charX = currentPlat.x * W + currentPlat.width * W * 0.5;
   drawCharacter(charX, charScreenY - 10, zone);
 
-  // Particles — more at higher intensity
   const particleRate = Math.max(1, Math.floor(4 - (zone.intensity || 0) * 3));
   const particleCap = 80 + Math.floor((zone.intensity || 0) * 120);
   if (frameCount % particleRate === 0 && particles.length < particleCap) {
     spawnParticle(zone);
-    // At high intensity, spawn extra particles
     if ((zone.intensity || 0) > 0.6 && particles.length < particleCap) spawnParticle(zone);
     if ((zone.intensity || 0) > 0.85 && particles.length < particleCap) spawnParticle(zone);
   }
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
-    p.x += p.vx;
-    p.y += p.vy;
-    p.life -= dt;
-    if (p.life <= 0 || p.y < -20 || p.y > H + 20) {
-      particles.splice(i, 1);
-      continue;
-    }
+    p.x += p.vx; p.y += p.vy; p.life -= dt;
+    if (p.life <= 0 || p.y < -20 || p.y > H + 20) { particles.splice(i, 1); continue; }
     ctx.globalAlpha = Math.min(1, p.life / p.maxLife) * 0.85;
     ctx.fillStyle = p.color;
     ctx.shadowColor = p.color;
@@ -1098,11 +1657,9 @@ function render(timestamp) {
   ctx.shadowBlur = 0;
   ctx.globalAlpha = 1;
 
-  // Fog overlay
   ctx.fillStyle = zone.fogColor;
   ctx.fillRect(0, 0, W, H);
 
-  // Intensity vignette — gets more dramatic at higher zones
   const intens = zone.intensity || 0;
   if (intens > 0.3) {
     const vignetteGrad = ctx.createRadialGradient(W/2, H/2, H*0.2, W/2, H/2, H*0.9);
@@ -1112,7 +1669,6 @@ function render(timestamp) {
     ctx.fillRect(0, 0, W, H);
   }
 
-  // Edge glow at high intensity
   if (intens > 0.6) {
     const glowAlpha = (intens - 0.6) * 0.3;
     const gc = zone.charGlow || '#f00';
@@ -1123,22 +1679,20 @@ function render(timestamp) {
     ctx.globalAlpha = 1;
   }
 
-  // Zone name display at bottom
   ctx.fillStyle = 'rgba(200,192,184,0.3)';
   ctx.font = '11px Silkscreen';
   ctx.textAlign = 'right';
   ctx.fillText(zone.name, W - 10, H - 50);
   ctx.textAlign = 'left';
 
-  // Restore shake transform
   if (screenShake > 0.5) ctx.restore();
 
   requestAnimationFrame(render);
 }
 
 // ============ AUDIO ENGINE ============
-const Audio = (() => {
-  let ctx = null;
+const AudioEngine = (() => {
+  let actx = null;
   let masterGain = null;
   let musicGain = null;
   let sfxGain = null;
@@ -1149,461 +1703,280 @@ const Audio = (() => {
   let volume = 0.5;
 
   function init() {
-    if (ctx) return;
-    ctx = new (window.AudioContext || window.webkitAudioContext)();
-    masterGain = ctx.createGain();
+    if (actx) return;
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = actx.createGain();
     masterGain.gain.value = volume;
-    masterGain.connect(ctx.destination);
-
-    musicGain = ctx.createGain();
+    masterGain.connect(actx.destination);
+    musicGain = actx.createGain();
     musicGain.gain.value = 0.35;
     musicGain.connect(masterGain);
-
-    sfxGain = ctx.createGain();
+    sfxGain = actx.createGain();
     sfxGain.gain.value = 0.7;
     sfxGain.connect(masterGain);
   }
 
-  function setVolume(v) {
-    volume = v;
-    if (masterGain) masterGain.gain.value = v;
-  }
-
-  function setMusicEnabled(on) {
-    musicEnabled = on;
-    if (musicGain) musicGain.gain.setTargetAtTime(on ? 0.35 : 0, ctx.currentTime, 0.3);
-  }
-
-  function setSfxEnabled(on) {
-    enabled = on;
-    if (sfxGain) sfxGain.gain.setTargetAtTime(on ? 0.7 : 0, ctx.currentTime, 0.1);
-  }
-
-  // --- SFX ---
+  function setVolume(v) { volume = v; if (masterGain) masterGain.gain.value = v; }
+  function setMusicEnabled(on) { musicEnabled = on; if (musicGain) musicGain.gain.setTargetAtTime(on ? 0.35 : 0, actx.currentTime, 0.3); }
+  function setSfxEnabled(on) { enabled = on; if (sfxGain) sfxGain.gain.setTargetAtTime(on ? 0.7 : 0, actx.currentTime, 0.1); }
 
   function playCorrect() {
-    if (!ctx || !enabled) return;
-    // Bright rising arpeggio
-    const now = ctx.currentTime;
+    if (!actx || !enabled) return;
+    const now = actx.currentTime;
     const notes = [440, 554, 659];
     notes.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.value = freq;
+      const osc = actx.createOscillator();
+      const gain = actx.createGain();
+      osc.type = 'triangle'; osc.frequency.value = freq;
       gain.gain.setValueAtTime(0, now + i * 0.06);
       gain.gain.linearRampToValueAtTime(0.3, now + i * 0.06 + 0.02);
       gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.06 + 0.2);
-      osc.connect(gain);
-      gain.connect(sfxGain);
-      osc.start(now + i * 0.06);
-      osc.stop(now + i * 0.06 + 0.25);
+      osc.connect(gain); gain.connect(sfxGain);
+      osc.start(now + i * 0.06); osc.stop(now + i * 0.06 + 0.25);
     });
   }
 
   function playWrong() {
-    if (!ctx || !enabled) return;
-    const now = ctx.currentTime;
-    // Dissonant falling buzz
-    const osc1 = ctx.createOscillator();
-    const osc2 = ctx.createOscillator();
-    const gain = ctx.createGain();
-    const distortion = ctx.createWaveShaperFunction ? null : ctx.createWaveShaper();
-
-    osc1.type = 'sawtooth';
-    osc1.frequency.setValueAtTime(220, now);
-    osc1.frequency.exponentialRampToValueAtTime(80, now + 0.4);
-
-    osc2.type = 'square';
-    osc2.frequency.setValueAtTime(233, now);
-    osc2.frequency.exponentialRampToValueAtTime(60, now + 0.4);
-
-    gain.gain.setValueAtTime(0.25, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
-
-    osc1.connect(gain);
-    osc2.connect(gain);
-    gain.connect(sfxGain);
-    osc1.start(now);
-    osc2.start(now);
-    osc1.stop(now + 0.5);
-    osc2.stop(now + 0.5);
+    if (!actx || !enabled) return;
+    const now = actx.currentTime;
+    const osc1 = actx.createOscillator();
+    const osc2 = actx.createOscillator();
+    const gain = actx.createGain();
+    osc1.type = 'sawtooth'; osc1.frequency.setValueAtTime(220, now); osc1.frequency.exponentialRampToValueAtTime(80, now + 0.4);
+    osc2.type = 'square'; osc2.frequency.setValueAtTime(233, now); osc2.frequency.exponentialRampToValueAtTime(60, now + 0.4);
+    gain.gain.setValueAtTime(0.25, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+    osc1.connect(gain); osc2.connect(gain); gain.connect(sfxGain);
+    osc1.start(now); osc2.start(now); osc1.stop(now + 0.5); osc2.stop(now + 0.5);
   }
 
   function playFall() {
-    if (!ctx || !enabled) return;
-    const now = ctx.currentTime;
-    // Long dramatic falling sound
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    const lfo = ctx.createOscillator();
-    const lfoGain = ctx.createGain();
-
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(400, now);
-    osc.frequency.exponentialRampToValueAtTime(40, now + 1.2);
-
-    lfo.frequency.value = 8;
-    lfoGain.gain.value = 30;
-    lfo.connect(lfoGain);
-    lfoGain.connect(osc.frequency);
-
-    gain.gain.setValueAtTime(0.2, now);
-    gain.gain.linearRampToValueAtTime(0.25, now + 0.1);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 1.3);
-
-    osc.connect(gain);
-    gain.connect(sfxGain);
-    lfo.start(now);
-    osc.start(now);
-    lfo.stop(now + 1.4);
-    osc.stop(now + 1.4);
-
-    // Impact thud
-    const noise = ctx.createBufferSource();
-    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.3, ctx.sampleRate);
+    if (!actx || !enabled) return;
+    const now = actx.currentTime;
+    const osc = actx.createOscillator();
+    const gain = actx.createGain();
+    const lfo = actx.createOscillator();
+    const lfoGain = actx.createGain();
+    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(40, now + 1.2);
+    lfo.frequency.value = 8; lfoGain.gain.value = 30;
+    lfo.connect(lfoGain); lfoGain.connect(osc.frequency);
+    gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0.25, now + 0.1); gain.gain.exponentialRampToValueAtTime(0.001, now + 1.3);
+    osc.connect(gain); gain.connect(sfxGain); lfo.start(now); osc.start(now); lfo.stop(now + 1.4); osc.stop(now + 1.4);
+    const noise = actx.createBufferSource();
+    const buf = actx.createBuffer(1, actx.sampleRate * 0.3, actx.sampleRate);
     const data = buf.getChannelData(0);
-    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.05));
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (actx.sampleRate * 0.05));
     noise.buffer = buf;
-    const nGain = ctx.createGain();
-    nGain.gain.setValueAtTime(0, now + 0.8);
-    nGain.gain.linearRampToValueAtTime(0.4, now + 0.82);
-    nGain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
-    noise.connect(nGain);
-    nGain.connect(sfxGain);
-    noise.start(now + 0.8);
+    const nGain = actx.createGain();
+    nGain.gain.setValueAtTime(0, now + 0.8); nGain.gain.linearRampToValueAtTime(0.4, now + 0.82); nGain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+    noise.connect(nGain); nGain.connect(sfxGain); noise.start(now + 0.8);
   }
 
   function playClick() {
-    if (!ctx || !enabled) return;
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = 800;
-    gain.gain.setValueAtTime(0.15, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
-    osc.connect(gain);
-    gain.connect(sfxGain);
-    osc.start(now);
-    osc.stop(now + 0.07);
+    if (!actx || !enabled) return;
+    const now = actx.currentTime;
+    const osc = actx.createOscillator();
+    const gain = actx.createGain();
+    osc.type = 'sine'; osc.frequency.value = 800;
+    gain.gain.setValueAtTime(0.15, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+    osc.connect(gain); gain.connect(sfxGain); osc.start(now); osc.stop(now + 0.07);
   }
 
   function playStreak(streakCount) {
-    if (!ctx || !enabled) return;
-    // Higher pitch chime every 5 streak
+    if (!actx || !enabled) return;
     if (streakCount % 5 !== 0 || streakCount === 0) return;
-    const now = ctx.currentTime;
+    const now = actx.currentTime;
     const baseFreq = 523 + Math.min(streakCount, 50) * 8;
     [0, 0.08, 0.16].forEach((t, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = baseFreq + i * 100;
-      gain.gain.setValueAtTime(0, now + t);
-      gain.gain.linearRampToValueAtTime(0.2, now + t + 0.02);
+      const osc = actx.createOscillator();
+      const gain = actx.createGain();
+      osc.type = 'sine'; osc.frequency.value = baseFreq + i * 100;
+      gain.gain.setValueAtTime(0, now + t); gain.gain.linearRampToValueAtTime(0.2, now + t + 0.02);
       gain.gain.exponentialRampToValueAtTime(0.001, now + t + 0.4);
-      osc.connect(gain);
-      gain.connect(sfxGain);
-      osc.start(now + t);
-      osc.stop(now + t + 0.45);
+      osc.connect(gain); gain.connect(sfxGain); osc.start(now + t); osc.stop(now + t + 0.45);
     });
   }
 
   function playVictory() {
-    if (!ctx || !enabled) return;
-    const now = ctx.currentTime;
-    // Grand ascending fanfare
+    if (!actx || !enabled) return;
+    const now = actx.currentTime;
     const notes = [523, 659, 784, 880, 1047, 1319, 1568];
     notes.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const osc2 = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'triangle';
-      osc2.type = 'sine';
-      osc.frequency.value = freq;
-      osc2.frequency.value = freq * 1.002; // slight detune for richness
+      const osc = actx.createOscillator();
+      const osc2 = actx.createOscillator();
+      const gain = actx.createGain();
+      osc.type = 'triangle'; osc2.type = 'sine';
+      osc.frequency.value = freq; osc2.frequency.value = freq * 1.002;
       const t = i * 0.12;
-      gain.gain.setValueAtTime(0, now + t);
-      gain.gain.linearRampToValueAtTime(0.2, now + t + 0.03);
-      gain.gain.setValueAtTime(0.2, now + t + 0.3);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + t + 1.0);
-      osc.connect(gain);
-      osc2.connect(gain);
-      gain.connect(sfxGain);
-      osc.start(now + t);
-      osc2.start(now + t);
-      osc.stop(now + t + 1.1);
-      osc2.stop(now + t + 1.1);
+      gain.gain.setValueAtTime(0, now + t); gain.gain.linearRampToValueAtTime(0.2, now + t + 0.03);
+      gain.gain.setValueAtTime(0.2, now + t + 0.3); gain.gain.exponentialRampToValueAtTime(0.001, now + t + 1.0);
+      osc.connect(gain); osc2.connect(gain); gain.connect(sfxGain);
+      osc.start(now + t); osc2.start(now + t); osc.stop(now + t + 1.1); osc2.stop(now + t + 1.1);
     });
   }
 
   function playMenuOpen() {
-    if (!ctx || !enabled) return;
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(200, now);
-    osc.frequency.linearRampToValueAtTime(400, now + 0.12);
-    gain.gain.setValueAtTime(0.12, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-    osc.connect(gain);
-    gain.connect(sfxGain);
-    osc.start(now);
-    osc.stop(now + 0.18);
+    if (!actx || !enabled) return;
+    const now = actx.currentTime;
+    const osc = actx.createOscillator();
+    const gain = actx.createGain();
+    osc.type = 'sine'; osc.frequency.setValueAtTime(200, now); osc.frequency.linearRampToValueAtTime(400, now + 0.12);
+    gain.gain.setValueAtTime(0.12, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+    osc.connect(gain); gain.connect(sfxGain); osc.start(now); osc.stop(now + 0.18);
   }
 
   function playMenuClose() {
-    if (!ctx || !enabled) return;
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(400, now);
-    osc.frequency.linearRampToValueAtTime(200, now + 0.12);
-    gain.gain.setValueAtTime(0.12, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-    osc.connect(gain);
-    gain.connect(sfxGain);
-    osc.start(now);
-    osc.stop(now + 0.18);
+    if (!actx || !enabled) return;
+    const now = actx.currentTime;
+    const osc = actx.createOscillator();
+    const gain = actx.createGain();
+    osc.type = 'sine'; osc.frequency.setValueAtTime(400, now); osc.frequency.linearRampToValueAtTime(200, now + 0.12);
+    gain.gain.setValueAtTime(0.12, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+    osc.connect(gain); gain.connect(sfxGain); osc.start(now); osc.stop(now + 0.18);
   }
 
   function playShieldBreak() {
-    if (!ctx || !enabled) return;
-    const now = ctx.currentTime;
-    // Glass shatter — high freq noise burst + descending tone
-    const noise = ctx.createBufferSource();
-    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.25, ctx.sampleRate);
+    if (!actx || !enabled) return;
+    const now = actx.currentTime;
+    const noise = actx.createBufferSource();
+    const buf = actx.createBuffer(1, actx.sampleRate * 0.25, actx.sampleRate);
     const data = buf.getChannelData(0);
-    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.04));
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (actx.sampleRate * 0.04));
     noise.buffer = buf;
-    const nFilter = ctx.createBiquadFilter();
-    nFilter.type = 'highpass';
-    nFilter.frequency.value = 3000;
-    const nGain = ctx.createGain();
-    nGain.gain.setValueAtTime(0.2, now);
-    nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-    noise.connect(nFilter);
-    nFilter.connect(nGain);
-    nGain.connect(sfxGain);
-    noise.start(now);
-    // Descending crystalline tone
-    const osc = ctx.createOscillator();
-    const oGain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(2000, now);
-    osc.frequency.exponentialRampToValueAtTime(600, now + 0.3);
-    oGain.gain.setValueAtTime(0.15, now);
-    oGain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-    osc.connect(oGain);
-    oGain.connect(sfxGain);
-    osc.start(now);
-    osc.stop(now + 0.4);
+    const nFilter = actx.createBiquadFilter();
+    nFilter.type = 'highpass'; nFilter.frequency.value = 3000;
+    const nGain = actx.createGain();
+    nGain.gain.setValueAtTime(0.2, now); nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+    noise.connect(nFilter); nFilter.connect(nGain); nGain.connect(sfxGain); noise.start(now);
+    const osc = actx.createOscillator();
+    const oGain = actx.createGain();
+    osc.type = 'sine'; osc.frequency.setValueAtTime(2000, now); osc.frequency.exponentialRampToValueAtTime(600, now + 0.3);
+    oGain.gain.setValueAtTime(0.15, now); oGain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+    osc.connect(oGain); oGain.connect(sfxGain); osc.start(now); osc.stop(now + 0.4);
   }
 
   function playShieldGain() {
-    if (!ctx || !enabled) return;
-    const now = ctx.currentTime;
-    // Sparkly ascending chime
-    const osc = ctx.createOscillator();
-    const osc2 = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sine';
-    osc2.type = 'triangle';
-    osc.frequency.setValueAtTime(1200, now);
-    osc.frequency.linearRampToValueAtTime(2400, now + 0.15);
-    osc2.frequency.setValueAtTime(1205, now);
-    osc2.frequency.linearRampToValueAtTime(2410, now + 0.15);
-    gain.gain.setValueAtTime(0.12, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-    osc.connect(gain);
-    osc2.connect(gain);
-    gain.connect(sfxGain);
-    osc.start(now);
-    osc2.start(now);
-    osc.stop(now + 0.35);
-    osc2.stop(now + 0.35);
+    if (!actx || !enabled) return;
+    const now = actx.currentTime;
+    const osc = actx.createOscillator();
+    const osc2 = actx.createOscillator();
+    const gain = actx.createGain();
+    osc.type = 'sine'; osc2.type = 'triangle';
+    osc.frequency.setValueAtTime(1200, now); osc.frequency.linearRampToValueAtTime(2400, now + 0.15);
+    osc2.frequency.setValueAtTime(1205, now); osc2.frequency.linearRampToValueAtTime(2410, now + 0.15);
+    gain.gain.setValueAtTime(0.12, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+    osc.connect(gain); osc2.connect(gain); gain.connect(sfxGain);
+    osc.start(now); osc2.start(now); osc.stop(now + 0.35); osc2.stop(now + 0.35);
   }
 
-  // --- AMBIENT MUSIC ---
-  // Dark, evolving drone with zone-reactive harmonics
-
   function startMusic() {
-    if (!ctx || musicPlaying) return;
+    if (!actx || musicPlaying) return;
     musicPlaying = true;
 
-    // Base drone
-    const drone1 = ctx.createOscillator();
-    const drone1Gain = ctx.createGain();
-    drone1.type = 'sawtooth';
-    drone1.frequency.value = 55; // Low A
-    drone1Gain.gain.value = 0.08;
-    drone1.connect(drone1Gain);
-    drone1Gain.connect(musicGain);
-    drone1.start();
+    const drone1 = actx.createOscillator();
+    const drone1Gain = actx.createGain();
+    drone1.type = 'sawtooth'; drone1.frequency.value = 55; drone1Gain.gain.value = 0.08;
+    drone1.connect(drone1Gain); drone1Gain.connect(musicGain); drone1.start();
 
-    const drone2 = ctx.createOscillator();
-    const drone2Gain = ctx.createGain();
-    drone2.type = 'sine';
-    drone2.frequency.value = 55.2; // Slight detune for beating
-    drone2Gain.gain.value = 0.1;
-    drone2.connect(drone2Gain);
-    drone2Gain.connect(musicGain);
-    drone2.start();
+    const drone2 = actx.createOscillator();
+    const drone2Gain = actx.createGain();
+    drone2.type = 'sine'; drone2.frequency.value = 55.2; drone2Gain.gain.value = 0.1;
+    drone2.connect(drone2Gain); drone2Gain.connect(musicGain); drone2.start();
 
-    // Sub bass pulse
-    const sub = ctx.createOscillator();
-    const subGain = ctx.createGain();
-    const subLfo = ctx.createOscillator();
-    const subLfoGain = ctx.createGain();
-    sub.type = 'sine';
-    sub.frequency.value = 36.7; // Low D
-    subGain.gain.value = 0.12;
-    subLfo.frequency.value = 0.15; // Very slow pulse
-    subLfoGain.gain.value = 0.08;
-    subLfo.connect(subLfoGain);
-    subLfoGain.connect(subGain.gain);
-    sub.connect(subGain);
-    subGain.connect(musicGain);
-    sub.start();
-    subLfo.start();
+    const sub = actx.createOscillator();
+    const subGain = actx.createGain();
+    const subLfo = actx.createOscillator();
+    const subLfoGain = actx.createGain();
+    sub.type = 'sine'; sub.frequency.value = 36.7; subGain.gain.value = 0.12;
+    subLfo.frequency.value = 0.15; subLfoGain.gain.value = 0.08;
+    subLfo.connect(subLfoGain); subLfoGain.connect(subGain.gain);
+    sub.connect(subGain); subGain.connect(musicGain); sub.start(); subLfo.start();
 
-    // Filtered noise bed (wind)
-    const noiseNode = ctx.createBufferSource();
-    const noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 10, ctx.sampleRate);
+    const noiseNode = actx.createBufferSource();
+    const noiseBuf = actx.createBuffer(1, actx.sampleRate * 10, actx.sampleRate);
     const noiseData = noiseBuf.getChannelData(0);
     for (let i = 0; i < noiseData.length; i++) noiseData[i] = Math.random() * 2 - 1;
-    noiseNode.buffer = noiseBuf;
-    noiseNode.loop = true;
-    const noiseFilter = ctx.createBiquadFilter();
-    noiseFilter.type = 'bandpass';
-    noiseFilter.frequency.value = 300;
-    noiseFilter.Q.value = 0.5;
-    const noiseGain = ctx.createGain();
-    noiseGain.gain.value = 0.025;
-    // Slow filter sweep
-    const noiseLfo = ctx.createOscillator();
-    const noiseLfoGain = ctx.createGain();
-    noiseLfo.frequency.value = 0.05;
-    noiseLfoGain.gain.value = 200;
-    noiseLfo.connect(noiseLfoGain);
-    noiseLfoGain.connect(noiseFilter.frequency);
-    noiseNode.connect(noiseFilter);
-    noiseFilter.connect(noiseGain);
-    noiseGain.connect(musicGain);
-    noiseNode.start();
-    noiseLfo.start();
+    noiseNode.buffer = noiseBuf; noiseNode.loop = true;
+    const noiseFilter = actx.createBiquadFilter();
+    noiseFilter.type = 'bandpass'; noiseFilter.frequency.value = 300; noiseFilter.Q.value = 0.5;
+    const noiseGain = actx.createGain(); noiseGain.gain.value = 0.025;
+    const noiseLfo = actx.createOscillator();
+    const noiseLfoGain = actx.createGain();
+    noiseLfo.frequency.value = 0.05; noiseLfoGain.gain.value = 200;
+    noiseLfo.connect(noiseLfoGain); noiseLfoGain.connect(noiseFilter.frequency);
+    noiseNode.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(musicGain);
+    noiseNode.start(); noiseLfo.start();
 
-    // Eerie high harmonic pad
-    const pad1 = ctx.createOscillator();
-    const pad1Gain = ctx.createGain();
-    const padLfo = ctx.createOscillator();
-    const padLfoGain = ctx.createGain();
-    pad1.type = 'sine';
-    pad1.frequency.value = 330; // E4
-    pad1Gain.gain.value = 0.02;
-    padLfo.frequency.value = 0.08;
-    padLfoGain.gain.value = 15;
-    padLfo.connect(padLfoGain);
-    padLfoGain.connect(pad1.frequency);
-    pad1.connect(pad1Gain);
-    pad1Gain.connect(musicGain);
-    pad1.start();
-    padLfo.start();
+    const pad1 = actx.createOscillator();
+    const pad1Gain = actx.createGain();
+    const padLfo = actx.createOscillator();
+    const padLfoGain = actx.createGain();
+    pad1.type = 'sine'; pad1.frequency.value = 330; pad1Gain.gain.value = 0.02;
+    padLfo.frequency.value = 0.08; padLfoGain.gain.value = 15;
+    padLfo.connect(padLfoGain); padLfoGain.connect(pad1.frequency);
+    pad1.connect(pad1Gain); pad1Gain.connect(musicGain); pad1.start(); padLfo.start();
 
-    const pad2 = ctx.createOscillator();
-    const pad2Gain = ctx.createGain();
-    pad2.type = 'sine';
-    pad2.frequency.value = 392; // G4 (minor feel with the A base)
-    pad2Gain.gain.value = 0.015;
-    pad2.connect(pad2Gain);
-    pad2Gain.connect(musicGain);
-    pad2.start();
+    const pad2 = actx.createOscillator();
+    const pad2Gain = actx.createGain();
+    pad2.type = 'sine'; pad2.frequency.value = 392; pad2Gain.gain.value = 0.015;
+    pad2.connect(pad2Gain); pad2Gain.connect(musicGain); pad2.start();
 
     musicNodes = [drone1, drone2, sub, subLfo, noiseNode, noiseLfo, pad1, padLfo, pad2];
 
-    // Periodic dissonant stings
     function scheduleStings() {
       if (!musicPlaying) return;
-      const now = ctx.currentTime;
+      const now = actx.currentTime;
       const zone = getZone(S.height);
       const intens = zone.intensity || 0;
-      // Stings get more frequent and louder at higher intensity
       const delay = Math.max(3, (8 - intens * 5)) + Math.random() * Math.max(3, (15 - intens * 10));
-
-      const sting = ctx.createOscillator();
-      const stingGain = ctx.createGain();
-      const stingFilter = ctx.createBiquadFilter();
+      const sting = actx.createOscillator();
+      const stingGain = actx.createGain();
+      const stingFilter = actx.createBiquadFilter();
       sting.type = 'sawtooth';
       const stingFreqs = {
-        'THE ABYSS': [82, 87, 92],
-        'CRIMSON DEPTHS': [110, 117, 123],
-        'THE BONEYARD': [146, 155, 164],
-        'VOID SPIRE': [196, 207, 220],
-        'STORM REACH': [261, 277, 293],
-        'THE APEX': [349, 370, 392]
+        'THE ABYSS': [82, 87, 92], 'CRIMSON DEPTHS': [110, 117, 123],
+        'THE BONEYARD': [146, 155, 164], 'VOID SPIRE': [196, 207, 220],
+        'STORM REACH': [261, 277, 293], 'THE APEX': [349, 370, 392]
       };
       const freqs = stingFreqs[zone.name] || [130 + S.height * 0.3, 140 + S.height * 0.3, 155 + S.height * 0.3];
       sting.frequency.value = freqs[Math.floor(Math.random() * freqs.length)];
-
-      stingFilter.type = 'lowpass';
-      stingFilter.frequency.value = 800 + intens * 1200;
-      stingFilter.Q.value = 5 + intens * 8;
-
+      stingFilter.type = 'lowpass'; stingFilter.frequency.value = 800 + intens * 1200; stingFilter.Q.value = 5 + intens * 8;
       const vol = 0.04 + intens * 0.06;
       stingGain.gain.setValueAtTime(0, now + delay);
       stingGain.gain.linearRampToValueAtTime(vol, now + delay + 0.5);
       stingGain.gain.setValueAtTime(vol, now + delay + 2);
       stingGain.gain.exponentialRampToValueAtTime(0.001, now + delay + 5);
+      sting.connect(stingFilter); stingFilter.connect(stingGain); stingGain.connect(musicGain);
+      sting.start(now + delay); sting.stop(now + delay + 5.5);
 
-      sting.connect(stingFilter);
-      stingFilter.connect(stingGain);
-      stingGain.connect(musicGain);
-      sting.start(now + delay);
-      sting.stop(now + delay + 5.5);
-
-      // At high intensity, add a second dissonant layer
       if (intens > 0.5) {
-        const sting2 = ctx.createOscillator();
-        const s2Gain = ctx.createGain();
-        sting2.type = 'square';
-        sting2.frequency.value = sting.frequency.value * 1.06; // Dissonant interval
+        const sting2 = actx.createOscillator();
+        const s2Gain = actx.createGain();
+        sting2.type = 'square'; sting2.frequency.value = sting.frequency.value * 1.06;
         s2Gain.gain.setValueAtTime(0, now + delay + 0.2);
         s2Gain.gain.linearRampToValueAtTime(vol * 0.4, now + delay + 0.7);
         s2Gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 4);
-        sting2.connect(s2Gain);
-        s2Gain.connect(musicGain);
-        sting2.start(now + delay + 0.2);
-        sting2.stop(now + delay + 4.5);
+        sting2.connect(s2Gain); s2Gain.connect(musicGain);
+        sting2.start(now + delay + 0.2); sting2.stop(now + delay + 4.5);
       }
-
       setTimeout(scheduleStings, (delay + 5) * 1000);
     }
     scheduleStings();
 
-    // Heartbeat-like kick at low heights
     function scheduleHeartbeat() {
       if (!musicPlaying) return;
-      const intensity = Math.max(0, 1 - S.height / 100); // Fades as you climb
+      const intensity = Math.max(0, 1 - S.height / 100);
       if (intensity < 0.05) { setTimeout(scheduleHeartbeat, 3000); return; }
-
-      const now = ctx.currentTime;
+      const now = actx.currentTime;
       [0, 0.15].forEach(offset => {
-        const kick = ctx.createOscillator();
-        const kickGain = ctx.createGain();
-        kick.type = 'sine';
-        kick.frequency.setValueAtTime(80, now + offset);
+        const kick = actx.createOscillator();
+        const kickGain = actx.createGain();
+        kick.type = 'sine'; kick.frequency.setValueAtTime(80, now + offset);
         kick.frequency.exponentialRampToValueAtTime(30, now + offset + 0.15);
         kickGain.gain.setValueAtTime(0.1 * intensity, now + offset);
         kickGain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.2);
-        kick.connect(kickGain);
-        kickGain.connect(musicGain);
-        kick.start(now + offset);
-        kick.stop(now + offset + 0.25);
+        kick.connect(kickGain); kickGain.connect(musicGain);
+        kick.start(now + offset); kick.stop(now + offset + 0.25);
       });
-
       const bpm = 50 + S.height * 0.1;
       setTimeout(scheduleHeartbeat, (60 / bpm) * 2000);
     }
@@ -1629,15 +2002,14 @@ const Audio = (() => {
 
 // ============ INTRO / START ============
 document.getElementById('start-btn').addEventListener('click', () => {
-  Audio.init();
-  Audio.startMusic();
-  Audio.playClick();
+  AudioEngine.init();
+  AudioEngine.startMusic();
+  AudioEngine.playClick();
   document.getElementById('intro-screen').style.display = 'none';
   updateUI();
   presentProblem();
 });
 
-// If continuing
 if (S.totalCorrect > 0) {
   document.getElementById('intro-screen').querySelector('.tagline').textContent =
     `You've answered ${S.totalCorrect} problems. Height: ${S.height}. The tower awaits.`;
