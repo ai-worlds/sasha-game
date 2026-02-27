@@ -289,7 +289,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 
     <h3 style="font-family:var(--font-display);color:var(--gold);font-size:14px;margin:14px 0 8px">BIRTH YEAR</h3>
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-      <input type="number" min="2005" max="2024" value="2016" class="num-input" id="kid-birth-year-input">
+      <input type="number" min="1950" max="2024" value="2016" class="num-input" id="kid-birth-year-input">
       <span style="color:var(--fg-dim);font-size:16px" id="kid-age-display">Age: 10</span>
     </div>
 
@@ -340,7 +340,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
     <div class="menu-row">
       <label>Birth Year</label>
       <div style="display:flex;align-items:center;gap:10px">
-        <input type="number" min="2005" max="2024" value="2016" class="num-input" id="birth-year-input">
+        <input type="number" min="1950" max="2024" value="2016" class="num-input" id="birth-year-input">
         <span style="color:var(--fg-dim);font-size:16px" id="age-display">Age: 10</span>
       </div>
     </div>
@@ -1208,7 +1208,7 @@ function updateKidCreateButton() {
   const name = document.getElementById('kid-name-input').value.trim();
   const birthYear = parseInt(document.getElementById('kid-birth-year-input').value);
   const btn = document.getElementById('kid-create-confirm');
-  const shouldDisable = !name || !birthYear || birthYear < 2005 || birthYear > 2024;
+  const shouldDisable = !name || !birthYear || birthYear < 1950 || birthYear > 2024;
   btn.disabled = shouldDisable;
   btn.style.opacity = shouldDisable ? '0.4' : '1';
   btn.style.cursor = shouldDisable ? 'not-allowed' : 'pointer';
