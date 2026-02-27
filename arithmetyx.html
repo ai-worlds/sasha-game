@@ -199,8 +199,11 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 #rate-popup .bp-title{font-family:var(--font-display);font-size:12px;color:var(--accent2);
   letter-spacing:2px;margin-bottom:8px;border-bottom:1px solid rgba(210,64,64,0.3);padding-bottom:4px}
 #rate-popup .bp-problem{font-family:var(--font-display);font-size:14px;color:#fff;margin-bottom:8px}
-#rate-popup .bp-row{display:flex;justify-content:space-between;align-items:center;
+#rate-popup .bp-row{display:flex;align-items:center;gap:6px;
   padding:3px 0;font-size:16px;color:var(--fg)}
+#rate-popup .bp-row .bp-label{flex:1}
+#rate-popup .bp-row .bp-mult{min-width:42px;text-align:right}
+#rate-popup .bp-row .bp-running{min-width:72px;text-align:right}
 #rate-popup .bp-label{color:var(--fg-dim)}
 #rate-popup .bp-val{color:var(--fg);font-family:var(--font-mono);font-size:14px}
 #rate-popup .bp-mult{color:var(--accent2);font-family:var(--font-mono);font-size:14px}
@@ -2007,7 +2010,8 @@ function renderSlotsList() {
       const slot = JSON.parse(raw);
       const isCurrent = key === CFG.currentSlotKey;
       const ops = Object.entries(slot.ops).filter(([,v])=>v).map(([k])=>opSymbols[k]||k).join(' ');
-      const allProbs = enumerateSlotProblems(slot.ops, slot.minNum, slot.maxNum);
+      const slotMin = slot.minNum || 0;
+      const allProbs = enumerateSlotProblems(slot.ops, slotMin, slot.maxNum);
       const th = getAgeThresholds(getAge());
       let mc = 0;
       for (const p of allProbs) {
@@ -2018,7 +2022,7 @@ function renderSlotsList() {
       const slotAvgRate = (slot.playTimeMs > 0) ? ((slot.slotEarnings||0) / slot.playTimeMs) * 3600000 : 0;
       return `<div class="slot-card ${isCurrent?'active':''}" data-slot-key="${key}">
         <div class="slot-ops">${ops}</div>
-        <div class="slot-range">Range: 0-${slot.maxNum} · ${slot.totalCorrect||0} correct</div>
+        <div class="slot-range">Range: ${slotMin}-${slot.maxNum} · ${slot.totalCorrect||0} correct</div>
         <div class="slot-mastery"><div class="slot-mastery-fill" style="width:${mPct}%"></div></div>
         <div class="slot-info">
           <span style="color:var(--fg-dim);font-size:14px">Mastery: ${mPct}%</span>
