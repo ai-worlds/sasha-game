@@ -913,11 +913,13 @@ function goToKidSelect() {
   closeParent();
   showScreen('kid-select-screen');
   renderKidSelection();
+  AudioEngine.playVoice('kid_select');
 }
 
 function goToKidCreate() {
   showScreen('kid-create-screen');
   initKidCreation();
+  AudioEngine.playVoice('kid_create');
 }
 
 function goToSlotSelect() {
@@ -928,12 +930,15 @@ function goToSlotSelect() {
   // If no slots exist, auto-go to creation
   if (getAllSlotKeys().length === 0) {
     goToSlotCreate();
+    return;
   }
+  AudioEngine.playVoice('slot_select');
 }
 
 function goToSlotCreate() {
   showScreen('slot-create-screen');
   initSlotCreation();
+  AudioEngine.playVoice('slot_create');
 }
 
 function goToGame() {
@@ -942,6 +947,7 @@ function goToGame() {
     goToKidSelect();
     return;
   }
+  AudioEngine.playVoice('game_start');
   updateUI();
   presentProblem();
 }
@@ -1294,10 +1300,12 @@ function updateIdleIndicator() {
 }
 
 function resetIdleTimer() {
+  const wasIdle = isIdle;
   isIdle = false;
   lastActiveAt = Date.now();
   clearTimeout(idleTimer);
-  idleTimer = setTimeout(() => { isIdle = true; updateIdleIndicator(); }, 30000);
+  if (wasIdle && S) AudioEngine.playVoice('idle_return', 10000);
+  idleTimer = setTimeout(() => { isIdle = true; updateIdleIndicator(); AudioEngine.playVoice('idle_start', 60000); }, 30000);
   updateIdleIndicator();
 }
 
@@ -1787,6 +1795,7 @@ function evalProblem(a, op, b) {
 
 // ============ GAME LOGIC ============
 let currentProblem = null;
+let lastZoneName = null;
 let lastAnswerBreakdown = null;
 let problemStartTime = 0;
 let wrongThisProblem = 0;
@@ -1877,6 +1886,7 @@ function handleAnswer(val, btn) {
     answersLocked = true;
     btn.classList.add('correct-flash');
     AudioEngine.playCorrect();
+    AudioEngine.playRandomVoice('correct', 7, 0.10, 5000);
 
     // Track time
     trackTimeOnAnswer();
@@ -1944,6 +1954,7 @@ function handleAnswer(val, btn) {
     S.streak++;
     if (S.streak > S.bestStreak) S.bestStreak = S.streak;
     AudioEngine.playStreak(S.streak);
+    if (S.streak > 0 && S.streak % 10 === 0) AudioEngine.playVoice('streak', 8000);
 
     if (S.totalCorrect % 10 === 0) S.karma++;
     if (S.streak % 5 === 0 && S.shields < 5) { S.shields++; AudioEngine.playShieldGain(); }
@@ -1960,8 +1971,11 @@ function handleAnswer(val, btn) {
     }
 
     if (!S.bonusActive) {
+      const zoneBefore = getZone(S.height).name;
       S.height++;
       if (S.height > S.maxHeight) S.maxHeight = S.height;
+      const zoneAfter = getZone(S.height).name;
+      if (zoneBefore !== zoneAfter) AudioEngine.playVoice('zone_advance');
     }
 
     showFeedback(true);
@@ -1972,6 +1986,7 @@ function handleAnswer(val, btn) {
       S.gameBeaten = true;
       saveSlot();
       AudioEngine.playVictory();
+      AudioEngine.playVoice('victory');
       setTimeout(showVictory, 600);
       return;
     }
@@ -2001,10 +2016,14 @@ function handleAnswer(val, btn) {
     else { S.karma = Math.max(0, S.karma - 1); }
 
     const floor = S.floor || 0;
+    const zoneBefore = getZone(S.height).name;
     const heightBefore = S.height;
     S.height = Math.max(floor, 0);
+    const zoneAfter = getZone(S.height).name;
 
     AudioEngine.playWrong();
+    AudioEngine.playRandomVoice('wrong', 8, 0.50, 3000);
+    if (zoneBefore !== zoneAfter) AudioEngine.playVoice('zone_retreat', 5000);
     if (heightBefore - S.height > 5) AudioEngine.playFall();
     screenShake = Math.min(25, 5 + S.height * 0.02);
 
@@ -2040,6 +2059,7 @@ function startBonusRound() {
   S.bonusCorrect = 0;
   saveSlot();
   showSlotNote(`Bonus Round ${S.bonusRound} started! 20 problems.`);
+  AudioEngine.playVoice('bonus_start');
   presentProblem();
 }
 
@@ -2092,6 +2112,7 @@ function updateUI() {
 // ============ MENU ============
 function openMenu() {
   AudioEngine.playMenuOpen();
+  AudioEngine.playVoice('menu_open', 10000);
   menuOpen = true;
   updateIdleIndicator();
   document.getElementById('menu-overlay').classList.add('open');
@@ -3004,6 +3025,11 @@ const AudioEngine = (() => {
   let musicEnabled = true;
   let volume = 0.5;
 
+  const voiceBuffers = {};
+  let voiceGain = null;
+  let lastVoiceTime = 0;
+  let currentVoiceSource = null;
+
   function init() {
     if (actx) return;
     actx = new (window.AudioContext || window.webkitAudioContext)();
@@ -3016,6 +3042,49 @@ const AudioEngine = (() => {
     sfxGain = actx.createGain();
     sfxGain.gain.value = 0.7;
     sfxGain.connect(masterGain);
+    voiceGain = actx.createGain();
+    voiceGain.gain.value = 0.85;
+    voiceGain.connect(masterGain);
+    preloadAllVoices();
+  }
+
+  function preloadVoice(name) {
+    if (voiceBuffers[name]) return;
+    fetch('audio/' + name + '.mp3')
+      .then(r => r.arrayBuffer())
+      .then(buf => actx.decodeAudioData(buf))
+      .then(decoded => { voiceBuffers[name] = decoded; })
+      .catch(() => {});
+  }
+
+  function preloadAllVoices() {
+    const names = [
+      'title_intro','kid_select','kid_create','slot_select','slot_create',
+      'game_start','menu_open','victory','streak','bonus_start',
+      'zone_advance','zone_retreat','idle_start','idle_return',
+      'correct_1','correct_2','correct_3','correct_4','correct_5','correct_6','correct_7',
+      'wrong_1','wrong_2','wrong_3','wrong_4','wrong_5','wrong_6','wrong_7','wrong_8'
+    ];
+    names.forEach(preloadVoice);
+  }
+
+  function playVoice(name, cooldownMs) {
+    if (!actx || !enabled || !voiceBuffers[name]) return;
+    if (cooldownMs && Date.now() - lastVoiceTime < cooldownMs) return;
+    if (currentVoiceSource) { try { currentVoiceSource.stop(); } catch(e){} }
+    const src = actx.createBufferSource();
+    src.buffer = voiceBuffers[name];
+    src.connect(voiceGain || masterGain);
+    src.start();
+    currentVoiceSource = src;
+    src.onended = () => { if (currentVoiceSource === src) currentVoiceSource = null; };
+    lastVoiceTime = Date.now();
+  }
+
+  function playRandomVoice(prefix, count, probability, cooldownMs) {
+    if (Math.random() > probability) return;
+    const idx = Math.floor(Math.random() * count) + 1;
+    playVoice(prefix + '_' + idx, cooldownMs || 3000);
   }
 
   function setVolume(v) { volume = v; if (masterGain) masterGain.gain.value = v; }
@@ -3297,7 +3366,7 @@ const AudioEngine = (() => {
     init, setVolume, setMusicEnabled, setSfxEnabled,
     playCorrect, playWrong, playFall, playClick, playStreak,
     playVictory, playMenuOpen, playMenuClose, playShieldBreak, playShieldGain,
-    startMusic, stopMusic,
+    startMusic, stopMusic, playVoice, playRandomVoice,
     get musicEnabled() { return musicEnabled; },
     get sfxEnabled() { return enabled; },
     get volume() { return volume; }
@@ -3314,6 +3383,7 @@ document.getElementById('start-btn').addEventListener('click', () => {
   AudioEngine.init();
   AudioEngine.startMusic();
   AudioEngine.playClick();
+  AudioEngine.playVoice('title_intro');
   
   if (hasKid) {
     goToSlotSelect();
