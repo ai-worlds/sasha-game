@@ -12,6 +12,9 @@
   --green:#2a7a3a;--green-bright:#3fb855;--red:#8a1a1a;--red-bright:#d43030;
   --gold:#c9a84c;--purple:#6a3a8a;--cyan:#2a8a8a;
   --font-display:'Silkscreen',monospace;--font-body:'VT323',monospace;--font-mono:'JetBrains Mono',monospace;
+  --vivid-fg:#e0dbd6;--vivid-fg-dim:#8a8580;--vivid-accent:#d04040;--vivid-accent2:#e85555;
+  --vivid-green:#2a7a3a;--vivid-green-bright:#3fb855;--vivid-red:#8a1a1a;--vivid-red-bright:#d43030;
+  --vivid-gold:#c9a84c;--vivid-purple:#6a3a8a;--vivid-cyan:#2a8a8a;
 }
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-family:var(--font-body)}
 #app{height:100%;display:flex;flex-direction:column;position:relative;overflow:hidden}
@@ -28,12 +31,12 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 
 #top-bar{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;
   padding:8px 12px;background:rgba(18,18,26,0.9);border-bottom:1px solid rgba(210,64,64,0.35);min-height:48px}
-#top-bar .title{font-family:var(--font-display);font-size:14px;color:var(--accent2);letter-spacing:2px}
-#top-bar .stats{display:flex;gap:12px;font-size:18px;color:var(--fg)}
+#top-bar .title{font-family:var(--font-display);font-size:14px;color:var(--vivid-accent2);letter-spacing:2px}
+#top-bar .stats{display:flex;gap:12px;font-size:18px;color:var(--vivid-fg)}
 #top-bar .stats span{display:flex;align-items:center;gap:3px}
-#top-bar .stats .val{color:var(--fg)}
+#top-bar .stats .val{color:var(--vivid-fg)}
 .top-btns{display:flex;gap:6px}
-.menu-btn{background:rgba(210,64,64,0.1);border:1px solid var(--accent);color:var(--accent2);
+.menu-btn{background:rgba(210,64,64,0.1);border:1px solid var(--accent);color:var(--vivid-accent2);
   font-family:var(--font-display);font-size:12px;padding:6px 12px;cursor:pointer;
   letter-spacing:1px;transition:all .2s}
 .menu-btn:hover,.menu-btn:active{background:var(--accent);color:#fff}
@@ -73,9 +76,9 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 
 #climb-info{position:relative;z-index:10;display:flex;justify-content:space-between;align-items:center;
   padding:6px 12px;background:rgba(18,18,26,0.9);border-top:1px solid rgba(210,64,64,0.25);
-  font-size:16px;color:var(--fg);min-height:36px}
-#climb-info .height-val{color:var(--gold);font-family:var(--font-display);font-size:13px}
-#climb-info .nerf-val{color:var(--purple);font-family:var(--font-display);font-size:13px}
+  font-size:16px;color:var(--vivid-fg);min-height:36px}
+#climb-info .height-val{color:var(--vivid-gold);font-family:var(--font-display);font-size:13px}
+#climb-info .nerf-val{color:var(--vivid-purple);font-family:var(--font-display);font-size:13px}
 #progress-bar{position:relative;z-index:10;height:4px;background:rgba(184,48,48,0.15)}
 #progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));transition:width .3s;width:0%}
 
@@ -113,10 +116,10 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 .hard-item .hstats .bad{color:var(--red-bright)}
 .hard-item .hstats .slow{color:var(--gold)}
 
-.mode-btns{display:flex;gap:8px;margin:8px 0}
+.mode-btns{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap}
 .mode-btn{flex:1;padding:10px;font-family:var(--font-display);font-size:12px;
   cursor:pointer;border-radius:4px;text-align:center;letter-spacing:1px;transition:all .2s;
-  border:1px solid rgba(200,192,184,0.15);background:rgba(20,18,22,0.8);color:var(--fg-dim)}
+  border:1px solid rgba(200,192,184,0.15);background:rgba(20,18,22,0.8);color:var(--fg-dim);min-width:60px}
 .mode-btn.active{border-color:var(--accent2);color:var(--accent2);background:rgba(184,48,48,0.12)}
 
 #intro-screen{position:fixed;top:0;left:0;right:0;bottom:0;z-index:200;
@@ -170,6 +173,13 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
   font-family:var(--font-mono);font-size:16px;padding:6px 10px;width:70px;text-align:center;border-radius:4px}
 .num-input:focus{outline:none;border-color:var(--accent2)}
 
+/* Character customization */
+.color-presets{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.color-swatch{width:24px;height:24px;border:2px solid rgba(200,192,184,0.2);border-radius:3px;cursor:pointer;transition:all .15s}
+.color-swatch:hover{transform:scale(1.15)}
+.color-swatch.active{border-color:var(--accent2);box-shadow:0 0 8px rgba(232,85,85,0.4)}
+.char-preview-wrap{display:flex;justify-content:center;padding:16px 0;background:rgba(20,18,28,0.9);border-radius:6px;margin:8px 0}
+
 @media(max-width:360px){
   #problem-display{font-size:24px;padding:12px 16px;min-width:auto}
   .answer-btn{font-size:20px;padding:10px 6px;min-height:46px}
@@ -189,6 +199,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
       <span>✓<span class="val" id="stat-correct">0</span></span>
       <span>✗<span class="val" id="stat-wrong">0</span></span>
       <span>💰<span class="val" id="stat-money">$0.00</span></span>
+      <span>⏱<span class="val" id="stat-time">0:00</span></span>
     </div>
     <div class="top-btns">
       <button class="menu-btn" id="slots-open-btn">📋 SLOTS</button>
@@ -266,6 +277,40 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
       </div>
     </div>
 
+    <h2>CHARACTER</h2>
+    <div class="char-preview-wrap">
+      <canvas id="char-preview-canvas" width="120" height="80" style="width:240px;height:160px;image-rendering:pixelated"></canvas>
+    </div>
+    <h3>Hair Length</h3>
+    <div class="mode-btns" id="hair-length-btns">
+      <div class="mode-btn active" data-val="short">SHORT</div>
+      <div class="mode-btn" data-val="medium">MEDIUM</div>
+      <div class="mode-btn" data-val="long">LONG</div>
+    </div>
+    <h3>Hair Color</h3>
+    <div class="color-presets" id="hair-color-presets"></div>
+    <h3>Eye Color</h3>
+    <div class="color-presets" id="eye-color-presets"></div>
+    <h3>Skin Color</h3>
+    <div class="color-presets" id="skin-color-presets"></div>
+    <h3>Shirt Pattern</h3>
+    <div class="mode-btns" id="shirt-pattern-btns">
+      <div class="mode-btn active" data-val="solid">SOLID</div>
+      <div class="mode-btn" data-val="striped">STRIPED</div>
+      <div class="mode-btn" data-val="checkered">CHECKERED</div>
+    </div>
+    <h3>Shirt Color</h3>
+    <div class="color-presets" id="shirt-color-presets"></div>
+    <h3>Bottom Type</h3>
+    <div class="mode-btns" id="bottom-type-btns">
+      <div class="mode-btn active" data-val="pants">PANTS</div>
+      <div class="mode-btn" data-val="shorts">SHORTS</div>
+      <div class="mode-btn" data-val="skirt">SKIRT</div>
+      <div class="mode-btn" data-val="longskirt">LONG SKIRT</div>
+    </div>
+    <h3>Bottom Color</h3>
+    <div class="color-presets" id="bottom-color-presets"></div>
+
     <h3>OPERATIONS</h3>
     <div class="menu-row"><label>Addition (+)</label><div class="toggle on" data-op="add"></div></div>
     <div class="menu-row"><label>Subtraction (−)</label><div class="toggle on" data-op="sub"></div></div>
@@ -320,6 +365,28 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
       <span class="range-val" id="volume-val">50</span>
     </div>
 
+    <h2>DISPLAY</h2>
+    <div class="range-row">
+      <span style="font-size:16px;color:var(--fg-dim)">Background:</span>
+      <input type="range" min="0" max="200" value="100" id="vivid-bg-range">
+      <span class="range-val" id="vivid-bg-val">100%</span>
+    </div>
+    <div class="range-row">
+      <span style="font-size:16px;color:var(--fg-dim)">Base:</span>
+      <input type="range" min="0" max="200" value="100" id="vivid-base-range">
+      <span class="range-val" id="vivid-base-val">100%</span>
+    </div>
+    <div class="range-row">
+      <span style="font-size:16px;color:var(--fg-dim)">Info:</span>
+      <input type="range" min="0" max="200" value="100" id="vivid-info-range">
+      <span class="range-val" id="vivid-info-val">100%</span>
+    </div>
+    <div class="range-row">
+      <span style="font-size:16px;color:var(--fg-dim)">Foreground:</span>
+      <input type="range" min="0" max="200" value="100" id="vivid-fg-range">
+      <span class="range-val" id="vivid-fg-val">100%</span>
+    </div>
+
     <h2>📊 REPORT CARD</h2>
     <div id="report-card"></div>
 
@@ -332,13 +399,26 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 
 <script>
 // ============ CONFIG & SLOT SYSTEM ============
+const DEFAULT_CHARACTER = {
+  hairLength: 'short',
+  hairColor: '#2a2025',
+  eyeColor: '#e85555',
+  skinColor: '#d0b8a0',
+  shirtPattern: 'solid',
+  shirtColor: '#b8b0a8',
+  bottomType: 'pants',
+  bottomColor: '#4a4550'
+};
+
 const DEFAULT_CONFIG = {
   birthYear: 2016,
   globalMoneyScaler: 0.25,
   sfxEnabled: true,
   musicEnabled: true,
   volume: 0.5,
-  currentSlotKey: null
+  currentSlotKey: null,
+  character: JSON.parse(JSON.stringify(DEFAULT_CHARACTER)),
+  vividness: { background: 100, base: 100, info: 100, foreground: 100 }
 };
 
 const DEFAULT_SLOT = {
@@ -363,7 +443,9 @@ const DEFAULT_SLOT = {
   last50: [],
   bonusActive: false,
   bonusProblemsLeft: 0,
-  bonusCorrect: 0
+  bonusCorrect: 0,
+  playTimeMs: 0,
+  idleTimeMs: 0
 };
 
 const TARGET_HEIGHT = 600;
@@ -374,7 +456,14 @@ function loadConfig() {
   try {
     const raw = localStorage.getItem('arithmetyx_config');
     CFG = raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(DEFAULT_CONFIG));
-    for (const k in DEFAULT_CONFIG) { if (!(k in CFG)) CFG[k] = DEFAULT_CONFIG[k]; }
+    for (const k in DEFAULT_CONFIG) {
+      if (!(k in CFG)) CFG[k] = typeof DEFAULT_CONFIG[k] === 'object' ? JSON.parse(JSON.stringify(DEFAULT_CONFIG[k])) : DEFAULT_CONFIG[k];
+    }
+    // Migrate character defaults
+    if (!CFG.character) CFG.character = JSON.parse(JSON.stringify(DEFAULT_CHARACTER));
+    for (const k in DEFAULT_CHARACTER) { if (!(k in CFG.character)) CFG.character[k] = DEFAULT_CHARACTER[k]; }
+    if (!CFG.vividness) CFG.vividness = { background: 100, base: 100, info: 100, foreground: 100 };
+    for (const k of ['background','base','info','foreground']) { if (!(k in CFG.vividness)) CFG.vividness[k] = 100; }
   } catch(e) { CFG = JSON.parse(JSON.stringify(DEFAULT_CONFIG)); }
 }
 
@@ -398,7 +487,6 @@ function loadSlot(key) {
       for (const k in DEFAULT_SLOT) { if (!(k in S)) S[k] = typeof DEFAULT_SLOT[k]==='object'? JSON.parse(JSON.stringify(DEFAULT_SLOT[k])) : DEFAULT_SLOT[k]; }
     } else {
       S = JSON.parse(JSON.stringify(DEFAULT_SLOT));
-      // Parse ops and maxNum from key
       const parts = key.split('_');
       const maxNum = parseInt(parts[parts.length - 1]);
       const opNames = parts.slice(0, -1);
@@ -445,11 +533,9 @@ function migrateOldState() {
     const raw = localStorage.getItem('arithmetyx_state');
     if (!raw) return;
     const old = JSON.parse(raw);
-    // Create config
     CFG.sfxEnabled = true;
     CFG.musicEnabled = true;
     CFG.volume = 0.5;
-    // Create slot from old state
     const key = getSlotKey(old.ops || {add:true,sub:true,mul:true,div:true}, old.maxNum || 10);
     const slot = JSON.parse(JSON.stringify(DEFAULT_SLOT));
     for (const k of ['ops','mode','numChoices','maxNum','totalCorrect','totalWrong','streak','bestStreak','height','maxHeight','karma','shields','karmaLog','problems','gameBeaten']) {
@@ -465,7 +551,6 @@ function migrateOldState() {
 loadConfig();
 migrateOldState();
 
-// Load current slot or create default
 if (CFG.currentSlotKey) {
   loadSlot(CFG.currentSlotKey);
 } else {
@@ -487,6 +572,97 @@ function showSlotNote(text) {
   el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 2000);
 }
+
+// ============ VIVIDNESS ============
+function applyVividness(hexColor, vividnessPercent) {
+  if (vividnessPercent === 100) return hexColor;
+  const hex = hexColor.replace('#','');
+  const r = parseInt(hex.substring(0,2),16)/255;
+  const g = parseInt(hex.substring(2,4),16)/255;
+  const b = parseInt(hex.substring(4,6),16)/255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b);
+  let h, s, l = (max+min)/2;
+  if (max === min) { h = s = 0; }
+  else {
+    const d = max - min;
+    s = l > 0.5 ? d/(2-max-min) : d/(max+min);
+    switch(max) {
+      case r: h = ((g-b)/d + (g<b?6:0))/6; break;
+      case g: h = ((b-r)/d + 2)/6; break;
+      case b: h = ((r-g)/d + 4)/6; break;
+    }
+  }
+  const vf = vividnessPercent / 100;
+  s = Math.min(1, Math.max(0, s * vf));
+  l = Math.min(0.95, Math.max(0.05, l * (1 + (vf - 1) * 0.5)));
+  // HSL to RGB
+  let r2, g2, b2;
+  if (s === 0) { r2 = g2 = b2 = l; }
+  else {
+    const hue2rgb = (p,q,t) => { if(t<0)t+=1; if(t>1)t-=1; if(t<1/6)return p+(q-p)*6*t; if(t<1/2)return q; if(t<2/3)return p+(q-p)*(2/3-t)*6; return p; };
+    const q = l < 0.5 ? l*(1+s) : l+s-l*s;
+    const p = 2*l-q;
+    r2 = hue2rgb(p,q,h+1/3);
+    g2 = hue2rgb(p,q,h);
+    b2 = hue2rgb(p,q,h-1/3);
+  }
+  const toHex = v => { const h = Math.round(v*255).toString(16); return h.length===1?'0'+h:h; };
+  return '#'+toHex(r2)+toHex(g2)+toHex(b2);
+}
+
+function updateVividnessCSS() {
+  const root = document.documentElement.style;
+  const iv = CFG.vividness.info;
+  const fv = CFG.vividness.foreground;
+  root.setProperty('--vivid-fg', applyVividness('#e0dbd6', iv));
+  root.setProperty('--vivid-fg-dim', applyVividness('#8a8580', iv));
+  root.setProperty('--vivid-accent', applyVividness('#d04040', iv));
+  root.setProperty('--vivid-accent2', applyVividness('#e85555', iv));
+  root.setProperty('--vivid-green', applyVividness('#2a7a3a', fv));
+  root.setProperty('--vivid-green-bright', applyVividness('#3fb855', fv));
+  root.setProperty('--vivid-red', applyVividness('#8a1a1a', fv));
+  root.setProperty('--vivid-red-bright', applyVividness('#d43030', fv));
+  root.setProperty('--vivid-gold', applyVividness('#c9a84c', iv));
+  root.setProperty('--vivid-purple', applyVividness('#6a3a8a', iv));
+  root.setProperty('--vivid-cyan', applyVividness('#2a8a8a', iv));
+}
+
+// ============ TIME TRACKING ============
+let isIdle = false;
+let idleTimer = null;
+let problemShownAt = 0;
+let lastActiveAt = Date.now();
+let menuOpen = false;
+let slotsOpen = false;
+let timeDisplayInterval = null;
+
+function resetIdleTimer() {
+  isIdle = false;
+  lastActiveAt = Date.now();
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => { isIdle = true; }, 30000);
+}
+
+function formatTime(ms) {
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+function updateTimeDisplay() {
+  const el = document.getElementById('stat-time');
+  if (el) el.textContent = formatTime(S.playTimeMs || 0);
+}
+
+// Add idle detection listeners
+['click','touchstart','keydown'].forEach(evt => {
+  document.addEventListener(evt, resetIdleTimer, { passive: true });
+});
+
+timeDisplayInterval = setInterval(updateTimeDisplay, 1000);
 
 // ============ DIFFICULTY & MASTERY ============
 function calcProblemDifficulty(a, op, b, maxNum) {
@@ -528,7 +704,6 @@ function getAgeThresholds(age) {
   return { speedGate: 4, masterySpeed: 3, last50Acc: 0.90, minUnique: 200, minHard: 70 };
 }
 
-// Enumerate all possible problems for a slot
 function enumerateSlotProblems(ops, maxNum) {
   const problems = [];
   if (ops.add) {
@@ -577,13 +752,9 @@ function checkCompletionRequirements() {
   const age = getAge();
   const th = getAgeThresholds(age);
   const mi = getSlotMasteryInfo();
-
-  // 1. >= 80% mastered
   if (mi.masteryPct < 0.80) return false;
-  // 2. >= minUnique distinct problems answered
   const uniqueAnswered = Object.keys(S.problems).length;
   if (uniqueAnswered < th.minUnique) return false;
-  // 3. >= minHard with operand >= maxNum * 0.7
   const hardThreshold = S.maxNum * 0.7;
   let hardCount = 0;
   for (const key in S.problems) {
@@ -594,15 +765,12 @@ function checkCompletionRequirements() {
     }
   }
   if (hardCount < th.minHard) return false;
-  // 4. Last 50 accuracy
   if (S.last50.length >= 50) {
     const acc = S.last50.filter(e => e.firstTryCorrect).length / S.last50.length;
     if (acc < th.last50Acc) return false;
   } else return false;
-  // 5. Last 50 avg response time
   const avgTime = S.last50.reduce((s, e) => s + e.responseTime, 0) / S.last50.length / 1000;
   if (avgTime >= th.speedGate) return false;
-  // 6. <= 3 problems with 0% lifetime accuracy
   let zeroAccCount = 0;
   for (const key in S.problems) {
     const d = S.problems[key];
@@ -727,11 +895,9 @@ function selectProblem() {
 }
 
 function selectBonusProblem() {
-  // Weight toward highest-difficulty problems
   const allProbs = enumerateSlotProblems(S.ops, S.maxNum);
   const weighted = allProbs.map(p => ({ ...p, diff: calcProblemDifficulty(p.a, p.op, p.b, S.maxNum) }));
   weighted.sort((a, b) => b.diff - a.diff);
-  // Top 30% get heavy weight
   const top = Math.max(10, Math.floor(weighted.length * 0.3));
   const pool = weighted.slice(0, top);
   const totalW = pool.reduce((s, p) => s + p.diff, 0);
@@ -778,6 +944,17 @@ function generateDistractors(correct, count, p) {
   return arr;
 }
 
+function trackTimeOnAnswer() {
+  if (!problemShownAt || menuOpen || slotsOpen) return;
+  const elapsed = Date.now() - problemShownAt;
+  if (elapsed > 30000) {
+    S.playTimeMs = (S.playTimeMs || 0) + 30000;
+    S.idleTimeMs = (S.idleTimeMs || 0) + (elapsed - 30000);
+  } else {
+    S.playTimeMs = (S.playTimeMs || 0) + elapsed;
+  }
+}
+
 function presentProblem() {
   if (S.bonusActive) {
     currentProblem = selectBonusProblem();
@@ -785,6 +962,7 @@ function presentProblem() {
     currentProblem = selectProblem();
   }
   problemStartTime = Date.now();
+  problemShownAt = Date.now();
   wrongThisProblem = 0;
   answersLocked = false;
 
@@ -824,17 +1002,18 @@ function handleAnswer(val, btn) {
     btn.classList.add('correct-flash');
     AudioEngine.playCorrect();
 
+    // Track time
+    trackTimeOnAnswer();
+
     pd.correct++;
     pd.lastTime = elapsed;
     pd.attempts++;
     pd.lastCorrect = true;
 
-    // Update mastery
     const age = getAge();
     const th = getAgeThresholds(age);
     pd.mastered = pd.correct >= 2 && pd.lastCorrect && elapsed < th.masterySpeed * 1000;
 
-    // Track last50 (only if >= 1.5s)
     if (elapsed >= 1500) {
       S.last50.push({ firstTryCorrect: wrongThisProblem === 0, responseTime: elapsed });
       if (S.last50.length > 50) S.last50.shift();
@@ -848,7 +1027,6 @@ function handleAnswer(val, btn) {
     if (S.totalCorrect % 10 === 0) S.karma++;
     if (S.streak % 5 === 0 && S.shields < 5) { S.shields++; AudioEngine.playShieldGain(); }
 
-    // Bonus round tracking
     if (S.bonusActive) {
       S.bonusProblemsLeft--;
       if (wrongThisProblem === 0) S.bonusCorrect++;
@@ -888,7 +1066,6 @@ function handleAnswer(val, btn) {
     S.totalWrong++;
     S.streak = 0;
 
-    // Bonus round: track but don't fall
     if (S.bonusActive) {
       AudioEngine.playWrong();
       showFeedback(false, false);
@@ -929,7 +1106,7 @@ function finishBonusRound() {
     AudioEngine.playVictory();
   } else {
     showSlotNote(`Bonus Round ${S.bonusRound} FAILED (${Math.round(acc*100)}% < ${Math.round(reqAcc*100)}%) — retry available`);
-    S.bonusRound--; // Allow retry of same round
+    S.bonusRound--;
     AudioEngine.playWrong();
   }
   S.bonusRound++;
@@ -959,6 +1136,7 @@ function updateUI() {
   document.getElementById('stat-correct').textContent = S.totalCorrect;
   document.getElementById('stat-wrong').textContent = S.totalWrong;
   document.getElementById('stat-money').textContent = '$' + getTotalEarnings().toFixed(2);
+  document.getElementById('stat-time').textContent = formatTime(S.playTimeMs || 0);
   document.getElementById('height-display').textContent = `HEIGHT: ${S.height} / ${TARGET_HEIGHT}`;
   document.getElementById('nerf-display').textContent = `KARMA: ${S.karma}`;
   const shieldIcons = '●'.repeat(S.shields) + '○'.repeat(5 - S.shields);
@@ -984,13 +1162,17 @@ function updateUI() {
 // ============ MENU ============
 function openMenu() {
   AudioEngine.playMenuOpen();
+  menuOpen = true;
   document.getElementById('menu-overlay').classList.add('open');
   renderMenu();
   renderHardList();
   renderReportCard();
+  renderCharacterMenu();
+  updateCharPreview();
 }
 function closeMenu() {
   AudioEngine.playMenuClose();
+  menuOpen = false;
   document.getElementById('menu-overlay').classList.remove('open');
   saveSlot();
   saveConfig();
@@ -1002,7 +1184,7 @@ function renderMenu() {
     el.classList.toggle('on', S.ops[el.dataset.op]);
   });
   document.querySelectorAll('.mode-btn').forEach(el => {
-    el.classList.toggle('active', el.dataset.mode === S.mode);
+    if (el.dataset.mode) el.classList.toggle('active', el.dataset.mode === S.mode);
   });
   document.getElementById('choices-range').value = S.numChoices;
   document.getElementById('choices-val').textContent = S.numChoices;
@@ -1016,7 +1198,271 @@ function renderMenu() {
   document.getElementById('toggle-music').classList.toggle('on', CFG.musicEnabled);
   document.getElementById('volume-range').value = Math.round(CFG.volume * 100);
   document.getElementById('volume-val').textContent = Math.round(CFG.volume * 100);
+  // Vividness
+  document.getElementById('vivid-bg-range').value = CFG.vividness.background;
+  document.getElementById('vivid-bg-val').textContent = CFG.vividness.background + '%';
+  document.getElementById('vivid-base-range').value = CFG.vividness.base;
+  document.getElementById('vivid-base-val').textContent = CFG.vividness.base + '%';
+  document.getElementById('vivid-info-range').value = CFG.vividness.info;
+  document.getElementById('vivid-info-val').textContent = CFG.vividness.info + '%';
+  document.getElementById('vivid-fg-range').value = CFG.vividness.foreground;
+  document.getElementById('vivid-fg-val').textContent = CFG.vividness.foreground + '%';
   renderKarmaUI();
+}
+
+// ============ CHARACTER CUSTOMIZATION ============
+const HAIR_COLORS = ['#2a2025','#5a3a28','#c4a44a','#8a2a1a','#d0ccc8','#2a4a8a','#aa4a6a','#5a2a6a'];
+const EYE_COLORS = ['#dd4444','#4488ff','#44bb44','#ddaa33','#aa44dd','#44dddd','#dddddd','#dd8833'];
+const SKIN_COLORS = ['#e8d0c0','#d0b8a0','#b89878','#9a7a5a','#7a5a3a','#5a3a2a'];
+const SHIRT_COLORS = ['#b8b0a8','#aa3030','#3050aa','#30aa50','#7030aa','#aaaa30','#d8d0c8','#3a3035'];
+const BOTTOM_COLORS = ['#4a4550','#5a3a28','#2a3a5a','#2a2025','#5a2020','#2a4a2a','#3a2a4a','#8a7a5a'];
+
+function buildColorPresets(containerId, colors, configKey) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  colors.forEach(c => {
+    const swatch = document.createElement('div');
+    swatch.className = 'color-swatch' + (CFG.character[configKey] === c ? ' active' : '');
+    swatch.style.background = c;
+    swatch.addEventListener('click', () => {
+      CFG.character[configKey] = c;
+      saveConfig();
+      container.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+      swatch.classList.add('active');
+      updateCharPreview();
+    });
+    container.appendChild(swatch);
+  });
+}
+
+function buildTextPresets(containerId, configKey) {
+  const container = document.getElementById(containerId);
+  container.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.val === CFG.character[configKey]);
+    btn.onclick = () => {
+      CFG.character[configKey] = btn.dataset.val;
+      saveConfig();
+      container.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updateCharPreview();
+    };
+  });
+}
+
+function renderCharacterMenu() {
+  buildColorPresets('hair-color-presets', HAIR_COLORS, 'hairColor');
+  buildColorPresets('eye-color-presets', EYE_COLORS, 'eyeColor');
+  buildColorPresets('skin-color-presets', SKIN_COLORS, 'skinColor');
+  buildColorPresets('shirt-color-presets', SHIRT_COLORS, 'shirtColor');
+  buildColorPresets('bottom-color-presets', BOTTOM_COLORS, 'bottomColor');
+  buildTextPresets('hair-length-btns', 'hairLength');
+  buildTextPresets('shirt-pattern-btns', 'shirtPattern');
+  buildTextPresets('bottom-type-btns', 'bottomType');
+}
+
+function updateCharPreview() {
+  const canvas = document.getElementById('char-preview-canvas');
+  if (!canvas) return;
+  const pctx = canvas.getContext('2d');
+  pctx.clearRect(0, 0, 120, 80);
+  pctx.fillStyle = '#1a1a24';
+  pctx.fillRect(0, 0, 120, 80);
+  // Draw character centered at 60, 45 using a mock zone
+  const mockZone = { charGlow: CFG.character.eyeColor, intensity: 0 };
+  drawCharacterOnCtx(pctx, 60, 45, mockZone, 0);
+}
+
+function darkenColor(hex, factor) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  const toHex = v => { const h = Math.max(0,Math.round(v*factor)).toString(16); return h.length===1?'0'+h:h; };
+  return '#'+toHex(r)+toHex(g)+toHex(b);
+}
+
+function drawCharacterOnCtx(c, cx, cy, zone, bob) {
+  const ch = CFG.character;
+  const y = cy + Math.sin(bob) * 4;
+  const glow = ch.eyeColor;
+  const expandHex = (col) => col.length === 4 ? '#' + col[1]+col[1]+col[2]+col[2]+col[3]+col[3] : col;
+  const glowFull = expandHex(glow);
+  const bv = CFG.vividness.base;
+
+  const skinColor = applyVividness(ch.skinColor, bv);
+  const hairColor = applyVividness(ch.hairColor, bv);
+  const eyeColor = applyVividness(ch.eyeColor, bv);
+  const shirtColor = applyVividness(ch.shirtColor, bv);
+  const bottomColor = applyVividness(ch.bottomColor, bv);
+  const beltColor = applyVividness('#5a4530', bv);
+
+  // Aura
+  const auraGrad = c.createRadialGradient(cx, y - 6, 0, cx, y - 6, 40);
+  auraGrad.addColorStop(0, glowFull + '40');
+  auraGrad.addColorStop(0.5, glowFull + '15');
+  auraGrad.addColorStop(1, 'transparent');
+  c.fillStyle = auraGrad;
+  c.fillRect(cx - 50, y - 50, 100, 80);
+
+  // Shadow
+  c.fillStyle = 'rgba(0,0,0,0.6)';
+  c.beginPath();
+  c.ellipse(cx, y + 26, 14, 4, 0, 0, Math.PI * 2);
+  c.fill();
+
+  // Hair behind (long only)
+  if (ch.hairLength === 'long') {
+    c.fillStyle = hairColor;
+    c.fillRect(cx - 6, y - 14, 12, 24);
+  }
+
+  // Cape
+  c.fillStyle = 'rgba(130,25,25,0.7)';
+  c.beginPath();
+  c.moveTo(cx - 9, y - 14);
+  c.lineTo(cx - 14, y + 18 + Math.sin(bob * 0.7) * 3);
+  c.lineTo(cx + 14, y + 18 + Math.sin(bob * 0.7 + 1) * 3);
+  c.lineTo(cx + 9, y - 14);
+  c.fill();
+
+  // Bottom
+  const btType = ch.bottomType;
+  if (btType === 'pants') {
+    c.fillStyle = bottomColor;
+    c.fillRect(cx - 6, y + 8, 4, 12);
+    c.fillRect(cx + 2, y + 8, 4, 12);
+    // Boots
+    c.fillStyle = applyVividness('#3a3035', bv);
+    c.fillRect(cx - 7, y + 18, 5, 4);
+    c.fillRect(cx + 1, y + 18, 5, 4);
+  } else if (btType === 'shorts') {
+    c.fillStyle = bottomColor;
+    c.fillRect(cx - 6, y + 8, 4, 6);
+    c.fillRect(cx + 2, y + 8, 4, 6);
+    // Exposed skin
+    c.fillStyle = skinColor;
+    c.fillRect(cx - 6, y + 14, 4, 6);
+    c.fillRect(cx + 2, y + 14, 4, 6);
+    // Boots
+    c.fillStyle = applyVividness('#3a3035', bv);
+    c.fillRect(cx - 7, y + 18, 5, 4);
+    c.fillRect(cx + 1, y + 18, 5, 4);
+  } else if (btType === 'skirt') {
+    // Flared trapezoid from belt to knees
+    c.fillStyle = bottomColor;
+    c.beginPath();
+    c.moveTo(cx - 6, y + 8);
+    c.lineTo(cx - 10, y + 18);
+    c.lineTo(cx + 10, y + 18);
+    c.lineTo(cx + 6, y + 8);
+    c.closePath();
+    c.fill();
+    // Boots
+    c.fillStyle = applyVividness('#3a3035', bv);
+    c.fillRect(cx - 7, y + 18, 5, 4);
+    c.fillRect(cx + 1, y + 18, 5, 4);
+  } else if (btType === 'longskirt') {
+    // Flared trapezoid from belt to ankles
+    c.fillStyle = bottomColor;
+    c.beginPath();
+    c.moveTo(cx - 6, y + 8);
+    c.lineTo(cx - 12, y + 22);
+    c.lineTo(cx + 12, y + 22);
+    c.lineTo(cx + 6, y + 8);
+    c.closePath();
+    c.fill();
+    // No boots visible
+  }
+
+  // Shirt/body
+  c.fillStyle = shirtColor;
+  c.fillRect(cx - 8, y - 12, 16, 20);
+
+  // Shirt pattern
+  if (ch.shirtPattern === 'striped') {
+    const dark = darkenColor(ch.shirtColor, 0.7);
+    c.fillStyle = applyVividness(dark, bv);
+    for (let sy = y - 12; sy < y + 8; sy += 4) {
+      c.fillRect(cx - 8, sy, 16, 2);
+    }
+  } else if (ch.shirtPattern === 'checkered') {
+    const dark = darkenColor(ch.shirtColor, 0.7);
+    c.fillStyle = applyVividness(dark, bv);
+    for (let sy = y - 12; sy < y + 8; sy += 4) {
+      for (let sx = cx - 8; sx < cx + 8; sx += 4) {
+        const cellX = Math.floor((sx - (cx - 8)) / 4);
+        const cellY = Math.floor((sy - (y - 12)) / 4);
+        if ((cellX + cellY) % 2 === 0) {
+          c.fillRect(sx, sy, 2, 2);
+        }
+      }
+    }
+  }
+
+  // Belt
+  c.fillStyle = beltColor;
+  c.fillRect(cx - 8, y + 2, 16, 3);
+  c.fillStyle = eyeColor;
+  c.fillRect(cx - 2, y + 2, 4, 3);
+
+  // Arms
+  c.fillStyle = shirtColor;
+  c.fillRect(cx - 12, y - 10, 4, 14);
+  c.fillRect(cx + 8, y - 10, 4, 14);
+
+  // Head (skin)
+  c.fillStyle = skinColor;
+  c.fillRect(cx - 6, y - 24, 12, 12);
+
+  // Hair/helmet
+  c.fillStyle = hairColor;
+  c.fillRect(cx - 7, y - 26, 14, 5);
+  // Side hair
+  const extraHair = ch.hairLength === 'medium' ? 4 : ch.hairLength === 'long' ? 8 : 0;
+  c.fillRect(cx - 7, y - 24, 2, 8 + extraHair);
+  c.fillRect(cx + 5, y - 24, 2, 8 + extraHair);
+
+  // Eyes
+  c.fillStyle = eyeColor;
+  c.shadowColor = eyeColor;
+  c.shadowBlur = 12;
+  c.fillRect(cx - 4, y - 20, 3, 3);
+  c.fillRect(cx + 1, y - 20, 3, 3);
+  c.shadowBlur = 0;
+
+  // Eye trails (when moving)
+  if (typeof targetPlayerY !== 'undefined' && typeof playerY !== 'undefined' && Math.abs(targetPlayerY - playerY) > 0.5) {
+    c.globalAlpha = 0.4;
+    c.fillStyle = eyeColor;
+    c.fillRect(cx - 4, y - 19, 2, 6);
+    c.fillRect(cx + 2, y - 19, 2, 6);
+    c.globalAlpha = 1;
+  }
+
+  // Shields
+  const shields = S.shields || 0;
+  if (shields > 0) {
+    const orbitRadius = 22;
+    const orbitSpeed = bob * 0.8;
+    for (let si = 0; si < shields; si++) {
+      const angle = orbitSpeed + (si / shields) * Math.PI * 2;
+      const ox = cx + Math.cos(angle) * orbitRadius;
+      const oy = y - 5 + Math.sin(angle) * orbitRadius * 0.4;
+      c.fillStyle = '#4ad4d4';
+      c.shadowColor = '#4ad4d4';
+      c.shadowBlur = 10;
+      c.globalAlpha = 0.6;
+      c.beginPath();
+      c.arc(ox, oy, 3, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = '#aaffff';
+      c.globalAlpha = 0.9;
+      c.beginPath();
+      c.arc(ox, oy, 1.5, 0, Math.PI * 2);
+      c.fill();
+    }
+    c.shadowBlur = 0;
+    c.globalAlpha = 1;
+  }
 }
 
 function renderHardList() {
@@ -1055,6 +1501,7 @@ function renderReportCard() {
   const ageExp = getAgeExpected(age);
   const allSlotKeys = getAllSlotKeys();
   let totalEarnings = 0;
+  let totalPlayTime = 0, totalIdleTime = 0;
 
   let rows = '';
   for (const key of allSlotKeys) {
@@ -1076,21 +1523,24 @@ function renderReportCard() {
       const sd = getSlotDifficulty(slot.ops, slot.maxNum);
       const bp = getBasePayout(sd, ageExp);
       const actual = bp * mq * CFG.globalMoneyScaler;
-      // Bonus earnings
       let bonusEarnings = 0;
       for (let r = 1; r <= (slot.bonusRoundsCompleted || 0); r++) {
         let base; if (r<=5) base=1; else if(r<=10) base=1.5; else if(r<=20) base=2; else if(r<=50) base=2.5; else base=3;
         bonusEarnings += base * CFG.globalMoneyScaler;
       }
       totalEarnings += (slot.slotEarnings || 0);
+      const slotPlay = slot.playTimeMs || 0;
+      const slotIdle = slot.idleTimeMs || 0;
+      totalPlayTime += slotPlay;
+      totalIdleTime += slotIdle;
       const isCurrent = key === CFG.currentSlotKey;
       rows += `<div style="padding:6px 0;border-bottom:1px solid rgba(200,192,184,0.05);${isCurrent?'color:var(--accent2)':''}">
         <strong>${key}</strong> — Mastery: ${Math.round(mPct*100)}% · Base: $${bp} · MQ: ${Math.round(mq*100)}% · Payout: $${actual.toFixed(2)} · Bonus: ${slot.bonusRoundsCompleted||0} ($${bonusEarnings.toFixed(2)})
+        <br><span style="color:var(--fg-dim);font-size:13px">Play: ${formatTime(slotPlay)} · Idle: ${formatTime(slotIdle)} · Total: ${formatTime(slotPlay+slotIdle)}</span>
       </div>`;
     } catch(e){}
   }
 
-  // Current slot detail
   const sd = getSlotDifficulty(S.ops, S.maxNum);
   const bp = getBasePayout(sd, ageExp);
   const mi = getSlotMasteryInfo();
@@ -1102,6 +1552,7 @@ function renderReportCard() {
     <div class="report-section">${rows || '<div style="color:var(--fg-dim)">No slots yet</div>'}</div>
     <div class="report-section">
       <div><span class="rpt-label">TOTAL EARNINGS:</span> <span class="rpt-money">$${getTotalEarnings().toFixed(2)}</span></div>
+      <div><span class="rpt-label">TOTAL PLAY TIME:</span> <span class="rpt-val">${formatTime(totalPlayTime)}</span> · IDLE: <span class="rpt-val">${formatTime(totalIdleTime)}</span> · COMBINED: <span class="rpt-val">${formatTime(totalPlayTime+totalIdleTime)}</span></div>
     </div>
     <div class="report-section">
       <div style="font-size:14px;color:var(--gold);margin-bottom:6px">MONEY CALCULATION (current slot)</div>
@@ -1125,11 +1576,13 @@ function renderReportCard() {
 // Slots overlay
 function openSlots() {
   AudioEngine.playMenuOpen();
+  slotsOpen = true;
   document.getElementById('slots-overlay').classList.add('open');
   renderSlotsList();
 }
 function closeSlots() {
   AudioEngine.playMenuClose();
+  slotsOpen = false;
   document.getElementById('slots-overlay').classList.remove('open');
 }
 
@@ -1206,10 +1659,10 @@ document.querySelectorAll('.toggle[data-op]').forEach(el => {
   });
 });
 
-document.querySelectorAll('.mode-btn').forEach(el => {
+document.querySelectorAll('.mode-btn[data-mode]').forEach(el => {
   el.addEventListener('click', () => {
     S.mode = el.dataset.mode;
-    document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === S.mode));
+    document.querySelectorAll('.mode-btn[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === S.mode));
     saveSlot();
   });
 });
@@ -1260,6 +1713,18 @@ document.getElementById('volume-range').addEventListener('input', (e) => {
   CFG.volume = v / 100;
   AudioEngine.setVolume(CFG.volume);
   saveConfig();
+});
+
+// Vividness controls
+['bg','base','info','fg'].forEach(key => {
+  const cfgKey = {bg:'background',base:'base',info:'info',fg:'foreground'}[key];
+  document.getElementById(`vivid-${key}-range`).addEventListener('input', (e) => {
+    const v = parseInt(e.target.value);
+    document.getElementById(`vivid-${key}-val`).textContent = v + '%';
+    CFG.vividness[cfgKey] = v;
+    updateVividnessCSS();
+    saveConfig();
+  });
 });
 
 document.getElementById('reset-slot-btn').addEventListener('click', () => {
@@ -1343,9 +1808,8 @@ function showVictory() {
   if (complete) {
     title.textContent = 'THE TOWER IS CONQUERED';
     msg.textContent = 'You have escaped the arithmetic void.';
-    // Award payout
     const payout = calculateSlotPayout();
-    if (S.slotEarnings === 0) { // Only award base payout once
+    if (S.slotEarnings === 0) {
       S.slotEarnings = payout;
       saveSlot();
     }
@@ -1363,7 +1827,6 @@ function showVictory() {
 
 document.getElementById('continue-btn').addEventListener('click', () => {
   document.getElementById('victory-screen').classList.remove('show');
-  // If completion met and game beaten, offer bonus rounds
   if (S.gameBeaten && checkCompletionRequirements() && !S.bonusActive) {
     if (S.bonusRound === 0) S.bonusRound = 1;
     startBonusRound();
@@ -1437,100 +1900,9 @@ let lastTime = 0;
 let frameCount = 0;
 let screenShake = 0;
 
+// Old drawCharacter wrapper — calls the new shared function on the main canvas ctx
 function drawCharacter(cx, cy, zone) {
-  const bob = Math.sin(playerBob) * 4;
-  const y = cy + bob;
-  const glow = zone.charGlow || '#dd4444';
-  const expandHex = (c) => c.length === 4 ? '#' + c[1]+c[1]+c[2]+c[2]+c[3]+c[3] : c;
-  const glowFull = expandHex(glow);
-
-  const auraGrad = ctx.createRadialGradient(cx, y - 6, 0, cx, y - 6, 40);
-  auraGrad.addColorStop(0, glowFull + '40');
-  auraGrad.addColorStop(0.5, glowFull + '15');
-  auraGrad.addColorStop(1, 'transparent');
-  ctx.fillStyle = auraGrad;
-  ctx.fillRect(cx - 50, y - 50, 100, 80);
-
-  ctx.fillStyle = 'rgba(0,0,0,0.6)';
-  ctx.beginPath();
-  ctx.ellipse(cx, y + 26, 14, 4, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = 'rgba(130,25,25,0.7)';
-  ctx.beginPath();
-  ctx.moveTo(cx - 9, y - 14);
-  ctx.lineTo(cx - 14, y + 18 + Math.sin(playerBob * 0.7) * 3);
-  ctx.lineTo(cx + 14, y + 18 + Math.sin(playerBob * 0.7 + 1) * 3);
-  ctx.lineTo(cx + 9, y - 14);
-  ctx.fill();
-
-  ctx.fillStyle = '#4a4550';
-  ctx.fillRect(cx - 6, y + 8, 4, 12);
-  ctx.fillRect(cx + 2, y + 8, 4, 12);
-
-  ctx.fillStyle = '#3a3035';
-  ctx.fillRect(cx - 7, y + 18, 5, 4);
-  ctx.fillRect(cx + 1, y + 18, 5, 4);
-
-  ctx.fillStyle = '#b8b0a8';
-  ctx.fillRect(cx - 8, y - 12, 16, 20);
-
-  ctx.fillStyle = '#5a4530';
-  ctx.fillRect(cx - 8, y + 2, 16, 3);
-  ctx.fillStyle = glow;
-  ctx.fillRect(cx - 2, y + 2, 4, 3);
-
-  ctx.fillStyle = '#a8a098';
-  ctx.fillRect(cx - 12, y - 10, 4, 14);
-  ctx.fillRect(cx + 8, y - 10, 4, 14);
-
-  ctx.fillStyle = '#d0c8c0';
-  ctx.fillRect(cx - 6, y - 24, 12, 12);
-
-  ctx.fillStyle = '#3a3035';
-  ctx.fillRect(cx - 7, y - 26, 14, 5);
-  ctx.fillRect(cx - 7, y - 24, 2, 8);
-  ctx.fillRect(cx + 5, y - 24, 2, 8);
-
-  ctx.fillStyle = glow;
-  ctx.shadowColor = glow;
-  ctx.shadowBlur = 12;
-  ctx.fillRect(cx - 4, y - 20, 3, 3);
-  ctx.fillRect(cx + 1, y - 20, 3, 3);
-  ctx.shadowBlur = 0;
-
-  if (Math.abs(targetPlayerY - playerY) > 0.5) {
-    ctx.globalAlpha = 0.4;
-    ctx.fillStyle = glow;
-    ctx.fillRect(cx - 4, y - 19, 2, 6);
-    ctx.fillRect(cx + 2, y - 19, 2, 6);
-    ctx.globalAlpha = 1;
-  }
-
-  const shields = S.shields || 0;
-  if (shields > 0) {
-    const orbitRadius = 22;
-    const orbitSpeed = playerBob * 0.8;
-    for (let si = 0; si < shields; si++) {
-      const angle = orbitSpeed + (si / shields) * Math.PI * 2;
-      const ox = cx + Math.cos(angle) * orbitRadius;
-      const oy = y - 5 + Math.sin(angle) * orbitRadius * 0.4;
-      ctx.fillStyle = '#4ad4d4';
-      ctx.shadowColor = '#4ad4d4';
-      ctx.shadowBlur = 10;
-      ctx.globalAlpha = 0.6;
-      ctx.beginPath();
-      ctx.arc(ox, oy, 3, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#aaffff';
-      ctx.globalAlpha = 0.9;
-      ctx.beginPath();
-      ctx.arc(ox, oy, 1.5, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.shadowBlur = 0;
-    ctx.globalAlpha = 1;
-  }
+  drawCharacterOnCtx(ctx, cx, cy, zone, playerBob);
 }
 
 function render(timestamp) {
@@ -1554,9 +1926,12 @@ function render(timestamp) {
     screenShake *= 0.9;
   }
 
+  const bgv = CFG.vividness.background;
+  const bsv = CFG.vividness.base;
+
   const grad = ctx.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, zone.bg2);
-  grad.addColorStop(1, zone.bg1);
+  grad.addColorStop(0, applyVividness(zone.bg2, bgv));
+  grad.addColorStop(1, applyVividness(zone.bg1, bgv));
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
@@ -1565,9 +1940,9 @@ function render(timestamp) {
     const bx = (i * W / 5 + 30) % (W + 100) - 50;
     const bh = 100 + (i * 73 % 200);
     const by = H - bh + cameraY * 0.1;
-    ctx.fillStyle = zone.platColor;
+    ctx.fillStyle = applyVividness(zone.platColor, bgv);
     ctx.fillRect(bx, by, 30 + i * 7, bh);
-    ctx.fillStyle = zone.edgeColor || '#444';
+    ctx.fillStyle = applyVividness(zone.edgeColor || '#444', bgv);
     ctx.globalAlpha = 0.15;
     for (let wy = by + 15; wy < by + bh - 10; wy += 20) {
       ctx.fillRect(bx + 6, wy, 4, 6);
@@ -1587,29 +1962,29 @@ function render(timestamp) {
     const px = p.x * W;
     const pw = p.width * W;
 
-    ctx.fillStyle = zone.edgeColor || zone.platColor;
+    ctx.fillStyle = applyVividness(zone.edgeColor || zone.platColor, bsv);
     ctx.globalAlpha = 0.15;
     ctx.fillRect(px - 2, screenY + 2, pw + 4, 12);
     ctx.globalAlpha = 1;
 
-    ctx.fillStyle = zone.platColor;
+    ctx.fillStyle = applyVividness(zone.platColor, bsv);
     ctx.fillRect(px, screenY, pw, 10);
 
-    ctx.fillStyle = zone.edgeColor || 'rgba(200,192,184,0.3)';
+    ctx.fillStyle = applyVividness(zone.edgeColor || 'rgba(200,192,184,0.3)', bsv);
     ctx.fillRect(px, screenY, pw, 2);
 
-    ctx.fillStyle = zone.edgeColor || 'rgba(200,192,184,0.2)';
+    ctx.fillStyle = applyVividness(zone.edgeColor || 'rgba(200,192,184,0.2)', bsv);
     ctx.fillRect(px, screenY, 2, 10);
     ctx.fillRect(px + pw - 2, screenY, 2, 10);
 
     if (p.decoration > 0.8 && i > 0) {
-      ctx.fillStyle = zone.edgeColor || 'rgba(184,48,48,0.4)';
+      ctx.fillStyle = applyVividness(zone.edgeColor || 'rgba(184,48,48,0.4)', bsv);
       ctx.fillRect(px + pw * 0.3, screenY - 14, 4, 14);
       ctx.fillRect(px + pw * 0.6, screenY - 10, 3, 10);
     }
 
     if (p.decoration > 0.5 && p.decoration < 0.7) {
-      ctx.fillStyle = zone.edgeColor || '#4a4a4a';
+      ctx.fillStyle = applyVividness(zone.edgeColor || '#4a4a4a', bsv);
       ctx.globalAlpha = 0.5;
       for (let t = 0; t < 3; t++) {
         const tx = px + pw * (0.2 + t * 0.3);
@@ -1647,8 +2022,8 @@ function render(timestamp) {
     p.x += p.vx; p.y += p.vy; p.life -= dt;
     if (p.life <= 0 || p.y < -20 || p.y > H + 20) { particles.splice(i, 1); continue; }
     ctx.globalAlpha = Math.min(1, p.life / p.maxLife) * 0.85;
-    ctx.fillStyle = p.color;
-    ctx.shadowColor = p.color;
+    ctx.fillStyle = applyVividness(p.color, bgv);
+    ctx.shadowColor = applyVividness(p.color, bgv);
     ctx.shadowBlur = p.size * 2;
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
@@ -2001,11 +2376,14 @@ const AudioEngine = (() => {
 })();
 
 // ============ INTRO / START ============
+updateVividnessCSS();
+
 document.getElementById('start-btn').addEventListener('click', () => {
   AudioEngine.init();
   AudioEngine.startMusic();
   AudioEngine.playClick();
   document.getElementById('intro-screen').style.display = 'none';
+  resetIdleTimer();
   updateUI();
   presentProblem();
 });
