@@ -977,6 +977,17 @@ function getChoicesMult(numChoices, cfg) {
   }
 }
 
+function getDigitBonus(a, op, b) {
+  const ops = { '+': (x,y) => x+y, '−': (x,y) => x-y, '×': (x,y) => x*y, '÷': (x,y) => x/y,
+                add: (x,y) => x+y, sub: (x,y) => x-y, mul: (x,y) => x*y, div: (x,y) => x/y };
+  const result = Math.abs(Math.round((ops[op] || ops.add)(a, b)));
+  const digitMult = (n) => 1 + Math.max(0, String(Math.abs(n)).length - 1) * 0.1;
+  const mA = digitMult(a);
+  const mB = digitMult(b);
+  const mR = digitMult(result);
+  return { digitBonus: mA * mB * mR, digitParts: { a: mA, b: mB, result: mR, resultVal: result } };
+}
+
 function getNumOps(ops) {
   return Object.values(ops).filter(v => v).length;
 }
@@ -1028,6 +1039,7 @@ function renderRatePopup() {
   let r6 = r5 * b.heightMult;
   let r7 = r6 * b.questionModeMult;
   let r8 = r7 * b.choicesMult;
+  let r9 = r8 * (b.digitBonus || 1);
 
   const rOA = CFG.multipliers.opsAvg;
   const rAO = CFG.multipliers.additionalOps;
@@ -1105,10 +1117,17 @@ function renderRatePopup() {
       <span class="bp-mult">${fmtP(b.choicesMult)}</span>
       <span class="bp-running">→ ${fmtR(r8)}</span>
     </div>
+    <div class="bp-divider"></div>
+
+    <div class="bp-row">
+      <span class="bp-label">× Digits (${b.digitParts ? fmtP(b.digitParts.a) + ' × ' + fmtP(b.digitParts.b) + ' × ' + fmtP(b.digitParts.result) : '100%'})</span>
+      <span class="bp-mult">${fmtP(b.digitBonus || 1)}</span>
+      <span class="bp-running">→ ${fmtR(r9)}</span>
+    </div>
 
     <div class="bp-total">
       <span>YOUR RATE</span>
-      <span>${fmtR(r8)}</span>
+      <span>${fmtR(r9)}</span>
     </div>
     <div class="bp-earned">
       <span>Earned</span>
@@ -1341,8 +1360,9 @@ function handleAnswer(val, btn) {
       const heightMult = getHeightMult(S.height, CFG);
       const questionModeMult = getQuestionModeMult(S.mode, CFG);
       const choicesMult = getChoicesMult(S.numChoices, CFG);
+      const { digitBonus, digitParts } = getDigitBonus(currentProblem.a, currentProblem.op, currentProblem.b);
 
-      const preSpeedRate = CFG.baseRate * opsAvgMult * additionalOpsMult * rangeMult * ageMult * heightMult * questionModeMult * choicesMult;
+      const preSpeedRate = CFG.baseRate * opsAvgMult * additionalOpsMult * rangeMult * ageMult * heightMult * questionModeMult * choicesMult * digitBonus;
       const effectiveRate = preSpeedRate * speedMult;
       const answerPay = (expectedTimeSec / 3600) * preSpeedRate * speedMult;
 
@@ -1363,6 +1383,7 @@ function handleAnswer(val, btn) {
         heightMult, height: S.height,
         questionModeMult, mode: S.mode,
         choicesMult, numChoices: S.numChoices,
+        digitBonus, digitParts,
         effectiveRate, answerPay,
         difficulty: probDiff
       };
@@ -1896,16 +1917,39 @@ function renderReportCard() {
 
   const combinedAvgRate = totalPlayTime > 0 ? (totalEarnings / totalPlayTime) * 3600000 : 0;
 
-  // Current slot breakdown
-  const slotRateMult = getSlotRateMultiplier(S.ops);
-  const numOps = getNumOps(S.ops);
+  // Current slot multiplier chain (without speed)
+  const enabledOps = Object.entries(S.ops).filter(([k,v]) => v).map(([k]) => k);
+  const opsAvgMult = getOpsAvgMult(enabledOps, CFG);
+  const numOps = enabledOps.length;
+  const additionalOpsMult = getAdditionalOpsMult(numOps, CFG);
+  const rangeMult = getRangeMult(S.maxNum, CFG);
+  const ageMult = getAgeMult(opsAvgMult, age, CFG);
+  const heightMult = getHeightMult(S.height, CFG);
+  const questionModeMult = getQuestionModeMult(S.mode, CFG);
+  const choicesMult = getChoicesMult(S.numChoices, CFG);
+
+  let r = CFG.baseRate;
+  const chain = [
+    { label: 'Base Rate', mult: null, running: r },
+    { label: '× Ops Avg', mult: opsAvgMult, running: r *= opsAvgMult },
+    { label: '× Additional Ops', mult: additionalOpsMult, running: r *= additionalOpsMult },
+    { label: '× Range', mult: rangeMult, running: r *= rangeMult },
+    { label: '× Age', mult: ageMult, running: r *= ageMult },
+    { label: '× Height', mult: heightMult, running: r *= heightMult },
+    { label: '× Question Mode', mult: questionModeMult, running: r *= questionModeMult },
+    { label: '× Choices', mult: choicesMult, running: r *= choicesMult },
+  ];
+  const slotBaseRate = r;
   const curRate = getCurrentRate();
   const avgRate = getAvgRate();
 
-  // Theoretical rates
-  const theorBaseRate = 20 * slotRateMult * CFG.globalMoneyScaler;
-  const theorFastRate = theorBaseRate * 2.0;
-  const theorSlowRate = theorBaseRate * 0.5;
+  const chainHTML = chain.map(c => {
+    if (c.mult === null) return `<div><span class="rpt-label">${c.label}:</span> <span class="rpt-money">$${c.running.toFixed(2)}/hr</span></div>`;
+    return `<div><span class="rpt-label">${c.label}:</span> <span class="rpt-val">${Math.round(c.mult*100)}%</span> → <span class="rpt-money">$${c.running.toFixed(2)}/hr</span></div>`;
+  }).join('');
+
+  const theorFastRate = slotBaseRate * (CFG.multipliers.speed.max / 100);
+  const theorSlowRate = slotBaseRate * (CFG.multipliers.speed.min / 100);
 
   el.innerHTML = `
     <div class="report-section">${rows || '<div style="color:var(--fg-dim)">No slots yet</div>'}</div>
@@ -1915,19 +1959,18 @@ function renderReportCard() {
       <div><span class="rpt-label">COMBINED AVG RATE:</span> <span class="rpt-money">$${combinedAvgRate.toFixed(2)}/hr</span></div>
     </div>
     <div class="report-section">
-      <div style="font-size:14px;color:var(--gold);margin-bottom:6px">EARNINGS BREAKDOWN (current slot)</div>
-      <div><span class="rpt-label">Base Rate:</span> <span class="rpt-money">$20.00/hr</span></div>
-      <div><span class="rpt-label">× Op Count (${numOps} op${numOps>1?'s':''}, 1.2^${numOps-1}):</span> <span class="rpt-val">×${slotRateMult.toFixed(2)}</span> = <span class="rpt-money">$${(20 * slotRateMult).toFixed(2)}/hr</span></div>
-      <div><span class="rpt-label">× Scaler (${Math.round(CFG.globalMoneyScaler*100)}%):</span> <span class="rpt-val">×${CFG.globalMoneyScaler.toFixed(2)}</span> = <span class="rpt-money">$${theorBaseRate.toFixed(2)}/hr</span></div>
-      <div><span class="rpt-label">Your Current Rate:</span> <span class="rpt-money">$${curRate.toFixed(2)}/hr</span></div>
-      <div><span class="rpt-label">Your Avg Rate:</span> <span class="rpt-money">$${avgRate.toFixed(2)}/hr</span></div>
-      <div><span class="rpt-label">Slot Total:</span> <span class="rpt-money">${formatMoney(S.slotEarnings||0)}</span></div>
+      <div style="font-size:14px;color:var(--gold);margin-bottom:6px">SLOT BASE RATE (before speed)</div>
+      ${chainHTML}
+      <div style="border-top:1px solid rgba(200,192,184,0.15);margin-top:4px;padding-top:4px"><span class="rpt-label">Slot Base Rate:</span> <span class="rpt-money">$${slotBaseRate.toFixed(2)}/hr</span></div>
     </div>
     <div class="report-section">
       <div style="font-size:14px;color:var(--gold);margin-bottom:6px">THEORETICAL RATES</div>
-      <div><span class="rpt-label">At expected speed (1×):</span> <span class="rpt-money">$${theorBaseRate.toFixed(2)}/hr</span></div>
-      <div><span class="rpt-label">At 2× speed (max bonus):</span> <span class="rpt-money">$${theorFastRate.toFixed(2)}/hr</span></div>
-      <div><span class="rpt-label">At 0.5× speed (min):</span> <span class="rpt-money">$${theorSlowRate.toFixed(2)}/hr</span></div>
+      <div><span class="rpt-label">At expected speed (100%):</span> <span class="rpt-money">$${slotBaseRate.toFixed(2)}/hr</span></div>
+      <div><span class="rpt-label">At max speed (${CFG.multipliers.speed.max}%):</span> <span class="rpt-money">$${theorFastRate.toFixed(2)}/hr</span></div>
+      <div><span class="rpt-label">At min speed (${CFG.multipliers.speed.min}%):</span> <span class="rpt-money">$${theorSlowRate.toFixed(2)}/hr</span></div>
+      <div style="margin-top:4px"><span class="rpt-label">Your Current Rate:</span> <span class="rpt-money">$${curRate.toFixed(2)}/hr</span></div>
+      <div><span class="rpt-label">Your Avg Rate:</span> <span class="rpt-money">$${avgRate.toFixed(2)}/hr</span></div>
+      <div><span class="rpt-label">Slot Total:</span> <span class="rpt-money">${formatMoney(S.slotEarnings||0)}</span></div>
     </div>
   `;
 }
@@ -1998,12 +2041,121 @@ function renderSlotsList() {
   });
 }
 
+// ============ PARENT CONFIG ============
+let parentOpen = false;
+
+function openParent() {
+  AudioEngine.playMenuOpen();
+  parentOpen = true;
+  updateIdleIndicator();
+  document.getElementById('parent-overlay').classList.add('open');
+  renderParentMenu();
+}
+function closeParent() {
+  AudioEngine.playMenuClose();
+  parentOpen = false;
+  updateIdleIndicator();
+  document.getElementById('parent-overlay').classList.remove('open');
+  saveConfig();
+}
+
+const MULT_LABELS = {
+  opsAvg: 'Ops Avg',
+  additionalOps: 'Additional Ops',
+  range: 'Range',
+  age: 'Age',
+  speed: 'Speed',
+  height: 'Height',
+  questionMode: 'Question Mode',
+  choices: 'Choices'
+};
+
+function renderParentMenu() {
+  document.getElementById('birth-year-input').value = CFG.birthYear;
+  document.getElementById('age-display').textContent = 'Age: ' + getAge();
+  document.getElementById('baserate-input').value = CFG.baseRate.toFixed(2);
+
+  // Build multiplier range inputs
+  const container = document.getElementById('mult-ranges-container');
+  container.innerHTML = '';
+  for (const key in CFG.multipliers) {
+    const r = CFG.multipliers[key];
+    const row = document.createElement('div');
+    row.className = 'mult-row';
+    row.innerHTML = `<label>${MULT_LABELS[key] || key}</label>
+      <input type="number" class="num-input" data-mult="${key}" data-side="min" value="${r.min}" min="0" max="500" step="1">
+      <span class="mult-dash">% —</span>
+      <input type="number" class="num-input" data-mult="${key}" data-side="max" value="${r.max}" min="0" max="500" step="1">
+      <span class="mult-dash">%</span>`;
+    container.appendChild(row);
+  }
+
+  // Attach blur handlers for logging
+  container.querySelectorAll('input[data-mult]').forEach(inp => {
+    inp.addEventListener('blur', () => {
+      const field = inp.dataset.mult;
+      const side = inp.dataset.side;
+      const oldVal = { ...CFG.multipliers[field] };
+      const newVal = Math.max(0, Math.min(500, parseInt(inp.value) || 0));
+      inp.value = newVal;
+      if (CFG.multipliers[field][side] !== newVal) {
+        const from = { min: oldVal.min, max: oldVal.max };
+        CFG.multipliers[field][side] = newVal;
+        const to = { min: CFG.multipliers[field].min, max: CFG.multipliers[field].max };
+        if (!CFG.multiplierLog) CFG.multiplierLog = [];
+        CFG.multiplierLog.push({ date: new Date().toISOString(), field, from, to });
+        if (CFG.multiplierLog.length > 50) CFG.multiplierLog = CFG.multiplierLog.slice(-50);
+        saveConfig();
+        renderMultLog();
+      }
+    });
+  });
+
+  renderMultLog();
+  renderKarmaUI();
+}
+
+function renderMultLog() {
+  const log = document.getElementById('mult-log');
+  const entries = (CFG.multiplierLog || []).slice().reverse();
+  if (entries.length === 0) { log.innerHTML = '<div style="color:var(--fg-dim);font-size:14px;padding:4px">No changes yet</div>'; return; }
+  log.innerHTML = entries.map(e => {
+    const d = new Date(e.date);
+    const dateStr = d.toLocaleDateString([], {month:'short',day:'numeric'}) + ', ' + d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+    if (e.field === 'baseRate') {
+      return `<div style="font-size:14px;color:var(--fg-dim);padding:3px 0;border-bottom:1px solid rgba(200,192,184,0.05)">
+        <span style="color:var(--fg)">${dateStr}</span> · baseRate: <span style="color:var(--red-bright)">$${e.from}</span> → <span style="color:var(--green-bright)">$${e.to}</span>
+      </div>`;
+    }
+    return `<div style="font-size:14px;color:var(--fg-dim);padding:3px 0;border-bottom:1px solid rgba(200,192,184,0.05)">
+      <span style="color:var(--fg)">${dateStr}</span> · ${e.field}: <span style="color:var(--red-bright)">${e.from.min}-${e.from.max}%</span> → <span style="color:var(--green-bright)">${e.to.min}-${e.to.max}%</span>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('baserate-input').addEventListener('blur', (e) => {
+  const oldRate = CFG.baseRate;
+  const newRate = Math.max(0.50, Math.min(50, parseFloat(e.target.value) || 5.00));
+  e.target.value = newRate.toFixed(2);
+  if (oldRate !== newRate) {
+    CFG.baseRate = newRate;
+    if (!CFG.multiplierLog) CFG.multiplierLog = [];
+    CFG.multiplierLog.push({ date: new Date().toISOString(), field: 'baseRate', from: oldRate.toFixed(2), to: newRate.toFixed(2) });
+    if (CFG.multiplierLog.length > 50) CFG.multiplierLog = CFG.multiplierLog.slice(-50);
+    saveConfig();
+    renderMultLog();
+  }
+});
+
 // Menu events
 document.getElementById('menu-open-btn').addEventListener('click', openMenu);
 document.getElementById('menu-close-btn').addEventListener('click', closeMenu);
 document.getElementById('menu-close-btn2').addEventListener('click', closeMenu);
 document.getElementById('slots-open-btn').addEventListener('click', openSlots);
 document.getElementById('slots-close-btn').addEventListener('click', closeSlots);
+document.getElementById('parent-open-btn').addEventListener('click', openParent);
+document.getElementById('parent-close-btn').addEventListener('click', closeParent);
+document.getElementById('parent-close-btn2').addEventListener('click', closeParent);
 document.getElementById('new-slot-btn').addEventListener('click', () => {
   closeSlots();
   openMenu();
@@ -2099,10 +2251,12 @@ document.getElementById('reset-slot-btn').addEventListener('click', () => {
   if (confirm('Reset current slot? This cannot be undone.')) {
     const key = CFG.currentSlotKey;
     const ops = { ...S.ops };
+    const minNum = S.minNum || 0;
     const maxNum = S.maxNum;
     localStorage.removeItem('arithmetyx_slot_' + key);
     loadSlot(key);
     S.ops = ops;
+    S.minNum = minNum;
     S.maxNum = maxNum;
     saveSlot();
     renderMenu();
@@ -2152,26 +2306,11 @@ document.getElementById('apply-karma-btn').addEventListener('click', () => {
   updateUI();
 });
 
-document.getElementById('floor-range').addEventListener('input', (e) => {
-  document.getElementById('floor-range-val').textContent = e.target.value;
-});
-
-document.getElementById('apply-floor-btn').addEventListener('click', () => {
-  const newFloor = parseInt(document.getElementById('floor-range').value);
-  S.floor = newFloor;
-  if (S.height < newFloor) S.height = newFloor;
-  saveSlot();
-  renderKarmaUI();
-  updateUI();
-});
-
 function renderKarmaUI() {
   document.getElementById('menu-karma-val').textContent = S.karma;
-  document.getElementById('menu-floor-val').textContent = S.floor || 0;
+  document.getElementById('menu-floor-val').textContent = S.floor || S.karma * 5;
   document.getElementById('karma-range').value = S.karma;
   document.getElementById('karma-range-val').textContent = S.karma;
-  document.getElementById('floor-range').value = S.floor || 0;
-  document.getElementById('floor-range-val').textContent = S.floor || 0;
 
   const log = document.getElementById('karma-log');
   const entries = (S.karmaLog || []).slice().reverse();
@@ -2182,7 +2321,7 @@ function renderKarmaUI() {
     return `<div style="font-size:14px;color:var(--fg-dim);padding:3px 0;border-bottom:1px solid rgba(200,192,184,0.05)">
       <span style="color:var(--fg)">${dateStr}</span> · 
       Karma <span style="color:var(--red-bright)">${e.from}</span> → <span style="color:var(--green-bright)">${e.to}</span>
-      ${e.floor !== undefined ? '(floor ' + e.floor + ')' : ''}
+      (floor ${e.to * 5})
     </div>`;
   }).join('');
 }
