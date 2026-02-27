@@ -2475,7 +2475,17 @@ function showFeedback(correct, shielded) {
 
 function updateUI() {
   if (!S) return;
-  document.getElementById('stat-streak').textContent = S.streak;
+  const streakEl = document.getElementById('stat-streak');
+  if (S.streak > 0) {
+    streakEl.textContent = S.streak;
+    streakEl.style.color = '';
+  } else if (S.wrongStreak > 0) {
+    streakEl.textContent = '-' + S.wrongStreak;
+    streakEl.style.color = 'var(--red-bright)';
+  } else {
+    streakEl.textContent = '0';
+    streakEl.style.color = '';
+  }
   document.getElementById('stat-correct').textContent = S.totalCorrect;
   document.getElementById('stat-wrong').textContent = S.totalWrong;
   document.getElementById('stat-money').textContent = formatMoney(getTotalEarnings());
@@ -2857,7 +2867,7 @@ function renderReportCard() {
   let rows = '';
   for (const key of allSlotKeys) {
     try {
-      const raw = localStorage.getItem('arithmetyx_slot_' + key);
+      const raw = localStorage.getItem('arithmetyx_kid_' + currentKidId + '_slot_' + key);
       if (!raw) continue;
       const slot = JSON.parse(raw);
       const allProbs = enumerateSlotProblems(slot.ops, slot.minNum, slot.maxNum);
@@ -3854,7 +3864,7 @@ const AudioEngine = (() => {
     init, setVolume, setMusicEnabled, setSfxEnabled,
     playCorrect, playWrong, playFall, playClick, playStreak,
     playVictory, playMenuOpen, playMenuClose, playShieldBreak, playShieldGain,
-    startMusic, stopMusic, playVoice, playRandomVoice, playVoiceWithCooldown,
+    startMusic, stopMusic, playVoice, playRandomVoice, playVoiceWithCooldown, playRandomFromList,
     get musicEnabled() { return musicEnabled; },
     get sfxEnabled() { return enabled; },
     get volume() { return volume; }
