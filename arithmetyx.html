@@ -305,7 +305,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 
     <div style="display:flex;gap:10px;margin-top:20px">
       <button class="menu-btn-big btn-close" id="kid-create-back" style="flex:1">← BACK</button>
-      <button class="menu-btn-big" id="kid-create-confirm" style="flex:1;background:rgba(42,122,58,0.3);border:1px solid var(--green-bright);color:var(--green-bright)" disabled>CREATE PLAYER</button>
+      <button class="menu-btn-big" id="kid-create-confirm" style="flex:1;background:rgba(42,122,58,0.3);border:1px solid var(--green-bright);color:var(--green-bright);opacity:0.4" disabled>CREATE PLAYER</button>
     </div>
   </div>
 </div>
@@ -1208,7 +1208,10 @@ function updateKidCreateButton() {
   const name = document.getElementById('kid-name-input').value.trim();
   const birthYear = parseInt(document.getElementById('kid-birth-year-input').value);
   const btn = document.getElementById('kid-create-confirm');
-  btn.disabled = !name || !birthYear || birthYear < 2005 || birthYear > 2024;
+  const shouldDisable = !name || !birthYear || birthYear < 2005 || birthYear > 2024;
+  btn.disabled = shouldDisable;
+  btn.style.opacity = shouldDisable ? '0.4' : '1';
+  btn.style.cursor = shouldDisable ? 'not-allowed' : 'pointer';
 }
 
 // ============ VIVIDNESS ============
