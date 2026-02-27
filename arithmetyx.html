@@ -374,7 +374,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
     <div id="karma-log" style="margin-top:10px;max-height:150px;overflow-y:auto"></div>
 
     <h2>ACTIONS</h2>
-    <button class="menu-btn-big btn-danger" id="reset-btn">⚠ RESET ALL PROGRESS</button>
     <button class="menu-btn-big btn-danger" id="delete-player-btn" style="background:rgba(138,26,26,0.4);border-color:var(--red-bright)">DELETE THIS PLAYER</button>
     <button class="menu-btn-big btn-close" id="parent-close-btn2">BACK TO THE VOID</button>
   </div>
@@ -525,7 +524,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
     <h2>ACTIONS</h2>
     <button class="menu-btn-big btn-close" id="back-to-slots-btn">BACK TO SLOTS</button>
     <button class="menu-btn-big btn-close" id="switch-player-btn-menu">SWITCH PLAYER</button>
-    <button class="menu-btn-big btn-danger" id="reset-slot-btn">⚠ RESET CURRENT SLOT</button>
     <button class="menu-btn-big btn-close" id="menu-close-btn2">BACK TO THE VOID</button>
   </div>
 </div>
@@ -983,23 +981,38 @@ function renderKidSelection() {
       const earnings = getTotalEarnings(kidId);
       const slotCount = getAllSlotKeys(kidId).length;
       const isCurrent = kidId === currentKidId;
-      return `<div class="slot-card ${isCurrent?'active':''}" data-kid-id="${kidId}" style="cursor:pointer;margin:8px 0">
+      return `<div class="slot-card ${isCurrent?'active':''}" data-kid-id="${kidId}" style="cursor:pointer;margin:8px 0;position:relative">
         <div class="slot-ops" style="font-size:18px">${kid.name}</div>
         <div class="slot-range">Age: ${age} · ${slotCount} slots</div>
         <div class="slot-info">
           <span style="color:var(--fg-dim);font-size:14px">Created: ${new Date(kid.createdAt).toLocaleDateString()}</span>
           <span class="slot-earnings">${formatMoney(earnings)}</span>
         </div>
+        <button class="kid-delete-btn" data-kid-id="${kidId}" style="position:absolute;top:8px;right:8px;background:rgba(138,26,26,0.3);border:1px solid var(--red-bright);color:var(--red-bright);font-family:var(--font-display);font-size:10px;padding:4px 8px;cursor:pointer;border-radius:3px;letter-spacing:1px">✕ DELETE</button>
       </div>`;
     } catch(e) { return ''; }
   }).join('');
 
   // Add click handlers
   container.querySelectorAll('.slot-card').forEach(card => {
-    card.addEventListener('click', () => {
+    card.addEventListener('click', (e) => {
+      if (e.target.classList.contains('kid-delete-btn')) return;
       const kidId = card.dataset.kidId;
       if (loadKid(kidId)) {
         goToSlotSelect();
+      }
+    });
+  });
+
+  // Add delete handlers
+  container.querySelectorAll('.kid-delete-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const kidId = btn.dataset.kidId;
+      const kid = JSON.parse(localStorage.getItem('arithmetyx_kid_' + kidId) || '{}');
+      if (confirm(`Delete ${kid.name || 'this player'}? All their slots and progress will be permanently lost.`)) {
+        deleteKid(kidId);
+        renderKidSelection();
       }
     });
   });
@@ -1042,7 +1055,7 @@ function renderSlotSelection() {
       }
       const mPct = allProbs.length > 0 ? Math.round(mc / allProbs.length * 100) : 0;
       const slotAvgRate = (slot.playTimeMs > 0) ? ((slot.slotEarnings||0) / slot.playTimeMs) * 3600000 : 0;
-      return `<div class="slot-card ${isCurrent?'active':''}" data-slot-key="${key}" style="cursor:pointer;margin:8px 0">
+      return `<div class="slot-card ${isCurrent?'active':''}" data-slot-key="${key}" style="cursor:pointer;margin:8px 0;position:relative">
         <div class="slot-ops">${ops}</div>
         <div class="slot-range">Range: ${slotMin}-${slot.maxNum} · Mode: ${slot.mode} · ${slot.numChoices} choices</div>
         <div class="slot-range" style="font-size:14px">${slot.totalCorrect||0} correct · Best streak: ${slot.bestStreak||0}</div>
@@ -1051,18 +1064,33 @@ function renderSlotSelection() {
           <span style="color:var(--fg-dim);font-size:14px">Mastery: ${mPct}%</span>
           <span class="slot-earnings">${formatMoney(slot.slotEarnings||0)} · $${slotAvgRate.toFixed(2)}/hr</span>
         </div>
+        <button class="slot-delete-btn" data-slot-key="${key}" style="position:absolute;top:8px;right:8px;background:rgba(138,26,26,0.3);border:1px solid var(--red-bright);color:var(--red-bright);font-family:var(--font-display);font-size:10px;padding:4px 8px;cursor:pointer;border-radius:3px;letter-spacing:1px">✕ DELETE</button>
       </div>`;
     } catch(e) { return ''; }
   }).join('');
 
   // Add click handlers to slot cards
   container.querySelectorAll('.slot-card').forEach(card => {
-    card.addEventListener('click', () => {
+    card.addEventListener('click', (e) => {
+      if (e.target.classList.contains('slot-delete-btn')) return;
       const key = card.dataset.slotKey;
-      saveSlot(); // save current slot first
+      if (S) saveSlot(); // save current slot first
       loadSlot(key); // load clicked slot
       goToGame();
       showSlotNote('Loaded slot: ' + key);
+    });
+  });
+
+  // Add delete handlers to slot cards
+  container.querySelectorAll('.slot-delete-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const key = btn.dataset.slotKey;
+      if (confirm(`Delete slot "${key}"? All progress will be permanently lost.`)) {
+        localStorage.removeItem('arithmetyx_kid_' + currentKidId + '_slot_' + key);
+        if (CFG.currentSlotKey === key) { CFG.currentSlotKey = null; S = null; saveKid(); }
+        renderSlotSelection();
+      }
     });
   });
 }
@@ -1277,6 +1305,7 @@ function formatTime(ms) {
 }
 
 function updateTimeDisplay() {
+  if (!S) return;
   const el = document.getElementById('stat-time');
   if (el) el.textContent = formatTime(S.playTimeMs || 0);
 }
@@ -2015,6 +2044,7 @@ function showFeedback(correct, shielded) {
 }
 
 function updateUI() {
+  if (!S) return;
   document.getElementById('stat-streak').textContent = S.streak;
   document.getElementById('stat-correct').textContent = S.totalCorrect;
   document.getElementById('stat-wrong').textContent = S.totalWrong;
@@ -2656,59 +2686,6 @@ document.getElementById('volume-range').addEventListener('input', (e) => {
   });
 });
 
-document.getElementById('reset-slot-btn').addEventListener('click', () => {
-  if (confirm('Reset current slot? This cannot be undone.')) {
-    const key = CFG.currentSlotKey;
-    const ops = { ...S.ops };
-    const minNum = S.minNum || 0;
-    const maxNum = S.maxNum;
-    localStorage.removeItem('arithmetyx_slot_' + key);
-    loadSlot(key);
-    S.ops = ops;
-    S.minNum = minNum;
-    S.maxNum = maxNum;
-    saveSlot();
-    renderMenu();
-    renderHardList();
-    updateUI();
-    playerY = 0;
-    targetPlayerY = 0;
-  }
-});
-
-document.getElementById('reset-btn').addEventListener('click', () => {
-  if (!currentKidId || !CFG) return;
-  
-  if (confirm(`Reset ALL progress for ${CFG.name}? This will delete all slots and restart their progress. This cannot be undone.`)) {
-    const keys = getAllSlotKeys();
-    for (const k of keys) {
-      try { localStorage.removeItem('arithmetyx_kid_' + currentKidId + '_slot_' + k); } catch(e){}
-    }
-    
-    // Reset the kid profile but keep basic info
-    const resetProfile = JSON.parse(JSON.stringify(DEFAULT_KID_PROFILE));
-    resetProfile.id = CFG.id;
-    resetProfile.name = CFG.name;
-    resetProfile.birthYear = CFG.birthYear;
-    resetProfile.createdAt = CFG.createdAt;
-    
-    // Copy current rates and multipliers to preserve parent settings
-    resetProfile.baseRate = CFG.baseRate;
-    resetProfile.multipliers = JSON.parse(JSON.stringify(CFG.multipliers));
-    resetProfile.multiplierLog = CFG.multiplierLog || [];
-    
-    CFG = resetProfile;
-    saveKid();
-    
-    const key = 'add_sub_mul_div_10';
-    loadSlot(key);
-    renderParentMenu();
-    updateUI();
-    playerY = 0;
-    targetPlayerY = 0;
-  }
-});
-
 document.getElementById('karma-range').addEventListener('input', (e) => {
   document.getElementById('karma-range-val').textContent = e.target.value;
 });
@@ -2833,8 +2810,8 @@ function spawnParticle(zone) {
   particles.push(p);
 }
 
-let playerY = S.height;
-let targetPlayerY = S.height;
+let playerY = S ? S.height : 0;
+let targetPlayerY = S ? S.height : 0;
 let playerBob = 0;
 let cameraY = 0;
 let lastTime = 0;
@@ -2851,7 +2828,7 @@ function render(timestamp) {
   lastTime = timestamp;
   frameCount++;
 
-  targetPlayerY = S.height;
+  targetPlayerY = S ? S.height : 0;
   playerY += (targetPlayerY - playerY) * Math.min(1, dt * 5);
   playerBob += dt * 3;
 
@@ -3241,7 +3218,7 @@ const AudioEngine = (() => {
     function scheduleStings() {
       if (!musicPlaying) return;
       const now = actx.currentTime;
-      const zone = getZone(S.height);
+      const zone = getZone(S ? S.height : 0);
       const intens = zone.intensity || 0;
       const delay = Math.max(3, (8 - intens * 5)) + Math.random() * Math.max(3, (15 - intens * 10));
       const sting = actx.createOscillator();
@@ -3253,7 +3230,8 @@ const AudioEngine = (() => {
         'THE BONEYARD': [146, 155, 164], 'VOID SPIRE': [196, 207, 220],
         'STORM REACH': [261, 277, 293], 'THE APEX': [349, 370, 392]
       };
-      const freqs = stingFreqs[zone.name] || [130 + S.height * 0.3, 140 + S.height * 0.3, 155 + S.height * 0.3];
+      const h = S ? S.height : 0;
+      const freqs = stingFreqs[zone.name] || [130 + h * 0.3, 140 + h * 0.3, 155 + h * 0.3];
       sting.frequency.value = freqs[Math.floor(Math.random() * freqs.length)];
       stingFilter.type = 'lowpass'; stingFilter.frequency.value = 800 + intens * 1200; stingFilter.Q.value = 5 + intens * 8;
       const vol = 0.04 + intens * 0.06;
@@ -3280,7 +3258,8 @@ const AudioEngine = (() => {
 
     function scheduleHeartbeat() {
       if (!musicPlaying) return;
-      const intensity = Math.max(0, 1 - S.height / 100);
+      const hh = S ? S.height : 0;
+      const intensity = Math.max(0, 1 - hh / 100);
       if (intensity < 0.05) { setTimeout(scheduleHeartbeat, 3000); return; }
       const now = actx.currentTime;
       [0, 0.15].forEach(offset => {
@@ -3293,7 +3272,7 @@ const AudioEngine = (() => {
         kick.connect(kickGain); kickGain.connect(musicGain);
         kick.start(now + offset); kick.stop(now + offset + 0.25);
       });
-      const bpm = 50 + S.height * 0.1;
+      const bpm = 50 + hh * 0.1;
       setTimeout(scheduleHeartbeat, (60 / bpm) * 2000);
     }
     scheduleHeartbeat();
