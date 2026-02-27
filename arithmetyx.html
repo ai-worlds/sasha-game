@@ -198,7 +198,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
       <span>⚡<span class="val" id="stat-streak">0</span></span>
       <span>✓<span class="val" id="stat-correct">0</span></span>
       <span>✗<span class="val" id="stat-wrong">0</span></span>
-      <span>💰<span class="val" id="stat-money">$0.00</span></span>
+      <span>💰<span class="val" id="stat-money">$0.0000</span></span>
+      <span>📈<span class="val" id="stat-rate">$0.00/hr</span></span>
       <span>⏱<span class="val" id="stat-time">0:00</span></span>
     </div>
     <div class="top-btns">
@@ -440,6 +441,7 @@ const DEFAULT_SLOT = {
   bonusRound: 0,
   bonusRoundsCompleted: 0,
   slotEarnings: 0,
+  last10pays: [],
   last50: [],
   bonusActive: false,
   bonusProblemsLeft: 0,
@@ -780,7 +782,7 @@ function checkCompletionRequirements() {
   return true;
 }
 
-// ============ PAYOUT ============
+// ============ PAYOUT (per-answer pay-as-you-go) ============
 const OP_WEIGHTS = { add: 1.0, sub: 1.2, mul: 1.5, div: 1.8 };
 
 function getSlotDifficulty(ops, maxNum) {
@@ -801,36 +803,43 @@ function getAgeExpected(age) {
   return 6.6;
 }
 
-function getBasePayout(slotDiff, ageExpected) {
+function getAgeSpeedFactor(age) {
+  if (age <= 6) return 1.5;
+  if (age <= 8) return 1.2;
+  if (age <= 10) return 1.0;
+  if (age <= 12) return 0.85;
+  return 0.7;
+}
+
+function getExpectedTime(problemDifficulty, age) {
+  return (2 + problemDifficulty * 1.5) * getAgeSpeedFactor(age);
+}
+
+function getSlotRateMultiplier(slotDiff, ageExpected) {
   const ratio = slotDiff / ageExpected;
-  if (ratio < 0.25) return 2;
-  if (ratio < 0.5) return 5;
-  if (ratio < 0.75) return 15;
-  if (ratio < 1.0) return 30;
-  if (ratio < 1.25) return 50;
-  if (ratio < 1.5) return 65;
-  if (ratio < 2.0) return 80;
-  return 100;
+  return 0.3 + 0.7 * Math.min(ratio, 2.5);
 }
 
-function calculateSlotPayout() {
-  const mi = getSlotMasteryInfo();
-  const slotDiff = getSlotDifficulty(S.ops, S.maxNum);
-  const age = getAge();
-  const ageExp = getAgeExpected(age);
-  const basePay = getBasePayout(slotDiff, ageExp);
-  const mq = mi.totalValue > 0 ? mi.masteredValue / mi.totalValue : 0;
-  return basePay * mq * CFG.globalMoneyScaler;
+function getSpeedMultiplier(expectedTimeSec, actualTimeSec) {
+  return Math.max(0.5, Math.min(2.0, expectedTimeSec / actualTimeSec));
 }
 
-function getBonusRoundPayout(round) {
-  let base;
-  if (round <= 5) base = 1.00;
-  else if (round <= 10) base = 1.50;
-  else if (round <= 20) base = 2.00;
-  else if (round <= 50) base = 2.50;
-  else base = 3.00;
-  return base * CFG.globalMoneyScaler;
+function formatMoney(amount) {
+  return '$' + amount.toFixed(4);
+}
+
+function getCurrentRate() {
+  const last10 = S.last10pays || [];
+  if (last10.length < 2) return 0;
+  const totalPay = last10.reduce((s, p) => s + p.pay, 0);
+  const timeSpan = (last10[last10.length-1].timestamp - last10[0].timestamp) / 1000;
+  if (timeSpan <= 0) return 0;
+  return (totalPay / timeSpan) * 3600;
+}
+
+function getAvgRate() {
+  if (S.playTimeMs <= 0) return 0;
+  return (S.slotEarnings / S.playTimeMs) * 3600000;
 }
 
 function getBonusRequiredAccuracy(round) {
@@ -1017,6 +1026,21 @@ function handleAnswer(val, btn) {
     if (elapsed >= 1500) {
       S.last50.push({ firstTryCorrect: wrongThisProblem === 0, responseTime: elapsed });
       if (S.last50.length > 50) S.last50.shift();
+
+      // Per-answer pay
+      const probDiff = calcProblemDifficulty(currentProblem.a, currentProblem.op, currentProblem.b, S.maxNum);
+      const age = getAge();
+      const expectedTimeSec = getExpectedTime(probDiff, age);
+      const actualTimeSec = elapsed / 1000;
+      const slotDiff = getSlotDifficulty(S.ops, S.maxNum);
+      const ageExp = getAgeExpected(age);
+      const slotRateMult = getSlotRateMultiplier(slotDiff, ageExp);
+      const speedMult = getSpeedMultiplier(expectedTimeSec, actualTimeSec);
+      const answerPay = (expectedTimeSec / 3600) * 20 * slotRateMult * speedMult * CFG.globalMoneyScaler;
+      S.slotEarnings += answerPay;
+      if (!S.last10pays) S.last10pays = [];
+      S.last10pays.push({ pay: answerPay, timestamp: Date.now() });
+      if (S.last10pays.length > 10) S.last10pays.shift();
     }
 
     S.totalCorrect++;
@@ -1099,10 +1123,8 @@ function finishBonusRound() {
   const acc = S.bonusCorrect / 20;
   S.bonusActive = false;
   if (acc >= reqAcc) {
-    const payout = getBonusRoundPayout(S.bonusRound);
-    S.slotEarnings += payout;
     S.bonusRoundsCompleted++;
-    showSlotNote(`Bonus Round ${S.bonusRound} PASSED! +$${payout.toFixed(2)} (${Math.round(acc*100)}%)`);
+    showSlotNote(`Bonus Round ${S.bonusRound} PASSED! (${Math.round(acc*100)}%) — per-answer pay earned`);
     AudioEngine.playVictory();
   } else {
     showSlotNote(`Bonus Round ${S.bonusRound} FAILED (${Math.round(acc*100)}% < ${Math.round(reqAcc*100)}%) — retry available`);
@@ -1135,7 +1157,12 @@ function updateUI() {
   document.getElementById('stat-streak').textContent = S.streak;
   document.getElementById('stat-correct').textContent = S.totalCorrect;
   document.getElementById('stat-wrong').textContent = S.totalWrong;
-  document.getElementById('stat-money').textContent = '$' + getTotalEarnings().toFixed(2);
+  document.getElementById('stat-money').textContent = formatMoney(getTotalEarnings());
+  const curRate = getCurrentRate();
+  const avgRate = getAvgRate();
+  const rateEl = document.getElementById('stat-rate');
+  rateEl.textContent = '$' + curRate.toFixed(2) + '/hr';
+  rateEl.style.color = curRate > avgRate && curRate > 0 ? '#3fb855' : '#8a8580';
   document.getElementById('stat-time').textContent = formatTime(S.playTimeMs || 0);
   document.getElementById('height-display').textContent = `HEIGHT: ${S.height} / ${TARGET_HEIGHT}`;
   document.getElementById('nerf-display').textContent = `KARMA: ${S.karma}`;
@@ -1511,64 +1538,85 @@ function renderReportCard() {
       const slot = JSON.parse(raw);
       const allProbs = enumerateSlotProblems(slot.ops, slot.maxNum);
       const th = getAgeThresholds(age);
-      let mc = 0, mv = 0, tv = 0;
+      let mc = 0;
       for (const p of allProbs) {
-        const diff = calcProblemDifficulty(p.a, p.op, p.b, slot.maxNum);
-        tv += diff;
         const d = slot.problems[p.key];
-        if (d && d.correct >= 2 && d.lastCorrect && (d.lastTime||99999) < th.masterySpeed*1000) { mc++; mv += diff; }
+        if (d && d.correct >= 2 && d.lastCorrect && (d.lastTime||99999) < th.masterySpeed*1000) mc++;
       }
       const mPct = allProbs.length > 0 ? mc / allProbs.length : 0;
-      const mq = tv > 0 ? mv / tv : 0;
-      const sd = getSlotDifficulty(slot.ops, slot.maxNum);
-      const bp = getBasePayout(sd, ageExp);
-      const actual = bp * mq * CFG.globalMoneyScaler;
-      let bonusEarnings = 0;
-      for (let r = 1; r <= (slot.bonusRoundsCompleted || 0); r++) {
-        let base; if (r<=5) base=1; else if(r<=10) base=1.5; else if(r<=20) base=2; else if(r<=50) base=2.5; else base=3;
-        bonusEarnings += base * CFG.globalMoneyScaler;
-      }
       totalEarnings += (slot.slotEarnings || 0);
       const slotPlay = slot.playTimeMs || 0;
       const slotIdle = slot.idleTimeMs || 0;
       totalPlayTime += slotPlay;
       totalIdleTime += slotIdle;
+      const slotAvgRate = slotPlay > 0 ? ((slot.slotEarnings||0) / slotPlay) * 3600000 : 0;
+      const slotLast10 = slot.last10pays || [];
+      let slotCurRate = 0;
+      if (slotLast10.length >= 2) {
+        const tp = slotLast10.reduce((s,p) => s + p.pay, 0);
+        const ts = (slotLast10[slotLast10.length-1].timestamp - slotLast10[0].timestamp) / 1000;
+        if (ts > 0) slotCurRate = (tp / ts) * 3600;
+      }
       const isCurrent = key === CFG.currentSlotKey;
       rows += `<div style="padding:6px 0;border-bottom:1px solid rgba(200,192,184,0.05);${isCurrent?'color:var(--accent2)':''}">
-        <strong>${key}</strong> — Mastery: ${Math.round(mPct*100)}% · Base: $${bp} · MQ: ${Math.round(mq*100)}% · Payout: $${actual.toFixed(2)} · Bonus: ${slot.bonusRoundsCompleted||0} ($${bonusEarnings.toFixed(2)})
-        <br><span style="color:var(--fg-dim);font-size:13px">Play: ${formatTime(slotPlay)} · Idle: ${formatTime(slotIdle)} · Total: ${formatTime(slotPlay+slotIdle)}</span>
+        <strong>${key}</strong> — Mastery: ${Math.round(mPct*100)}%
+        <br><span class="rpt-money">Earned: ${formatMoney(slot.slotEarnings||0)}</span> · Avg: $${slotAvgRate.toFixed(2)}/hr · Current: $${slotCurRate.toFixed(2)}/hr
+        <br><span style="color:var(--fg-dim);font-size:13px">Play: ${formatTime(slotPlay)} · Idle: ${formatTime(slotIdle)}</span>
       </div>`;
     } catch(e){}
   }
 
+  const combinedAvgRate = totalPlayTime > 0 ? (totalEarnings / totalPlayTime) * 3600000 : 0;
+
+  // Current slot breakdown
   const sd = getSlotDifficulty(S.ops, S.maxNum);
-  const bp = getBasePayout(sd, ageExp);
-  const mi = getSlotMasteryInfo();
-  const mq = mi.totalValue > 0 ? mi.masteredValue / mi.totalValue : 0;
-  const actual = bp * mq * CFG.globalMoneyScaler;
   const ratio = sd / ageExp;
+  const slotRateMult = getSlotRateMultiplier(sd, ageExp);
+  const curRate = getCurrentRate();
+  const avgRate = getAvgRate();
+
+  // Theoretical rates at expected speed
+  const avgDiff = 1.5; // rough average problem difficulty
+  const expectedSec = getExpectedTime(avgDiff, age);
+  const theorBase = (expectedSec / 3600) * 20 * slotRateMult * 1.0 * CFG.globalMoneyScaler;
+  const theorPerHr = (theorBase / expectedSec) * 3600;
+  const theorFast = (expectedSec / 3600) * 20 * slotRateMult * 2.0 * CFG.globalMoneyScaler;
+  const theorFastPerHr = (theorFast / (expectedSec / 2)) * 3600;
+  const theorSlow = (expectedSec / 3600) * 20 * slotRateMult * 0.5 * CFG.globalMoneyScaler;
+  const theorSlowPerHr = (theorSlow / (expectedSec * 2)) * 3600;
+
+  // Average speed factor from last10
+  const last10 = S.last10pays || [];
+  let avgSpeedFactor = 1.0;
+  if (last10.length >= 2) {
+    const totalPay = last10.reduce((s,p) => s + p.pay, 0);
+    const timeSpan = (last10[last10.length-1].timestamp - last10[0].timestamp) / 1000;
+    if (timeSpan > 0 && theorPerHr > 0) avgSpeedFactor = curRate / theorPerHr;
+  }
 
   el.innerHTML = `
     <div class="report-section">${rows || '<div style="color:var(--fg-dim)">No slots yet</div>'}</div>
     <div class="report-section">
-      <div><span class="rpt-label">TOTAL EARNINGS:</span> <span class="rpt-money">$${getTotalEarnings().toFixed(2)}</span></div>
-      <div><span class="rpt-label">TOTAL PLAY TIME:</span> <span class="rpt-val">${formatTime(totalPlayTime)}</span> · IDLE: <span class="rpt-val">${formatTime(totalIdleTime)}</span> · COMBINED: <span class="rpt-val">${formatTime(totalPlayTime+totalIdleTime)}</span></div>
+      <div><span class="rpt-label">TOTAL EARNINGS:</span> <span class="rpt-money">${formatMoney(totalEarnings)}</span></div>
+      <div><span class="rpt-label">TOTAL PLAY TIME:</span> <span class="rpt-val">${formatTime(totalPlayTime)}</span> · IDLE: <span class="rpt-val">${formatTime(totalIdleTime)}</span></div>
+      <div><span class="rpt-label">COMBINED AVG RATE:</span> <span class="rpt-money">$${combinedAvgRate.toFixed(2)}/hr</span></div>
     </div>
     <div class="report-section">
-      <div style="font-size:14px;color:var(--gold);margin-bottom:6px">MONEY CALCULATION (current slot)</div>
+      <div style="font-size:14px;color:var(--gold);margin-bottom:6px">EARNINGS BREAKDOWN (current slot)</div>
+      <div><span class="rpt-label">Base Rate:</span> <span class="rpt-money">$20.00/hr</span></div>
       <div><span class="rpt-label">Slot Difficulty:</span> <span class="rpt-val">${sd.toFixed(1)}</span> (ops × range)</div>
       <div><span class="rpt-label">Age Expected:</span> <span class="rpt-val">${ageExp.toFixed(1)}</span> (age ${age})</div>
-      <div><span class="rpt-label">Ratio:</span> <span class="rpt-val">${ratio.toFixed(2)}</span> → Base: <span class="rpt-money">$${bp}</span></div>
-      <div><span class="rpt-label">Mastery Quality:</span> <span class="rpt-val">${Math.round(mq*100)}%</span> → Adjusted: <span class="rpt-money">$${(bp*mq).toFixed(2)}</span></div>
-      <div><span class="rpt-label">× Global Scaler (${Math.round(CFG.globalMoneyScaler*100)}%):</span> → Final: <span class="rpt-money">$${actual.toFixed(2)}</span></div>
-      <div><span class="rpt-label">Bonus Rounds:</span> <span class="rpt-val">${S.bonusRoundsCompleted||0}</span> completed</div>
-      <div><span class="rpt-label">Slot Total:</span> <span class="rpt-money">$${(S.slotEarnings||0).toFixed(2)}</span></div>
+      <div><span class="rpt-label">Slot Rate Multiplier:</span> <span class="rpt-val">${slotRateMult.toFixed(2)}</span> (ratio ${ratio.toFixed(2)})</div>
+      <div><span class="rpt-label">Effective Base Rate:</span> <span class="rpt-money">$${(20 * slotRateMult).toFixed(2)}/hr</span> × ${Math.round(CFG.globalMoneyScaler*100)}% scaler = <span class="rpt-money">$${(20 * slotRateMult * CFG.globalMoneyScaler).toFixed(2)}/hr</span></div>
+      <div><span class="rpt-label">Your Current Rate:</span> <span class="rpt-money">$${curRate.toFixed(2)}/hr</span> (speed factor: ${avgSpeedFactor.toFixed(2)} avg)</div>
+      <div><span class="rpt-label">Your Avg Rate:</span> <span class="rpt-money">$${avgRate.toFixed(2)}/hr</span></div>
+      <div><span class="rpt-label">Slot Total:</span> <span class="rpt-money">${formatMoney(S.slotEarnings||0)}</span></div>
     </div>
     <div class="report-section">
-      <div style="font-size:14px;color:var(--gold);margin-bottom:6px">THEORETICAL MAXIMUM</div>
-      <div><span class="rpt-label">This slot base max:</span> <span class="rpt-money">$${(bp * CFG.globalMoneyScaler).toFixed(2)}</span></div>
-      <div><span class="rpt-label">All ops max (range ${S.maxNum}):</span> <span class="rpt-money">$${(getBasePayout(getSlotDifficulty({add:true,sub:true,mul:true,div:true}, S.maxNum), ageExp) * CFG.globalMoneyScaler).toFixed(2)}</span></div>
-      <div style="color:var(--fg-dim);font-size:13px">(Plus unlimited bonus rounds)</div>
+      <div style="font-size:14px;color:var(--gold);margin-bottom:6px">THEORETICAL RATES</div>
+      <div><span class="rpt-label">At expected speed:</span> <span class="rpt-money">$${theorPerHr.toFixed(2)}/hr</span></div>
+      <div><span class="rpt-label">At 2× speed (max bonus):</span> <span class="rpt-money">$${theorFastPerHr.toFixed(2)}/hr</span></div>
+      <div><span class="rpt-label">At 0.5× speed (min):</span> <span class="rpt-money">$${theorSlowPerHr.toFixed(2)}/hr</span></div>
     </div>
   `;
 }
@@ -1611,13 +1659,14 @@ function renderSlotsList() {
         if (d && d.correct >= 2 && d.lastCorrect && (d.lastTime||99999) < th.masterySpeed*1000) mc++;
       }
       const mPct = allProbs.length > 0 ? Math.round(mc / allProbs.length * 100) : 0;
+      const slotAvgRate = (slot.playTimeMs > 0) ? ((slot.slotEarnings||0) / slot.playTimeMs) * 3600000 : 0;
       return `<div class="slot-card ${isCurrent?'active':''}" data-slot-key="${key}">
         <div class="slot-ops">${ops}</div>
         <div class="slot-range">Range: 0-${slot.maxNum} · ${slot.totalCorrect||0} correct</div>
         <div class="slot-mastery"><div class="slot-mastery-fill" style="width:${mPct}%"></div></div>
         <div class="slot-info">
           <span style="color:var(--fg-dim);font-size:14px">Mastery: ${mPct}%</span>
-          <span class="slot-earnings">$${(slot.slotEarnings||0).toFixed(2)}</span>
+          <span class="slot-earnings">${formatMoney(slot.slotEarnings||0)} · $${slotAvgRate.toFixed(2)}/hr</span>
         </div>
       </div>`;
     } catch(e) { return ''; }
@@ -1807,18 +1856,12 @@ function showVictory() {
 
   if (complete) {
     title.textContent = 'THE TOWER IS CONQUERED';
-    msg.textContent = 'You have escaped the arithmetic void.';
-    const payout = calculateSlotPayout();
-    if (S.slotEarnings === 0) {
-      S.slotEarnings = payout;
-      saveSlot();
-    }
-    payoutEl.textContent = `Slot Payout: $${S.slotEarnings.toFixed(2)} · Bonus Rounds Unlocked!`;
+    msg.textContent = 'You have escaped the arithmetic void. Bonus Rounds Unlocked!';
   } else {
     title.textContent = 'TOWER CONQUERED';
-    msg.textContent = 'Tower conquered but mastery incomplete — keep practicing for payout';
-    payoutEl.textContent = '';
+    msg.textContent = 'Tower conquered but mastery incomplete — keep practicing!';
   }
+  payoutEl.textContent = `Session Earnings: ${formatMoney(S.slotEarnings)} · Rate: $${getAvgRate().toFixed(2)}/hr`;
 
   document.getElementById('victory-stats').textContent =
     `${S.totalCorrect} correct · ${S.totalWrong} wrong · Best streak: ${S.bestStreak}`;
