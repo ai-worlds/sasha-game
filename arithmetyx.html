@@ -1455,13 +1455,10 @@ function updateTimeDisplay() {
   if (!S) return;
   const el = document.getElementById('stat-time');
   if (el) el.textContent = formatTime(S.playTimeMs || 0);
-  // Tick death spiral protection down by 1 per second
+  // Tick death spiral current protection down by 1 per second (max does NOT decay)
   const dsWasActive = S.deathSpiralCurrent > 0;
-  if (S.deathSpiralMax > 0) { S.deathSpiralMax--; }
   if (S.deathSpiralCurrent > 0) { S.deathSpiralCurrent--; }
   if (dsWasActive && S.deathSpiralCurrent <= 0) { AudioEngine.playVoice('death_spiral_expire', 5000); }
-  // Clamp current to max
-  if (S.deathSpiralCurrent > S.deathSpiralMax) S.deathSpiralCurrent = S.deathSpiralMax;
 }
 
 // Add idle detection listeners
@@ -2319,6 +2316,9 @@ function handleAnswer(val, btn) {
     S.totalCorrect++;
     S.streak++;
     if (S.streak > S.bestStreak) S.bestStreak = S.streak;
+    // Correct answer resets death spiral protection
+    S.deathSpiralMax = 0;
+    S.deathSpiralCurrent = 0;
     AudioEngine.playStreak(S.streak);
     if (S.streak > 0 && S.streak % 10 === 0) AudioEngine.playRandomFromList(['streak','streak_2','streak_3'], 8000);
 
