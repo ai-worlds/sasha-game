@@ -2539,6 +2539,7 @@ function updateUI() {
 
 // ============ MENU ============
 function openMenu() {
+  saveSlot(); // ensure localStorage is fresh before rendering report card
   AudioEngine.playMenuOpen();
   AudioEngine.playVoiceWithCooldown('menu_open', 10000);
   menuOpen = true;
