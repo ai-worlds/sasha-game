@@ -8,7 +8,7 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
 :root{
-  --bg:#0a0a0c;--bg2:#111116;--fg:#c8c0b8;--fg-dim:#5a5650;--accent:#b83030;--accent2:#d44;
+  --bg:#12121a;--bg2:#1a1a24;--fg:#e0dbd6;--fg-dim:#8a8580;--accent:#d04040;--accent2:#e85555;
   --green:#2a7a3a;--green-bright:#3fb855;--red:#8a1a1a;--red-bright:#d43030;
   --gold:#c9a84c;--purple:#6a3a8a;--cyan:#2a8a8a;
   --font-display:'Silkscreen',monospace;--font-body:'VT323',monospace;--font-mono:'JetBrains Mono',monospace;
@@ -26,17 +26,17 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 
 /* Overlay for readability */
 #overlay{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;
-  background:radial-gradient(ellipse at center,rgba(10,10,12,0.35) 0%,rgba(10,10,12,0.6) 100%);
+  background:radial-gradient(ellipse at center,rgba(18,18,26,0.2) 0%,rgba(18,18,26,0.45) 100%);
   pointer-events:none}
 
 /* Top bar */
 #top-bar{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;
-  padding:8px 12px;background:rgba(10,10,12,0.85);border-bottom:1px solid rgba(184,48,48,0.3);min-height:48px}
+  padding:8px 12px;background:rgba(18,18,26,0.9);border-bottom:1px solid rgba(210,64,64,0.35);min-height:48px}
 #top-bar .title{font-family:var(--font-display);font-size:14px;color:var(--accent2);letter-spacing:2px}
-#top-bar .stats{display:flex;gap:12px;font-size:18px;color:var(--fg-dim)}
+#top-bar .stats{display:flex;gap:12px;font-size:18px;color:var(--fg)}
 #top-bar .stats span{display:flex;align-items:center;gap:3px}
 #top-bar .stats .val{color:var(--fg)}
-.menu-btn{background:none;border:1px solid var(--accent);color:var(--accent2);
+.menu-btn{background:rgba(210,64,64,0.1);border:1px solid var(--accent);color:var(--accent2);
   font-family:var(--font-display);font-size:12px;padding:6px 12px;cursor:pointer;
   letter-spacing:1px;transition:all .2s}
 .menu-btn:hover,.menu-btn:active{background:var(--accent);color:#fff}
@@ -68,7 +68,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 #answers.cols-3{grid-template-columns:repeat(3,1fr)}
 #answers.cols-4{grid-template-columns:repeat(4,1fr)}
 .answer-btn{font-family:var(--font-body);font-size:clamp(22px,5vw,34px);
-  padding:14px 8px;background:rgba(20,18,22,0.85);border:1px solid rgba(200,192,184,0.15);
+  padding:14px 8px;background:rgba(30,28,38,0.85);border:1px solid rgba(200,192,184,0.25);
   color:var(--fg);cursor:pointer;border-radius:4px;transition:all .15s;
   text-align:center;min-height:54px;display:flex;align-items:center;justify-content:center;
   -webkit-tap-highlight-color:transparent;touch-action:manipulation}
@@ -79,8 +79,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 
 /* Height / nerf info */
 #climb-info{position:relative;z-index:10;display:flex;justify-content:space-between;align-items:center;
-  padding:6px 12px;background:rgba(10,10,12,0.85);border-top:1px solid rgba(184,48,48,0.2);
-  font-size:16px;color:var(--fg-dim);min-height:36px}
+  padding:6px 12px;background:rgba(18,18,26,0.9);border-top:1px solid rgba(210,64,64,0.25);
+  font-size:16px;color:var(--fg);min-height:36px}
 #climb-info .height-val{color:var(--gold);font-family:var(--font-display);font-size:13px}
 #climb-info .nerf-val{color:var(--purple);font-family:var(--font-display);font-size:13px}
 #progress-bar{position:relative;z-index:10;height:4px;background:rgba(184,48,48,0.15)}
@@ -136,8 +136,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 #intro-screen h1{font-family:var(--font-display);font-size:clamp(24px,6vw,40px);
   color:var(--accent2);letter-spacing:4px;margin-bottom:8px;
   text-shadow:0 0 30px rgba(184,48,48,0.6)}
-#intro-screen .sub{font-size:22px;color:var(--fg-dim);margin-bottom:30px;font-style:italic}
-#intro-screen .tagline{font-size:18px;color:var(--fg-dim);max-width:320px;line-height:1.6;margin-bottom:30px}
+#intro-screen .sub{font-size:22px;color:var(--fg);margin-bottom:30px;font-style:italic}
+#intro-screen .tagline{font-size:18px;color:var(--fg);max-width:320px;line-height:1.6;margin-bottom:30px}
 .start-btn{font-family:var(--font-display);font-size:16px;padding:16px 40px;
   background:rgba(184,48,48,0.2);border:2px solid var(--accent2);color:var(--accent2);
   cursor:pointer;letter-spacing:3px;transition:all .3s;border-radius:4px}
