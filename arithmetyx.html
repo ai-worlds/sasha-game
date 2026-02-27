@@ -1459,6 +1459,8 @@ function updateTimeDisplay() {
   const dsWasActive = S.deathSpiralCurrent > 0;
   if (S.deathSpiralCurrent > 0) { S.deathSpiralCurrent--; }
   if (dsWasActive && S.deathSpiralCurrent <= 0) { AudioEngine.playVoice('death_spiral_expire', 5000); }
+  // Save slot every second to keep localStorage in sync
+  saveSlot();
   // Refresh open popups every second so timers stay live
   if (heightPopupVisible) renderHeightPopup();
   if (shieldPopupVisible) renderShieldPopup();
