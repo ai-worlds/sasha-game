@@ -185,6 +185,28 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
   .answer-btn{font-size:20px;padding:10px 6px;min-height:46px}
   #top-bar .stats{gap:6px;font-size:16px}
 }
+
+/* Rate breakdown popup */
+#rate-popup{position:fixed;top:52px;right:8px;z-index:90;background:rgba(12,12,18,0.96);
+  border:1px solid rgba(210,64,64,0.4);border-radius:6px;padding:12px 14px;
+  max-width:320px;min-width:240px;display:none;font-family:var(--font-body);
+  box-shadow:0 4px 20px rgba(0,0,0,0.5)}
+#rate-popup.show{display:block}
+#rate-popup .bp-title{font-family:var(--font-display);font-size:12px;color:var(--accent2);
+  letter-spacing:2px;margin-bottom:8px;border-bottom:1px solid rgba(210,64,64,0.3);padding-bottom:4px}
+#rate-popup .bp-problem{font-family:var(--font-display);font-size:14px;color:#fff;margin-bottom:8px}
+#rate-popup .bp-row{display:flex;justify-content:space-between;align-items:center;
+  padding:3px 0;font-size:16px;color:var(--fg)}
+#rate-popup .bp-label{color:var(--fg-dim)}
+#rate-popup .bp-val{color:var(--fg);font-family:var(--font-mono);font-size:14px}
+#rate-popup .bp-mult{color:var(--accent2);font-family:var(--font-mono);font-size:14px}
+#rate-popup .bp-running{color:var(--gold);font-family:var(--font-mono);font-size:14px}
+#rate-popup .bp-divider{height:1px;background:rgba(200,192,184,0.1);margin:4px 0}
+#rate-popup .bp-total{font-family:var(--font-display);font-size:14px;color:var(--gold);
+  border-top:1px solid rgba(201,168,76,0.4);padding-top:6px;margin-top:4px;
+  display:flex;justify-content:space-between}
+#rate-popup .bp-earned{font-size:15px;color:#3fb855;margin-top:4px;display:flex;justify-content:space-between}
+#rate-popup .bp-sub{font-size:13px;color:var(--fg-dim);margin-top:2px}
 </style>
 </head>
 <body>
@@ -199,8 +221,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
       <span>✓<span class="val" id="stat-correct">0</span></span>
       <span>✗<span class="val" id="stat-wrong">0</span></span>
       <span>💰<span class="val" id="stat-money">$0.0000</span></span>
-      <span>📈<span class="val" id="stat-rate">$0.00/hr</span></span>
-      <span>⌀<span class="val" id="stat-avgrate">$0.00/hr</span></span>
+      <span style="cursor:pointer" onclick="toggleRatePopup()">📈<span class="val" id="stat-rate">$0.00/hr</span></span>
+      <span style="cursor:pointer" onclick="toggleRatePopup()">⌀<span class="val" id="stat-avgrate">$0.00/hr</span></span>
       <span>⏱<span class="val" id="stat-time">0:00</span></span>
     </div>
     <div class="top-btns">
@@ -226,6 +248,11 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 </div>
 
 <div id="slot-note"></div>
+
+<!-- Rate Breakdown Popup -->
+<div id="rate-popup">
+  <div id="rate-popup-content"></div>
+</div>
 
 <!-- Intro -->
 <div id="intro-screen">
@@ -833,9 +860,13 @@ function getExpectedTime(problemDifficulty, age) {
   return (2 + problemDifficulty * 1.5) * getAgeSpeedFactor(age);
 }
 
-function getSlotRateMultiplier(slotDiff, ageExpected) {
-  const ratio = slotDiff / ageExpected;
-  return 0.3 + 0.7 * Math.min(ratio, 2.5);
+function getSlotRateMultiplier(ops) {
+  const numOps = Object.values(ops).filter(v => v).length;
+  return Math.pow(1.2, numOps - 1);
+}
+
+function getNumOps(ops) {
+  return Object.values(ops).filter(v => v).length;
 }
 
 function getSpeedMultiplier(expectedTimeSec, actualTimeSec) {
@@ -860,6 +891,107 @@ function getAvgRate() {
   if (S.playTimeMs <= 0) return 0;
   return (S.slotEarnings / S.playTimeMs) * 3600000;
 }
+
+function renderRatePopup() {
+  const popup = document.getElementById('rate-popup-content');
+  if (!lastAnswerBreakdown) {
+    popup.innerHTML = '<div class="bp-title">RATE BREAKDOWN</div><div style="color:var(--fg-dim);font-size:15px">Answer a problem to see the breakdown</div>';
+    return;
+  }
+  const b = lastAnswerBreakdown;
+  const opNames = { '+': 'Addition', '-': 'Subtraction', '×': 'Multiplication', '÷': 'Division' };
+  const enabledOps = Object.entries(S.ops).filter(([k,v]) => v).map(([k]) => k);
+  const opSymbols = { add: '+', sub: '−', mul: '×', div: '÷' };
+  const opWeightMap = { '+': 1.0, '-': 1.2, '×': 1.5, '÷': 1.8 };
+
+  // Compute enabled ops average weight
+  const enabledWeights = enabledOps.map(k => OP_WEIGHTS[k]);
+  const opBaseAvg = enabledWeights.reduce((s,w) => s + w, 0) / enabledWeights.length;
+
+  // Running rate calculation
+  let running = 20; // base
+
+  // Step 1: Op difficulty (this problem's op)
+  const r1 = running * b.opWeight;
+
+  // Step 2: Op count bonus
+  const r2 = running * b.opCountMult; // base × opCountMult
+
+  // Step 3: Speed bonus
+  const r3 = r2 * b.speedMult;
+
+  // Step 4: Scaler
+  const r4 = r3 * b.globalScaler;
+
+  popup.innerHTML = `
+    <div class="bp-title">RATE BREAKDOWN</div>
+    <div class="bp-problem">${b.problem} (${opNames[b.op] || b.op})</div>
+    <div class="bp-sub">Difficulty: ${b.difficulty.toFixed(2)} · Expected: ${b.expectedTimeSec.toFixed(1)}s · Actual: ${b.actualTimeSec.toFixed(1)}s</div>
+    <div style="height:6px"></div>
+
+    <div class="bp-row">
+      <span class="bp-label">Base Rate</span>
+      <span class="bp-running">$20.00/hr</span>
+    </div>
+    <div class="bp-divider"></div>
+
+    <div class="bp-row">
+      <span class="bp-label">× Op Count (${b.numOps} op${b.numOps>1?'s':''}) 1.2^${b.numOps-1}</span>
+      <span class="bp-mult">×${b.opCountMult.toFixed(2)}</span>
+    </div>
+    <div class="bp-row">
+      <span class="bp-label"></span>
+      <span class="bp-running">$${r2.toFixed(2)}/hr</span>
+    </div>
+    <div class="bp-divider"></div>
+
+    <div class="bp-row">
+      <span class="bp-label">× Speed (${b.expectedTimeSec.toFixed(1)}s/${b.actualTimeSec.toFixed(1)}s)</span>
+      <span class="bp-mult">×${b.speedMult.toFixed(2)}</span>
+    </div>
+    <div class="bp-row">
+      <span class="bp-label"></span>
+      <span class="bp-running">$${r3.toFixed(2)}/hr</span>
+    </div>
+    <div class="bp-divider"></div>
+
+    <div class="bp-row">
+      <span class="bp-label">× Scaler (${Math.round(b.globalScaler*100)}%)</span>
+      <span class="bp-mult">×${b.globalScaler.toFixed(2)}</span>
+    </div>
+    <div class="bp-total">
+      <span>Effective Rate</span>
+      <span>$${r4.toFixed(2)}/hr</span>
+    </div>
+    <div class="bp-earned">
+      <span>You earned</span>
+      <span>${formatMoney(b.answerPay)} in ${b.actualTimeSec.toFixed(1)}s</span>
+    </div>
+    <div style="height:6px"></div>
+    <div class="bp-sub">Op weights: ${enabledOps.map(k => opSymbols[k] + '=' + (OP_WEIGHTS[k]*100).toFixed(0) + '%').join(', ')}</div>
+    <div class="bp-sub">Avg op weight: ${(opBaseAvg*100).toFixed(0)}%</div>
+  `;
+}
+
+let ratePopupVisible = false;
+function toggleRatePopup() {
+  const popup = document.getElementById('rate-popup');
+  ratePopupVisible = !ratePopupVisible;
+  if (ratePopupVisible) {
+    renderRatePopup();
+    popup.classList.add('show');
+  } else {
+    popup.classList.remove('show');
+  }
+}
+
+// Close popup when clicking elsewhere
+document.addEventListener('click', (e) => {
+  if (ratePopupVisible && !e.target.closest('#rate-popup') && !e.target.closest('#stat-rate') && !e.target.closest('#stat-avgrate')) {
+    document.getElementById('rate-popup').classList.remove('show');
+    ratePopupVisible = false;
+  }
+});
 
 function getBonusRequiredAccuracy(round) {
   if (round <= 5) return 0.90;
@@ -941,6 +1073,7 @@ function evalProblem(a, op, b) {
 
 // ============ GAME LOGIC ============
 let currentProblem = null;
+let lastAnswerBreakdown = null;
 let problemStartTime = 0;
 let wrongThisProblem = 0;
 let answersLocked = false;
@@ -1051,15 +1184,31 @@ function handleAnswer(val, btn) {
       const age = getAge();
       const expectedTimeSec = getExpectedTime(probDiff, age);
       const actualTimeSec = elapsed / 1000;
-      const slotDiff = getSlotDifficulty(S.ops, S.maxNum);
-      const ageExp = getAgeExpected(age);
-      const slotRateMult = getSlotRateMultiplier(slotDiff, ageExp);
+      const opWeight = { '+': 1.0, '-': 1.2, '×': 1.5, '÷': 1.8 }[currentProblem.op] || 1.0;
+      const slotRateMult = getSlotRateMultiplier(S.ops);
+      const numOps = getNumOps(S.ops);
       const speedMult = getSpeedMultiplier(expectedTimeSec, actualTimeSec);
       const answerPay = (expectedTimeSec / 3600) * 20 * slotRateMult * speedMult * CFG.globalMoneyScaler;
       S.slotEarnings += answerPay;
       if (!S.last10pays) S.last10pays = [];
       S.last10pays.push({ pay: answerPay, timestamp: Date.now(), responseMs: elapsed });
       if (S.last10pays.length > 10) S.last10pays.shift();
+
+      // Store last answer breakdown for popup
+      lastAnswerBreakdown = {
+        problem: `${currentProblem.a} ${currentProblem.op} ${currentProblem.b}`,
+        op: currentProblem.op,
+        opWeight: opWeight,
+        difficulty: probDiff,
+        expectedTimeSec: expectedTimeSec,
+        actualTimeSec: actualTimeSec,
+        speedMult: speedMult,
+        opCountMult: slotRateMult,
+        numOps: numOps,
+        globalScaler: CFG.globalMoneyScaler,
+        answerPay: answerPay,
+        effectiveRate: (answerPay / actualTimeSec) * 3600
+      };
     }
 
     S.totalCorrect++;
@@ -1187,6 +1336,7 @@ function updateUI() {
   avgRateEl.style.color = '#8a8580';
   document.getElementById('stat-time').textContent = formatTime(S.playTimeMs || 0);
   updateIdleIndicator();
+  if (ratePopupVisible) renderRatePopup();
   document.getElementById('height-display').textContent = `HEIGHT: ${S.height} / ${TARGET_HEIGHT}`;
   document.getElementById('nerf-display').textContent = `KARMA: ${S.karma}`;
   const shieldIcons = '●'.repeat(S.shields) + '○'.repeat(5 - S.shields);
@@ -1550,7 +1700,6 @@ function renderHardList() {
 function renderReportCard() {
   const el = document.getElementById('report-card');
   const age = getAge();
-  const ageExp = getAgeExpected(age);
   const allSlotKeys = getAllSlotKeys();
   let totalEarnings = 0;
   let totalPlayTime = 0, totalIdleTime = 0;
@@ -1594,30 +1743,15 @@ function renderReportCard() {
   const combinedAvgRate = totalPlayTime > 0 ? (totalEarnings / totalPlayTime) * 3600000 : 0;
 
   // Current slot breakdown
-  const sd = getSlotDifficulty(S.ops, S.maxNum);
-  const ratio = sd / ageExp;
-  const slotRateMult = getSlotRateMultiplier(sd, ageExp);
+  const slotRateMult = getSlotRateMultiplier(S.ops);
+  const numOps = getNumOps(S.ops);
   const curRate = getCurrentRate();
   const avgRate = getAvgRate();
 
-  // Theoretical rates at expected speed
-  const avgDiff = 1.5; // rough average problem difficulty
-  const expectedSec = getExpectedTime(avgDiff, age);
-  const theorBase = (expectedSec / 3600) * 20 * slotRateMult * 1.0 * CFG.globalMoneyScaler;
-  const theorPerHr = (theorBase / expectedSec) * 3600;
-  const theorFast = (expectedSec / 3600) * 20 * slotRateMult * 2.0 * CFG.globalMoneyScaler;
-  const theorFastPerHr = (theorFast / (expectedSec / 2)) * 3600;
-  const theorSlow = (expectedSec / 3600) * 20 * slotRateMult * 0.5 * CFG.globalMoneyScaler;
-  const theorSlowPerHr = (theorSlow / (expectedSec * 2)) * 3600;
-
-  // Average speed factor from last10
-  const last10 = S.last10pays || [];
-  let avgSpeedFactor = 1.0;
-  if (last10.length >= 2) {
-    const totalPay = last10.reduce((s,p) => s + p.pay, 0);
-    const timeSpan = (last10[last10.length-1].timestamp - last10[0].timestamp) / 1000;
-    if (timeSpan > 0 && theorPerHr > 0) avgSpeedFactor = curRate / theorPerHr;
-  }
+  // Theoretical rates
+  const theorBaseRate = 20 * slotRateMult * CFG.globalMoneyScaler;
+  const theorFastRate = theorBaseRate * 2.0;
+  const theorSlowRate = theorBaseRate * 0.5;
 
   el.innerHTML = `
     <div class="report-section">${rows || '<div style="color:var(--fg-dim)">No slots yet</div>'}</div>
@@ -1629,19 +1763,17 @@ function renderReportCard() {
     <div class="report-section">
       <div style="font-size:14px;color:var(--gold);margin-bottom:6px">EARNINGS BREAKDOWN (current slot)</div>
       <div><span class="rpt-label">Base Rate:</span> <span class="rpt-money">$20.00/hr</span></div>
-      <div><span class="rpt-label">Slot Difficulty:</span> <span class="rpt-val">${sd.toFixed(1)}</span> (ops × range)</div>
-      <div><span class="rpt-label">Age Expected:</span> <span class="rpt-val">${ageExp.toFixed(1)}</span> (age ${age})</div>
-      <div><span class="rpt-label">Slot Rate Multiplier:</span> <span class="rpt-val">${slotRateMult.toFixed(2)}</span> (ratio ${ratio.toFixed(2)})</div>
-      <div><span class="rpt-label">Effective Base Rate:</span> <span class="rpt-money">$${(20 * slotRateMult).toFixed(2)}/hr</span> × ${Math.round(CFG.globalMoneyScaler*100)}% scaler = <span class="rpt-money">$${(20 * slotRateMult * CFG.globalMoneyScaler).toFixed(2)}/hr</span></div>
-      <div><span class="rpt-label">Your Current Rate:</span> <span class="rpt-money">$${curRate.toFixed(2)}/hr</span> (speed factor: ${avgSpeedFactor.toFixed(2)} avg)</div>
+      <div><span class="rpt-label">× Op Count (${numOps} op${numOps>1?'s':''}, 1.2^${numOps-1}):</span> <span class="rpt-val">×${slotRateMult.toFixed(2)}</span> = <span class="rpt-money">$${(20 * slotRateMult).toFixed(2)}/hr</span></div>
+      <div><span class="rpt-label">× Scaler (${Math.round(CFG.globalMoneyScaler*100)}%):</span> <span class="rpt-val">×${CFG.globalMoneyScaler.toFixed(2)}</span> = <span class="rpt-money">$${theorBaseRate.toFixed(2)}/hr</span></div>
+      <div><span class="rpt-label">Your Current Rate:</span> <span class="rpt-money">$${curRate.toFixed(2)}/hr</span></div>
       <div><span class="rpt-label">Your Avg Rate:</span> <span class="rpt-money">$${avgRate.toFixed(2)}/hr</span></div>
       <div><span class="rpt-label">Slot Total:</span> <span class="rpt-money">${formatMoney(S.slotEarnings||0)}</span></div>
     </div>
     <div class="report-section">
       <div style="font-size:14px;color:var(--gold);margin-bottom:6px">THEORETICAL RATES</div>
-      <div><span class="rpt-label">At expected speed:</span> <span class="rpt-money">$${theorPerHr.toFixed(2)}/hr</span></div>
-      <div><span class="rpt-label">At 2× speed (max bonus):</span> <span class="rpt-money">$${theorFastPerHr.toFixed(2)}/hr</span></div>
-      <div><span class="rpt-label">At 0.5× speed (min):</span> <span class="rpt-money">$${theorSlowPerHr.toFixed(2)}/hr</span></div>
+      <div><span class="rpt-label">At expected speed (1×):</span> <span class="rpt-money">$${theorBaseRate.toFixed(2)}/hr</span></div>
+      <div><span class="rpt-label">At 2× speed (max bonus):</span> <span class="rpt-money">$${theorFastRate.toFixed(2)}/hr</span></div>
+      <div><span class="rpt-label">At 0.5× speed (min):</span> <span class="rpt-money">$${theorSlowRate.toFixed(2)}/hr</span></div>
     </div>
   `;
 }
