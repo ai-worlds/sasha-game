@@ -510,6 +510,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 
     <h2>ACTIONS</h2>
     <button class="menu-btn-big btn-danger" id="delete-player-btn" style="background:rgba(138,26,26,0.4);border-color:var(--red-bright)">DELETE THIS PLAYER</button>
+    <button class="menu-btn-big" id="change-password-btn" style="margin-top:10px">🔑 CHANGE PASSWORD</button>
     <button class="menu-btn-big" id="test-hack-btn" style="background:rgba(0,255,0,0.05);border-color:#0f0;color:#0f0;font-size:10px;margin-top:10px">🧪 TEST HACK DETECTION</button>
     <button class="menu-btn-big btn-close" id="parent-close-btn2">BACK TO THE VOID</button>
   </div>
@@ -553,6 +554,15 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
       <span style="font-size:16px;color:var(--fg-dim)">Choices:</span>
       <input type="range" min="2" max="8" value="4" id="create-choices-range">
       <span class="range-val" id="create-choices-val">4</span>
+    </div>
+
+    <h3 style="font-family:var(--font-display);color:var(--gold);font-size:14px;margin:14px 0 8px">ANSWER ORDER</h3>
+    <div class="mode-btns">
+      <div class="mode-btn active" id="create-order-random">RANDOM</div>
+      <div class="mode-btn" id="create-order-sorted">SORTED</div>
+    </div>
+    <div style="font-size:15px;color:var(--fg-dim);padding:4px 0">
+      Random: shuffled answers (110% pay) &nbsp;|&nbsp; Sorted: ordered answers (100% pay)
     </div>
 
     <h3 style="font-family:var(--font-display);color:var(--gold);font-size:14px;margin:14px 0 8px">NUMBER RANGE</h3>
@@ -736,7 +746,8 @@ const DEFAULT_SLOT = {
   idleTimeMs: 0,
   deathSpiralMax: 0,
   deathSpiralCurrent: 0,
-  wrongStreak: 0
+  wrongStreak: 0,
+  sortAnswers: false
 };
 
 const TARGET_HEIGHT = 600;
@@ -978,14 +989,18 @@ function saveConfig() {
   saveKid();
 }
 
-function getSlotKey(ops, minNum, maxNum) {
+function getSlotKey(ops, minNum, maxNum, mode, numChoices, sortAnswers) {
   const names = [];
   if (ops.add) names.push('add');
   if (ops.sub) names.push('sub');
   if (ops.mul) names.push('mul');
   if (ops.div) names.push('div');
   if (names.length === 0) names.push('add');
-  return names.join('_') + '_' + (minNum > 0 ? minNum + '-' : '') + maxNum;
+  let key = names.join('_') + '_' + (minNum > 0 ? minNum + '-' : '') + maxNum;
+  key += '_' + ((mode === 'question') ? 'q' : 'a');
+  key += '_c' + (numChoices || 4);
+  key += sortAnswers ? '_sorted' : '';
+  return key;
 }
 
 function loadSlot(key, kidId = null) {
@@ -1106,7 +1121,8 @@ let createState = {
   mode: 'answer',
   numChoices: 4,
   minNum: 0,
-  maxNum: 10
+  maxNum: 10,
+  sortAnswers: false
 };
 
 // Navigation helper functions
@@ -1185,7 +1201,8 @@ function initSlotCreation() {
     mode: 'answer',
     numChoices: 4,
     minNum: 0,
-    maxNum: 10
+    maxNum: 10,
+    sortAnswers: false
   };
   renderSlotCreation();
 }
@@ -1283,7 +1300,7 @@ function renderSlotSelection() {
       const slotAvgRate = (slot.playTimeMs > 0) ? ((slot.slotEarnings||0) / slot.playTimeMs) * 3600000 : 0;
       return `<div class="slot-card ${isCurrent?'active':''}" data-slot-key="${key}" style="cursor:pointer;margin:8px 0;position:relative">
         <div class="slot-ops">${ops}</div>
-        <div class="slot-range">Range: ${slotMin}-${slot.maxNum} · Mode: ${slot.mode} · ${slot.numChoices} choices</div>
+        <div class="slot-range">Range: ${slotMin}-${slot.maxNum} · Mode: ${slot.mode} · ${slot.numChoices} choices · ${slot.sortAnswers ? 'Sorted' : 'Random'}</div>
         <div class="slot-range" style="font-size:14px">${slot.totalCorrect||0} correct · Best streak: ${slot.bestStreak||0}</div>
         <div class="slot-mastery"><div class="slot-mastery-fill" style="width:${mPct}%"></div></div>
         <div class="slot-info">
@@ -1340,8 +1357,16 @@ function renderSlotCreation() {
   document.getElementById('create-maxnum-range').value = createState.maxNum;
   document.getElementById('create-maxnum-val').textContent = createState.maxNum;
   
+  // Update sort order buttons
+  const sortedBtn = document.getElementById('create-order-sorted');
+  const randomBtn = document.getElementById('create-order-random');
+  if (sortedBtn && randomBtn) {
+    sortedBtn.classList.toggle('active', createState.sortAnswers === true);
+    randomBtn.classList.toggle('active', createState.sortAnswers === false);
+  }
+
   // Update preview
-  const previewKey = getSlotKey(createState.ops, createState.minNum, createState.maxNum);
+  const previewKey = getSlotKey(createState.ops, createState.minNum, createState.maxNum, createState.mode, createState.numChoices, createState.sortAnswers);
   document.getElementById('slot-key-preview').textContent = previewKey;
 }
 
@@ -1407,18 +1432,18 @@ function createKidFromForm() {
 function createSlotFromState() {
   // Create the actual slot
   saveSlot(); // save current slot first
-  switchSlot(createState.ops, createState.minNum, createState.maxNum);
-  // Set the mode and choices (not part of slot key)
+  switchSlot(createState.ops, createState.minNum, createState.maxNum, createState.mode, createState.numChoices, createState.sortAnswers);
   S.mode = createState.mode;
   S.numChoices = createState.numChoices;
+  S.sortAnswers = createState.sortAnswers;
   saveSlot();
   goToGame();
   showSlotNote('Created new slot!');
 }
 
-function switchSlot(ops, minNum, maxNum) {
+function switchSlot(ops, minNum, maxNum, mode, numChoices, sortAnswers) {
   saveSlot();
-  const key = getSlotKey(ops, minNum, maxNum);
+  const key = getSlotKey(ops, minNum, maxNum, mode, numChoices, sortAnswers);
   const isNew = !localStorage.getItem('arithmetyx_kid_' + currentKidId + '_slot_' + key);
   loadSlot(key);
   showSlotNote(isNew ? 'Created new slot: ' + key : 'Switched to slot: ' + key);
@@ -1756,10 +1781,14 @@ function getQuestionModeMult(mode, cfg) {
 function getChoicesMult(numChoices, cfg) {
   const r = cfg.multipliers.choices;
   if (numChoices <= 4) {
-    return (100 + (r.max - 100) * (4 - numChoices)) / 100;
+    return (r.min + (100 - r.min) * (numChoices - 2) / 2) / 100;
   } else {
-    return (100 - (100 - r.min) * (numChoices - 4) / 4) / 100;
+    return (100 + (r.max - 100) * (numChoices - 4) / 4) / 100;
   }
+}
+
+function getOrderMult(sortAnswers) {
+  return sortAnswers ? 1.0 : 1.10;
 }
 
 function getDigitBonus(a, op, b) {
@@ -1824,7 +1853,8 @@ function renderRatePopup() {
   let r6 = r5 * b.heightMult;
   let r7 = r6 * b.questionModeMult;
   let r8 = r7 * b.choicesMult;
-  let r9 = r8 * (b.digitBonus || 1);
+  let r8b = r8 * (b.orderMult || 1);
+  let r9 = r8b * (b.digitBonus || 1);
 
   const rOA = CFG.multipliers.opsAvg;
   const rAO = CFG.multipliers.additionalOps;
@@ -1901,6 +1931,13 @@ function renderRatePopup() {
       <span class="bp-label">× Choices ${b.numChoices} (${rCh.min}-${rCh.max}%)</span>
       <span class="bp-mult">${fmtP(b.choicesMult)}</span>
       <span class="bp-running">→ ${fmtR(r8)}</span>
+    </div>
+    <div class="bp-divider"></div>
+
+    <div class="bp-row">
+      <span class="bp-label">× Random Order</span>
+      <span class="bp-mult">${fmtP(b.orderMult || 1)}</span>
+      <span class="bp-running">→ ${fmtR(r8b)}</span>
     </div>
     <div class="bp-divider"></div>
 
@@ -2258,7 +2295,11 @@ function generateDistractors(correct, count, p) {
     tries++;
   }
   const arr = Array.from(distractors).slice(0, count);
-  for (let i = arr.length - 1; i > 0; i--) { const j = randInt(0, i); [arr[i], arr[j]] = [arr[j], arr[i]]; }
+  if (S && S.sortAnswers) {
+    arr.sort((a, b) => a - b);
+  } else {
+    for (let i = arr.length - 1; i > 0; i--) { const j = randInt(0, i); [arr[i], arr[j]] = [arr[j], arr[i]]; }
+  }
   return arr;
 }
 
@@ -2414,9 +2455,10 @@ function handleAnswer(val, btn) {
       const heightMult = getHeightMult(S.height, CFG);
       const questionModeMult = getQuestionModeMult(S.mode, CFG);
       const choicesMult = getChoicesMult(S.numChoices, CFG);
+      const orderMult = getOrderMult(S.sortAnswers);
       const { digitBonus, digitParts } = getDigitBonus(currentProblem.a, currentProblem.op, currentProblem.b);
 
-      const preSpeedRate = CFG.baseRate * opsAvgMult * additionalOpsMult * rangeMult * ageMult * heightMult * questionModeMult * choicesMult * digitBonus;
+      const preSpeedRate = CFG.baseRate * opsAvgMult * additionalOpsMult * rangeMult * ageMult * heightMult * questionModeMult * choicesMult * orderMult * digitBonus;
       let effectiveRate = preSpeedRate * speedMult;
       
       // Apply rate clamping
@@ -2461,7 +2503,7 @@ function handleAnswer(val, btn) {
         speedMult, expectedTimeSec, actualTimeSec,
         heightMult, height: S.height,
         questionModeMult, mode: S.mode,
-        choicesMult, numChoices: S.numChoices,
+        choicesMult, numChoices: S.numChoices, orderMult, sortAnswers: S.sortAnswers,
         digitBonus, digitParts,
         effectiveRate, answerPay,
         difficulty: probDiff,
@@ -3065,6 +3107,7 @@ function renderReportCard() {
   const heightMult = getHeightMult(S.height, CFG);
   const questionModeMult = getQuestionModeMult(S.mode, CFG);
   const choicesMult = getChoicesMult(S.numChoices, CFG);
+  const orderMult = getOrderMult(S.sortAnswers);
 
   let r = CFG.baseRate;
   const chain = [
@@ -3076,6 +3119,7 @@ function renderReportCard() {
     { label: '× Height', mult: heightMult, running: r *= heightMult },
     { label: '× Question Mode', mult: questionModeMult, running: r *= questionModeMult },
     { label: '× Choices', mult: choicesMult, running: r *= choicesMult },
+    { label: '× Random Order', mult: orderMult, running: r *= orderMult },
   ];
   const slotBaseRate = r;
   const curRate = getCurrentRate();
@@ -3118,12 +3162,58 @@ function renderReportCard() {
 // ============ PARENT CONFIG ============
 let parentOpen = false;
 
+function showPasswordModal(title, placeholder, onSubmit) {
+  const overlay = document.createElement('div');
+  overlay.id = 'pw-modal-overlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9000;background:rgba(5,5,8,0.92);display:flex;align-items:center;justify-content:center';
+  const box = document.createElement('div');
+  box.style.cssText = 'background:var(--bg2);border:1px solid var(--accent2);border-radius:6px;padding:24px;max-width:340px;width:90%;text-align:center';
+  box.innerHTML = `<div style="font-family:var(--font-display);font-size:16px;color:var(--accent2);letter-spacing:2px;margin-bottom:14px">${title}</div>
+    <input type="password" id="pw-modal-input" placeholder="${placeholder}" style="width:100%;padding:10px;font-family:var(--font-body);font-size:18px;background:var(--bg);color:var(--fg);border:1px solid var(--accent);border-radius:4px;text-align:center;margin-bottom:10px">
+    <div id="pw-modal-error" style="color:var(--red-bright);font-size:14px;min-height:20px;margin-bottom:8px"></div>
+    <div style="display:flex;gap:10px">
+      <button id="pw-modal-cancel" style="flex:1;padding:10px;font-family:var(--font-display);font-size:13px;background:rgba(200,192,184,0.1);border:1px solid var(--fg-dim);color:var(--fg-dim);cursor:pointer;border-radius:4px;letter-spacing:1px">CANCEL</button>
+      <button id="pw-modal-ok" style="flex:1;padding:10px;font-family:var(--font-display);font-size:13px;background:rgba(210,64,64,0.2);border:1px solid var(--accent2);color:var(--accent2);cursor:pointer;border-radius:4px;letter-spacing:1px">OK</button>
+    </div>`;
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  const inp = document.getElementById('pw-modal-input');
+  inp.focus();
+  document.getElementById('pw-modal-cancel').addEventListener('click', () => overlay.remove());
+  const submit = () => {
+    const val = inp.value;
+    const err = onSubmit(val);
+    if (err) {
+      document.getElementById('pw-modal-error').textContent = err;
+    } else {
+      overlay.remove();
+    }
+  };
+  document.getElementById('pw-modal-ok').addEventListener('click', submit);
+  inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+}
+
 function openParent() {
-  AudioEngine.playMenuOpen();
-  parentOpen = true;
-  updateIdleIndicator();
-  document.getElementById('parent-overlay').classList.add('open');
-  renderParentMenu();
+  const storedPw = localStorage.getItem('arithmetyx_parent_password');
+  if (storedPw) {
+    showPasswordModal('ENTER PARENT PASSWORD', 'Password', (val) => {
+      if (val === storedPw) {
+        AudioEngine.playMenuOpen();
+        parentOpen = true;
+        updateIdleIndicator();
+        document.getElementById('parent-overlay').classList.add('open');
+        renderParentMenu();
+        return null;
+      }
+      return 'Wrong password';
+    });
+  } else {
+    AudioEngine.playMenuOpen();
+    parentOpen = true;
+    updateIdleIndicator();
+    document.getElementById('parent-overlay').classList.add('open');
+    renderParentMenu();
+  }
 }
 function closeParent() {
   AudioEngine.playMenuClose();
@@ -3343,6 +3433,10 @@ document.getElementById('apply-karma-btn').addEventListener('click', () => {
   if (!S.karmaLog) S.karmaLog = [];
   S.karmaLog.push({ date: new Date().toISOString(), from: oldKarma, to: newKarma });
   if (S.karmaLog.length > 20) S.karmaLog = S.karmaLog.slice(-20);
+  const effectiveFloor = Math.max(S.karma * 5, S.floor || 0);
+  if (S.height < effectiveFloor) {
+    S.height = effectiveFloor;
+  }
   saveSlot();
   renderKarmaUI();
   updateUI();
@@ -4103,6 +4197,14 @@ document.getElementById('back-to-title-btn-menu').addEventListener('click', () =
 });
 
 // Test hack detection
+document.getElementById('change-password-btn').addEventListener('click', () => {
+  showPasswordModal('SET NEW PASSWORD', 'New password', (val) => {
+    if (!val || val.length < 1) return 'Enter a password';
+    localStorage.setItem('arithmetyx_parent_password', val);
+    return null;
+  });
+});
+
 document.getElementById('test-hack-btn').addEventListener('click', () => {
   if (!currentKidId) return;
   // Corrupt the hash for the current kid profile
@@ -4141,6 +4243,15 @@ document.getElementById('create-mode-question').addEventListener('click', () => 
   renderSlotCreation();
 });
 
+document.getElementById('create-order-random').addEventListener('click', () => {
+  createState.sortAnswers = false;
+  renderSlotCreation();
+});
+document.getElementById('create-order-sorted').addEventListener('click', () => {
+  createState.sortAnswers = true;
+  renderSlotCreation();
+});
+
 document.getElementById('create-choices-range').addEventListener('input', (e) => {
   createState.numChoices = parseInt(e.target.value);
   renderSlotCreation();
@@ -4169,6 +4280,17 @@ if (hasKid && S && S.totalCorrect > 0) {
   document.getElementById('start-btn').textContent = 'RESUME';
 } else if (hasKid) {
   document.getElementById('start-btn').textContent = 'CONTINUE';
+}
+
+// Show password creation modal on first launch
+if (!localStorage.getItem('arithmetyx_parent_password')) {
+  setTimeout(() => {
+    showPasswordModal('CREATE PARENT PASSWORD', 'Choose a password', (val) => {
+      if (!val || val.length < 1) return 'Please enter a password';
+      localStorage.setItem('arithmetyx_parent_password', val);
+      return null;
+    });
+  }, 300);
 }
 
 requestAnimationFrame(render);
