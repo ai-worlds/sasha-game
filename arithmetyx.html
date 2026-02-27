@@ -197,7 +197,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
   border-radius:4px;font-family:var(--font-body);font-size:16px;color:var(--fg)}
 #height-popup.show{display:block}
 #height-popup .hp-title{font-family:var(--font-display);font-size:12px;color:var(--gold);
-  letter-spacing:2px;margin-bottom:8px;text-transform:uppercase}
+  letter-spacing:2px;margin-bottom:8px;text-transform:uppercase;position:relative}
 #height-popup .hp-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;
   border-bottom:1px solid rgba(200,192,184,0.06)}
 #height-popup .hp-label{color:var(--fg-dim)}
@@ -210,6 +210,48 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
   max-width:320px;min-width:240px;display:none;font-family:var(--font-body);
   box-shadow:0 4px 20px rgba(0,0,0,0.5)}
 #rate-popup.show{display:block}
+
+/* Shield popup */
+#shield-popup{position:fixed;bottom:52px;left:320px;z-index:90;background:rgba(12,12,18,0.96);
+  border:1px solid rgba(74,212,212,0.4);padding:14px;display:none;min-width:240px;max-width:340px;
+  border-radius:4px;font-family:var(--font-body);font-size:16px;color:var(--fg)}
+#shield-popup.show{display:block}
+#shield-popup .sp-title{font-family:var(--font-display);font-size:12px;color:var(--cyan);
+  letter-spacing:2px;margin-bottom:8px;text-transform:uppercase;position:relative}
+#shield-popup .sp-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;
+  border-bottom:1px solid rgba(200,192,184,0.06)}
+#shield-popup .sp-label{color:var(--fg-dim)}
+#shield-popup .sp-val{color:var(--fg);font-family:var(--font-mono);font-size:15px}
+
+/* Karma popup */
+#karma-popup{position:fixed;bottom:52px;right:8px;z-index:90;background:rgba(12,12,18,0.96);
+  border:1px solid rgba(106,58,138,0.4);padding:14px;display:none;min-width:240px;max-width:340px;
+  border-radius:4px;font-family:var(--font-body);font-size:16px;color:var(--fg)}
+#karma-popup.show{display:block}
+#karma-popup .kp-title{font-family:var(--font-display);font-size:12px;color:var(--purple);
+  letter-spacing:2px;margin-bottom:8px;text-transform:uppercase;position:relative}
+#karma-popup .kp-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;
+  border-bottom:1px solid rgba(200,192,184,0.06)}
+#karma-popup .kp-label{color:var(--fg-dim)}
+#karma-popup .kp-val{color:var(--fg);font-family:var(--font-mono);font-size:15px}
+
+/* Time/Idle popup */
+#time-popup{position:fixed;top:52px;left:8px;z-index:90;background:rgba(12,12,18,0.96);
+  border:1px solid rgba(200,192,184,0.4);padding:14px;display:none;min-width:240px;max-width:340px;
+  border-radius:4px;font-family:var(--font-body);font-size:16px;color:var(--fg)}
+#time-popup.show{display:block}
+#time-popup .tp-title{font-family:var(--font-display);font-size:12px;color:var(--fg);
+  letter-spacing:2px;margin-bottom:8px;text-transform:uppercase;position:relative}
+#time-popup .tp-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;
+  border-bottom:1px solid rgba(200,192,184,0.06)}
+#time-popup .tp-label{color:var(--fg-dim)}
+#time-popup .tp-val{color:var(--fg);font-family:var(--font-mono);font-size:15px}
+
+/* Close buttons for popups */
+.popup-close{position:absolute;top:8px;right:8px;background:rgba(138,26,26,0.3);
+  border:1px solid var(--red-bright);color:var(--red-bright);font-family:var(--font-display);
+  font-size:10px;padding:4px 8px;cursor:pointer;border-radius:3px;letter-spacing:1px}
+.popup-close:hover{background:var(--red);color:#fff}
 #rate-popup .bp-title{font-family:var(--font-display);font-size:12px;color:var(--accent2);
   letter-spacing:2px;margin-bottom:8px;border-bottom:1px solid rgba(210,64,64,0.3);padding-bottom:4px}
 #rate-popup .bp-problem{font-family:var(--font-display);font-size:14px;color:#fff;margin-bottom:8px}
@@ -244,7 +286,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
       <span>💰<span class="val" id="stat-money">$0.0000</span></span>
       <span style="cursor:pointer" onclick="toggleRatePopup()">📈<span class="val" id="stat-rate">$0.00/hr</span></span>
       <span style="cursor:pointer" onclick="toggleRatePopup()">⌀<span class="val" id="stat-avgrate">$0.00/hr</span></span>
-      <span>⏱<span class="val" id="stat-time">0:00</span></span>
+      <span style="cursor:pointer" onclick="toggleTimePopup()">⏱<span class="val" id="stat-time">0:00</span></span>
     </div>
     <div class="top-btns">
       <button class="menu-btn" id="parent-open-btn">👤 PARENT</button>
@@ -260,8 +302,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
   <div id="progress-bar"><div id="progress-fill"></div></div>
   <div id="climb-info">
     <span class="height-val" id="height-display" style="cursor:pointer" onclick="toggleHeightPopup()">HEIGHT: 0</span>
-    <span id="shield-display" style="color:#4ad4d4;font-family:var(--font-display);font-size:13px">SHIELDS: 0</span>
-    <span class="nerf-val" id="nerf-display">KARMA: 0</span>
+    <span id="shield-display" style="color:#4ad4d4;font-family:var(--font-display);font-size:13px;cursor:pointer" onclick="toggleShieldPopup()">SHIELDS: 0</span>
+    <span class="nerf-val" id="nerf-display" style="cursor:pointer" onclick="toggleKarmaPopup()">KARMA: 0</span>
     <span id="idle-indicator" style="font-family:var(--font-display);font-size:12px;color:#3fb855;letter-spacing:1px">▶ PLAY</span>
   </div>
 
@@ -276,6 +318,21 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 </div>
 <div id="height-popup">
   <div id="height-popup-content"></div>
+</div>
+
+<!-- Shield Popup -->
+<div id="shield-popup">
+  <div id="shield-popup-content"></div>
+</div>
+
+<!-- Karma Popup -->
+<div id="karma-popup">
+  <div id="karma-popup-content"></div>
+</div>
+
+<!-- Time/Idle Popup -->
+<div id="time-popup">
+  <div id="time-popup-content"></div>
 </div>
 
 <!-- Intro -->
@@ -1646,7 +1703,7 @@ function getAvgRate() {
 function renderRatePopup() {
   const popup = document.getElementById('rate-popup-content');
   if (!lastAnswerBreakdown) {
-    popup.innerHTML = '<div class="bp-title">RATE BREAKDOWN</div><div style="color:var(--fg-dim);font-size:15px">Answer a problem to see the breakdown</div>';
+    popup.innerHTML = '<div class="bp-title">RATE BREAKDOWN<button class="popup-close" onclick="toggleRatePopup()">✕</button></div><div style="color:var(--fg-dim);font-size:15px">Answer a problem to see the breakdown</div>';
     return;
   }
   const b = lastAnswerBreakdown;
@@ -1683,7 +1740,7 @@ function renderRatePopup() {
   const rCh = CFG.multipliers.choices;
 
   popup.innerHTML = `
-    <div class="bp-title">RATE BREAKDOWN</div>
+    <div class="bp-title">RATE BREAKDOWN<button class="popup-close" onclick="toggleRatePopup()">✕</button></div>
     <div class="bp-problem">${b.problem}</div>
     <div class="bp-sub">Difficulty: ${b.difficulty ? b.difficulty.toFixed(2) : '?'} · Expected: ${b.expectedTimeSec.toFixed(1)}s · Actual: ${b.actualTimeSec.toFixed(1)}s</div>
     <div style="height:6px"></div>
@@ -1778,24 +1835,24 @@ function renderRatePopup() {
 let ratePopupVisible = false;
 function toggleRatePopup() {
   const popup = document.getElementById('rate-popup');
-  ratePopupVisible = !ratePopupVisible;
-  if (ratePopupVisible) {
+  const wasVisible = ratePopupVisible;
+  closeAllPopups();
+  if (!wasVisible) {
     renderRatePopup();
     popup.classList.add('show');
-  } else {
-    popup.classList.remove('show');
+    ratePopupVisible = true;
   }
 }
 
 let heightPopupVisible = false;
 function toggleHeightPopup() {
   const popup = document.getElementById('height-popup');
-  heightPopupVisible = !heightPopupVisible;
-  if (heightPopupVisible) {
+  const wasVisible = heightPopupVisible;
+  closeAllPopups();
+  if (!wasVisible) {
     renderHeightPopup();
     popup.classList.add('show');
-  } else {
-    popup.classList.remove('show');
+    heightPopupVisible = true;
   }
 }
 
@@ -1821,7 +1878,7 @@ function renderHeightPopup() {
 
   const newZone = getZone(fallResult.newHeight);
 
-  let html = `<div class="hp-title">FALL FORECAST</div>`;
+  let html = `<div class="hp-title">FALL FORECAST<button class="popup-close" onclick="toggleHeightPopup()">✕</button></div>`;
   html += `<div class="hp-row"><span class="hp-label">Current Height</span><span class="hp-val">${height}</span></div>`;
   html += `<div class="hp-row"><span class="hp-label">Current Zone</span><span class="hp-val">${zone.name}</span></div>`;
   html += `<div class="hp-row"><span class="hp-label">Floor</span><span class="hp-val">${floor}</span></div>`;
@@ -1843,17 +1900,105 @@ function renderHeightPopup() {
   popup.innerHTML = html;
 }
 
-// Close popups when clicking elsewhere
-document.addEventListener('click', (e) => {
-  if (heightPopupVisible && !e.target.closest('#height-popup') && !e.target.closest('#height-display')) {
-    document.getElementById('height-popup').classList.remove('show');
-    heightPopupVisible = false;
+// Popup state variables
+let shieldPopupVisible = false;
+let karmaPopupVisible = false;
+let timePopupVisible = false;
+
+// Helper function to close all popups
+function closeAllPopups() {
+  document.getElementById('rate-popup').classList.remove('show');
+  document.getElementById('height-popup').classList.remove('show');
+  document.getElementById('shield-popup').classList.remove('show');
+  document.getElementById('karma-popup').classList.remove('show');
+  document.getElementById('time-popup').classList.remove('show');
+  ratePopupVisible = false;
+  heightPopupVisible = false;
+  shieldPopupVisible = false;
+  karmaPopupVisible = false;
+  timePopupVisible = false;
+}
+
+// New popup functions
+function toggleShieldPopup() {
+  const popup = document.getElementById('shield-popup');
+  const wasVisible = shieldPopupVisible;
+  closeAllPopups();
+  if (!wasVisible) {
+    renderShieldPopup();
+    popup.classList.add('show');
+    shieldPopupVisible = true;
   }
-  if (ratePopupVisible && !e.target.closest('#rate-popup') && !e.target.closest('#stat-rate') && !e.target.closest('#stat-avgrate')) {
-    document.getElementById('rate-popup').classList.remove('show');
-    ratePopupVisible = false;
+}
+
+function renderShieldPopup() {
+  if (!S) return;
+  const popup = document.getElementById('shield-popup-content');
+  const shields = S.shields || 0;
+  
+  let html = `<div class="sp-title">SHIELD INFO<button class="popup-close" onclick="toggleShieldPopup()">✕</button></div>`;
+  html += `<div class="sp-row"><span class="sp-label">Current Shields:</span><span class="sp-val">${'●'.repeat(shields)}${'○'.repeat(5 - shields)} (${shields}/5)</span></div>`;
+  html += `<div style="margin:8px 0;color:var(--fg-dim);font-size:15px;">• Shields absorb a wrong answer — no height lost, no karma lost</div>`;
+  html += `<div style="margin:8px 0;color:var(--fg-dim);font-size:15px;">• Earn 1 shield every 5-streak (max 5)</div>`;
+  html += `<div style="margin:8px 0;color:var(--fg-dim);font-size:15px;">• When hit without shields: fall to floor, lose 1 karma</div>`;
+  
+  popup.innerHTML = html;
+}
+
+function toggleKarmaPopup() {
+  const popup = document.getElementById('karma-popup');
+  const wasVisible = karmaPopupVisible;
+  closeAllPopups();
+  if (!wasVisible) {
+    renderKarmaPopup();
+    popup.classList.add('show');
+    karmaPopupVisible = true;
   }
-});
+}
+
+function renderKarmaPopup() {
+  if (!S) return;
+  const popup = document.getElementById('karma-popup-content');
+  const karma = S.karma || 0;
+  
+  let html = `<div class="kp-title">KARMA INFO<button class="popup-close" onclick="toggleKarmaPopup()">✕</button></div>`;
+  html += `<div class="kp-row"><span class="kp-label">Current Karma:</span><span class="kp-val">${karma}</span></div>`;
+  html += `<div style="margin:8px 0;color:var(--fg-dim);font-size:15px;">• Karma increases by 1 every 10 correct answers</div>`;
+  html += `<div style="margin:8px 0;color:var(--fg-dim);font-size:15px;">• Lose 1 karma on wrong answer (when no shields)</div>`;
+  html += `<div style="margin:8px 0;color:var(--fg-dim);font-size:15px;">• Higher karma = better multiplier potential</div>`;
+  
+  popup.innerHTML = html;
+}
+
+function toggleTimePopup() {
+  const popup = document.getElementById('time-popup');
+  const wasVisible = timePopupVisible;
+  closeAllPopups();
+  if (!wasVisible) {
+    renderTimePopup();
+    popup.classList.add('show');
+    timePopupVisible = true;
+  }
+}
+
+function renderTimePopup() {
+  if (!S || !CFG) return;
+  const popup = document.getElementById('time-popup-content');
+  const playTime = S.playTimeMs || 0;
+  const idleTime = S.idleTimeMs || 0;
+  const idleTimeout = CFG.idleTimeoutSec || 10;
+  
+  let html = `<div class="tp-title">TIME INFO<button class="popup-close" onclick="toggleTimePopup()">✕</button></div>`;
+  html += `<div class="tp-row"><span class="tp-label">Play Time:</span><span class="tp-val">${formatTime(playTime)}</span></div>`;
+  html += `<div class="tp-row"><span class="tp-label">Idle Time:</span><span class="tp-val">${formatTime(idleTime)}</span></div>`;
+  html += `<div class="tp-row"><span class="tp-label">Idle Timeout:</span><span class="tp-val">${idleTimeout}s</span></div>`;
+  html += `<div style="margin:8px 0;color:var(--fg-dim);font-size:15px;">• Play Time: active time answering questions</div>`;
+  html += `<div style="margin:8px 0;color:var(--fg-dim);font-size:15px;">• Idle Time: time with no input for ${idleTimeout} seconds (configurable)</div>`;
+  html += `<div style="margin:8px 0;color:var(--fg-dim);font-size:15px;">• Idle time is tracked separately and doesn't count toward your hourly rate</div>`;
+  html += `<div style="margin:8px 0;color:var(--fg-dim);font-size:15px;">• Going idle pauses your speed multiplier benefit</div>`;
+  
+  popup.innerHTML = html;
+}
 
 function getBonusRequiredAccuracy(round) {
   if (round <= 5) return 0.90;
@@ -2269,6 +2414,9 @@ function updateUI() {
   document.getElementById('stat-time').textContent = formatTime(S.playTimeMs || 0);
   updateIdleIndicator();
   if (ratePopupVisible) renderRatePopup();
+  if (shieldPopupVisible) renderShieldPopup();
+  if (karmaPopupVisible) renderKarmaPopup();
+  if (timePopupVisible) renderTimePopup();
   document.getElementById('height-display').textContent = `HEIGHT: ${S.height} / ${TARGET_HEIGHT}`;
   document.getElementById('nerf-display').textContent = `KARMA: ${S.karma}`;
   const shieldIcons = '●'.repeat(S.shields) + '○'.repeat(5 - S.shields);
