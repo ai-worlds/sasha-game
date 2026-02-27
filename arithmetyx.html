@@ -510,6 +510,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 
     <h2>ACTIONS</h2>
     <button class="menu-btn-big btn-danger" id="delete-player-btn" style="background:rgba(138,26,26,0.4);border-color:var(--red-bright)">DELETE THIS PLAYER</button>
+    <button class="menu-btn-big" id="test-hack-btn" style="background:rgba(0,255,0,0.05);border-color:#0f0;color:#0f0;font-size:10px;margin-top:10px">🧪 TEST HACK DETECTION</button>
     <button class="menu-btn-big btn-close" id="parent-close-btn2">BACK TO THE VOID</button>
   </div>
 </div>
@@ -760,6 +761,77 @@ function saveKidIds(ids) {
   try { localStorage.setItem('arithmetyx_kids', JSON.stringify(ids)); } catch(e){}
 }
 
+// ============ INTEGRITY HASH ============
+function computeHash(data) {
+  // Simple string hash — not cryptographic, just enough to detect tampering
+  const str = JSON.stringify(data);
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return ((h >>> 0).toString(36) + str.length.toString(36));
+}
+
+function saveWithHash(lsKey, data) {
+  try {
+    localStorage.setItem(lsKey, JSON.stringify(data));
+    localStorage.setItem(lsKey + '_h', computeHash(data));
+  } catch(e){}
+}
+
+function verifyHash(lsKey) {
+  try {
+    const raw = localStorage.getItem(lsKey);
+    const storedHash = localStorage.getItem(lsKey + '_h');
+    if (!raw || !storedHash) return true; // no data or no hash yet = ok
+    const data = JSON.parse(raw);
+    return computeHash(data) === storedHash;
+  } catch(e) { return true; }
+}
+
+let hackerDetected = false;
+function checkAllIntegrity() {
+  const kidIds = getAllKidIds();
+  for (const kidId of kidIds) {
+    if (!verifyHash('arithmetyx_kid_' + kidId)) return true;
+    const prefix = 'arithmetyx_kid_' + kidId + '_slot_';
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k.startsWith(prefix) && !k.endsWith('_h')) {
+        if (!verifyHash(k)) return true;
+      }
+    }
+  }
+  return false;
+}
+
+function showHackerEasterEgg() {
+  hackerDetected = true;
+  AudioEngine.init();
+  AudioEngine.playVoice('hacker_detected');
+  const overlay = document.createElement('div');
+  overlay.id = 'hacker-overlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:rgba(0,0,0,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;animation:hackerFade 0.5s ease-in';
+  overlay.innerHTML = `
+    <div style="font-family:var(--font-display);font-size:clamp(20px,5vw,36px);color:#0f0;text-shadow:0 0 20px #0f0,0 0 40px #0f0;margin-bottom:20px;letter-spacing:3px">
+      🏆 HACKER DETECTED 🏆
+    </div>
+    <div style="font-family:var(--font-body);font-size:clamp(18px,4vw,28px);color:#0f0;max-width:500px;line-height:1.6;margin-bottom:30px">
+      Congratulations! You are officially a<br>
+      <span style="font-size:clamp(24px,6vw,42px);color:#fff;text-shadow:0 0 15px #0f0">SUPER COMPUTER<br>HACKER GENIUS</span><br><br>
+      You figured out how to modify the game data!<br>
+      That takes real skill. 🧠💻<br><br>
+      <span style="color:#ff0;font-size:clamp(20px,5vw,32px);text-shadow:0 0 10px #ff0">
+        ⚡ SHOW THIS TO YOUR PARENTS RIGHT NOW ⚡<br>
+        for a SPECIAL SUPER AWESOME REWARD!
+      </span>
+    </div>
+    <button onclick="document.getElementById('hacker-overlay').remove()" style="font-family:var(--font-display);font-size:18px;padding:12px 30px;background:#0f0;color:#000;border:none;cursor:pointer;letter-spacing:2px;border-radius:4px">OK</button>
+  `;
+  document.body.appendChild(overlay);
+}
+
 function getCurrentKidId() {
   if (currentKidId) return currentKidId;
   try {
@@ -801,7 +873,7 @@ function loadKid(kidId) {
 
 function saveKid() {
   if (!currentKidId || !CFG) return;
-  try { localStorage.setItem('arithmetyx_kid_' + currentKidId, JSON.stringify(CFG)); } catch(e){}
+  saveWithHash('arithmetyx_kid_' + currentKidId, CFG);
 }
 
 function createKid(name, birthYear) {
@@ -952,7 +1024,7 @@ function loadSlot(key, kidId = null) {
 function saveSlot(kidId = null) {
   const useKidId = kidId || currentKidId;
   if (!useKidId || !CFG || !CFG.currentSlotKey) return;
-  try { localStorage.setItem('arithmetyx_kid_' + useKidId + '_slot_' + CFG.currentSlotKey, JSON.stringify(S)); } catch(e){}
+  saveWithHash('arithmetyx_kid_' + useKidId + '_slot_' + CFG.currentSlotKey, S);
 }
 
 function getAllSlotKeys(kidId = null) {
@@ -3647,7 +3719,7 @@ const AudioEngine = (() => {
       'idle_start','idle_start_2','idle_start_3',
       'idle_return','idle_return_2','idle_return_3',
       'shield_gain','shield_break_2',
-      'death_spiral_activate','death_spiral_karma_safe','death_spiral_expire',
+      'death_spiral_activate','death_spiral_karma_safe','death_spiral_expire','hacker_detected',
       'correct_1','correct_2','correct_3','correct_4','correct_5','correct_6','correct_7',
       'correct_8','correct_9','correct_10','correct_11','correct_12','correct_13','correct_14',
       'wrong_1','wrong_2','wrong_3','wrong_4','wrong_5','wrong_6','wrong_7','wrong_8',
@@ -3982,6 +4054,12 @@ document.getElementById('start-btn').addEventListener('click', () => {
   AudioEngine.playClick();
   AudioEngine.playVoice('title_intro');
   
+  // Check integrity on entry
+  if (checkAllIntegrity()) {
+    setTimeout(showHackerEasterEgg, 500);
+    return;
+  }
+  
   if (hasKid) {
     goToSlotSelect();
   } else {
@@ -4018,6 +4096,14 @@ document.getElementById('slot-create-confirm').addEventListener('click', createS
 // Menu navigation
 document.getElementById('back-to-title-btn-menu').addEventListener('click', () => {
   closeMenu();
+  location.reload();
+});
+
+// Test hack detection
+document.getElementById('test-hack-btn').addEventListener('click', () => {
+  if (!currentKidId) return;
+  // Corrupt the hash for the current kid profile
+  localStorage.setItem('arithmetyx_kid_' + currentKidId + '_h', Math.random().toString(36));
   location.reload();
 });
 
