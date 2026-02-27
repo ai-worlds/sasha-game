@@ -1968,11 +1968,14 @@ function renderKarmaPopup() {
   const popup = document.getElementById('karma-popup-content');
   const karma = S.karma || 0;
   
+  const karmaFloor = karma * 5;
   let html = `<div class="kp-title">KARMA INFO<button class="popup-close" onclick="toggleKarmaPopup()">✕</button></div>`;
-  html += `<div class="kp-row"><span class="kp-label">Current Karma:</span><span class="kp-val">${karma}</span></div>`;
-  html += `<div style="margin:8px 0;color:var(--fg-dim);font-size:15px;">• Karma increases by 1 every 10 correct answers</div>`;
-  html += `<div style="margin:8px 0;color:var(--fg-dim);font-size:15px;">• Lose 1 karma on wrong answer (when no shields)</div>`;
-  html += `<div style="margin:8px 0;color:var(--fg-dim);font-size:15px;">• Higher karma = better multiplier potential</div>`;
+  html += `<div class="kp-row"><span class="kp-label">Current Karma</span><span class="kp-val">${karma}</span></div>`;
+  html += `<div class="kp-row"><span class="kp-label">Karma Floor (${karma} × 5)</span><span class="kp-val" style="color:var(--gold)">${karmaFloor}</span></div>`;
+  html += `<div style="margin:10px 0 4px;color:var(--fg-dim);font-size:15px;">• +1 karma every 10 correct answers</div>`;
+  html += `<div style="margin:4px 0;color:var(--fg-dim);font-size:15px;">• −1 karma on wrong answer (when no shields)</div>`;
+  html += `<div style="margin:4px 0;color:var(--fg-dim);font-size:15px;">• Karma sets your safety net: floor = karma × 5</div>`;
+  html += `<div style="margin:4px 0;color:var(--fg-dim);font-size:15px;">• You can never fall below your karma floor</div>`;
   
   popup.innerHTML = html;
 }
