@@ -222,7 +222,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
   <div id="overlay"></div>
 
   <div id="top-bar">
-    <div class="title">ARITHMETYX</div>
+    <div class="title" style="cursor:pointer" id="title-link">ARITHMETYX</div>
     <div class="stats">
       <span>⚡<span class="val" id="stat-streak">0</span></span>
       <span>✓<span class="val" id="stat-correct">0</span></span>
@@ -233,7 +233,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
       <span>⏱<span class="val" id="stat-time">0:00</span></span>
     </div>
     <div class="top-btns">
-      <button class="menu-btn" id="slots-open-btn">📋 SLOTS</button>
       <button class="menu-btn" id="parent-open-btn">👤 PARENT</button>
       <button class="menu-btn" id="menu-open-btn">☰ MENU</button>
     </div>
@@ -267,7 +266,47 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
   <h1>ARITHMETYX</h1>
   <div class="sub">The Descent</div>
   <div class="tagline">In a world where numbers are all that remain, climb the infinite tower. Every wrong answer sends you plummeting. There is no mercy — only arithmetic.</div>
-  <button class="start-btn" id="start-btn">BEGIN DESCENT</button>
+  <button class="start-btn" id="start-btn">ENTER THE VOID</button>
+</div>
+
+<!-- Kid Select Screen -->
+<div id="kid-select-screen" style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:200;background:var(--bg);display:none;flex-direction:column;align-items:center;padding:20px">
+  <h1 style="font-family:var(--font-display);font-size:clamp(24px,6vw,40px);color:var(--accent2);letter-spacing:4px;margin-bottom:8px;text-shadow:0 0 30px rgba(184,48,48,0.6)">ARITHMETYX</h1>
+  <div style="font-size:18px;color:var(--fg);margin-bottom:20px">Choose your warrior</div>
+  <div id="kid-cards-container" style="width:100%;max-width:500px;max-height:60vh;overflow-y:auto;margin-bottom:20px"></div>
+  <button class="start-btn" id="new-kid-btn" style="margin-top:10px">+ NEW KID</button>
+</div>
+
+<!-- Kid Create Screen -->
+<div id="kid-create-screen" style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:200;background:var(--bg);display:none;flex-direction:column;align-items:center;padding:20px;overflow-y:auto">
+  <h1 style="font-family:var(--font-display);font-size:clamp(20px,5vw,32px);color:var(--accent2);letter-spacing:3px;margin-bottom:8px;text-shadow:0 0 20px rgba(184,48,48,0.6)">NEW PLAYER</h1>
+  <div style="font-size:16px;color:var(--fg);margin-bottom:20px">Parent Configuration</div>
+  
+  <div id="kid-create-content" style="width:100%;max-width:480px;background:rgba(30,28,38,0.85);border:1px solid rgba(200,192,184,0.15);border-radius:6px;padding:20px">
+    <h3 style="font-family:var(--font-display);color:var(--gold);font-size:14px;margin:14px 0 8px">NAME</h3>
+    <input type="text" id="kid-name-input" placeholder="Enter name" style="width:100%;background:rgba(30,28,38,0.85);border:1px solid rgba(200,192,184,0.25);color:var(--fg);font-family:var(--font-mono);font-size:16px;padding:10px;border-radius:4px;margin-bottom:10px">
+
+    <h3 style="font-family:var(--font-display);color:var(--gold);font-size:14px;margin:14px 0 8px">BIRTH YEAR</h3>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <input type="number" min="2005" max="2024" value="2016" class="num-input" id="kid-birth-year-input">
+      <span style="color:var(--fg-dim);font-size:16px" id="kid-age-display">Age: 10</span>
+    </div>
+
+    <h3 style="font-family:var(--font-display);color:var(--gold);font-size:14px;margin:14px 0 8px">COMPENSATION</h3>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+      <span style="color:var(--gold);font-size:16px">$</span>
+      <input type="number" min="0.50" max="50" step="0.50" value="5.00" class="num-input" id="kid-baserate-input" style="width:70px">
+      <span style="color:var(--fg-dim);font-size:14px">/hr</span>
+    </div>
+
+    <h3 style="font-family:var(--font-display);color:var(--gold);font-size:14px;margin:14px 0 8px">MULTIPLIER RANGES</h3>
+    <div id="kid-mult-ranges-container"></div>
+
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button class="menu-btn-big btn-close" id="kid-create-back" style="flex:1">← BACK</button>
+      <button class="menu-btn-big" id="kid-create-confirm" style="flex:1;background:rgba(42,122,58,0.3);border:1px solid var(--green-bright);color:var(--green-bright)" disabled>CREATE PLAYER</button>
+    </div>
+  </div>
 </div>
 
 <!-- Victory -->
@@ -279,23 +318,20 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
   <button class="start-btn" style="margin-top:20px" id="continue-btn">CONTINUE CLIMBING</button>
 </div>
 
-<!-- Slots Overlay -->
-<div id="slots-overlay">
-  <div id="slots-content">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <h2 style="margin:0;border:none;padding:0;font-family:var(--font-display);color:var(--accent2);font-size:18px;letter-spacing:2px">SLOTS</h2>
-      <button class="menu-btn" id="slots-close-btn">✕ CLOSE</button>
-    </div>
-    <div id="slots-list"></div>
-    <button class="menu-btn-big btn-close" id="new-slot-btn" style="margin-top:12px">+ NEW SLOT</button>
-  </div>
-</div>
+<!-- Old slots overlay removed - using new slot-select-screen instead -->
 
 <!-- Parent Config -->
 <div id="parent-overlay">
   <div id="parent-content">
+    <div id="welcome-banner" style="display:none;background:rgba(42,122,58,0.2);border:1px solid var(--green-bright);color:var(--green-bright);padding:12px;margin-bottom:16px;border-radius:4px;text-align:center">
+      <div style="font-family:var(--font-display);font-size:16px;letter-spacing:2px;margin-bottom:4px">WELCOME — PARENT SETUP</div>
+      <div style="font-size:14px;color:var(--fg)">Configure your child's age and payment settings to get started</div>
+    </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <h2 style="margin:0;border:none;padding:0;font-family:var(--font-display);color:var(--accent2);font-size:18px;letter-spacing:2px">PARENT CONFIG</h2>
+      <div>
+        <h2 style="margin:0;border:none;padding:0;font-family:var(--font-display);color:var(--accent2);font-size:18px;letter-spacing:2px">PARENT CONFIG</h2>
+        <div style="font-size:14px;color:var(--fg);margin-top:2px" id="parent-kid-name">Player: Unknown</div>
+      </div>
       <button class="menu-btn" id="parent-close-btn">✕ CLOSE</button>
     </div>
 
@@ -339,7 +375,71 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 
     <h2>ACTIONS</h2>
     <button class="menu-btn-big btn-danger" id="reset-btn">⚠ RESET ALL PROGRESS</button>
+    <button class="menu-btn-big btn-danger" id="delete-player-btn" style="background:rgba(138,26,26,0.4);border-color:var(--red-bright)">DELETE THIS PLAYER</button>
     <button class="menu-btn-big btn-close" id="parent-close-btn2">BACK TO THE VOID</button>
+  </div>
+</div>
+
+<!-- Slot Select Screen -->
+<div id="slot-select-screen" style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:200;background:var(--bg);display:none;flex-direction:column;align-items:center;padding:20px">
+  <div style="display:flex;justify-content:space-between;align-items:center;width:100%;max-width:500px;margin-bottom:20px">
+    <div>
+      <h1 style="font-family:var(--font-display);font-size:clamp(20px,5vw,32px);color:var(--accent2);letter-spacing:3px;margin:0;text-shadow:0 0 20px rgba(184,48,48,0.6)" id="slot-select-title">Player's Slots</h1>
+      <div style="font-size:16px;color:var(--fg);margin-top:4px">Total Earnings: <span id="total-earnings-display" style="color:var(--gold);font-family:var(--font-mono)">$0.0000</span></div>
+    </div>
+    <button class="menu-btn" id="switch-player-btn">← SWITCH PLAYER</button>
+  </div>
+  
+  <div id="slot-cards-container" style="width:100%;max-width:500px;max-height:55vh;overflow-y:auto;margin-bottom:20px"></div>
+  <button class="start-btn" id="new-slot-btn-main" style="margin-top:10px">+ NEW SLOT</button>
+</div>
+
+<!-- Slot Creation Screen -->
+<div id="slot-create-screen" style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:200;background:var(--bg);display:none;flex-direction:column;align-items:center;padding:20px">
+  <h1 style="font-family:var(--font-display);font-size:clamp(20px,5vw,32px);color:var(--accent2);letter-spacing:3px;margin-bottom:20px;text-shadow:0 0 20px rgba(184,48,48,0.6)">CREATE NEW SLOT</h1>
+  <div id="slot-create-content" style="width:100%;max-width:400px;background:rgba(30,28,38,0.85);border:1px solid rgba(200,192,184,0.15);border-radius:6px;padding:20px">
+    <h3 style="font-family:var(--font-display);color:var(--gold);font-size:14px;margin:14px 0 8px">OPERATIONS</h3>
+    <div class="menu-row"><label>Addition (+)</label><div class="toggle on" id="create-op-add"></div></div>
+    <div class="menu-row"><label>Subtraction (−)</label><div class="toggle on" id="create-op-sub"></div></div>
+    <div class="menu-row"><label>Multiplication (×)</label><div class="toggle on" id="create-op-mul"></div></div>
+    <div class="menu-row"><label>Division (÷)</label><div class="toggle on" id="create-op-div"></div></div>
+    
+    <h3 style="font-family:var(--font-display);color:var(--gold);font-size:14px;margin:14px 0 8px">MODE</h3>
+    <div class="mode-btns">
+      <div class="mode-btn active" id="create-mode-answer">ANSWER MODE</div>
+      <div class="mode-btn" id="create-mode-question">QUESTION MODE</div>
+    </div>
+    <div style="font-size:15px;color:var(--fg-dim);padding:4px 0">
+      Answer: pick the result &nbsp;|&nbsp; Question: pick the missing number
+    </div>
+
+    <h3 style="font-family:var(--font-display);color:var(--gold);font-size:14px;margin:14px 0 8px">ANSWER CHOICES</h3>
+    <div class="range-row">
+      <span style="font-size:16px;color:var(--fg-dim)">Choices:</span>
+      <input type="range" min="2" max="8" value="4" id="create-choices-range">
+      <span class="range-val" id="create-choices-val">4</span>
+    </div>
+
+    <h3 style="font-family:var(--font-display);color:var(--gold);font-size:14px;margin:14px 0 8px">NUMBER RANGE</h3>
+    <div class="range-row">
+      <span style="font-size:16px;color:var(--fg-dim)">Min:</span>
+      <input type="range" min="0" max="15" value="0" id="create-minnum-range">
+      <span class="range-val" id="create-minnum-val">0</span>
+    </div>
+    <div class="range-row">
+      <span style="font-size:16px;color:var(--fg-dim)">Max:</span>
+      <input type="range" min="6" max="20" value="10" id="create-maxnum-range">
+      <span class="range-val" id="create-maxnum-val">10</span>
+    </div>
+
+    <div style="font-size:14px;color:var(--fg-dim);margin:10px 0;padding:8px;background:rgba(20,18,28,0.8);border-radius:4px">
+      <strong>Preview:</strong> <span id="slot-key-preview">add_sub_mul_div_10</span>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button class="menu-btn-big btn-close" id="slot-create-back" style="flex:1">BACK</button>
+      <button class="menu-btn-big" id="slot-create-confirm" style="flex:1;background:rgba(42,122,58,0.3);border:1px solid var(--green-bright);color:var(--green-bright)">CREATE SLOT</button>
+    </div>
   </div>
 </div>
 
@@ -385,40 +485,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
     <h3>Bottom Color</h3>
     <div class="color-presets" id="bottom-color-presets"></div>
 
-    <h3>OPERATIONS</h3>
-    <div class="menu-row"><label>Addition (+)</label><div class="toggle on" data-op="add"></div></div>
-    <div class="menu-row"><label>Subtraction (−)</label><div class="toggle on" data-op="sub"></div></div>
-    <div class="menu-row"><label>Multiplication (×)</label><div class="toggle on" data-op="mul"></div></div>
-    <div class="menu-row"><label>Division (÷)</label><div class="toggle on" data-op="div"></div></div>
-
-    <h3>MODE</h3>
-    <div class="mode-btns">
-      <div class="mode-btn active" data-mode="answer">ANSWER MODE</div>
-      <div class="mode-btn" data-mode="question">QUESTION MODE</div>
-    </div>
-    <div style="font-size:15px;color:var(--fg-dim);padding:4px 0">
-      Answer: pick the result &nbsp;|&nbsp; Question: pick the missing number
-    </div>
-
-    <h3>ANSWER CHOICES</h3>
-    <div class="range-row">
-      <span style="font-size:16px;color:var(--fg-dim)">Choices:</span>
-      <input type="range" min="2" max="8" value="4" id="choices-range">
-      <span class="range-val" id="choices-val">4</span>
-    </div>
-
-    <h3>NUMBER RANGE</h3>
-    <div class="range-row">
-      <span style="font-size:16px;color:var(--fg-dim)">Min:</span>
-      <input type="range" min="0" max="15" value="0" id="minnum-range">
-      <span class="range-val" id="minnum-val">0</span>
-    </div>
-    <div class="range-row">
-      <span style="font-size:16px;color:var(--fg-dim)">Max:</span>
-      <input type="range" min="6" max="20" value="10" id="maxnum-range">
-      <span class="range-val" id="maxnum-val">10</span>
-    </div>
-
     <h2>YOUR HARDEST PROBLEMS</h2>
     <div class="hard-list" id="hard-list"></div>
 
@@ -457,13 +523,15 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
     <div id="report-card"></div>
 
     <h2>ACTIONS</h2>
+    <button class="menu-btn-big btn-close" id="back-to-slots-btn">BACK TO SLOTS</button>
+    <button class="menu-btn-big btn-close" id="switch-player-btn-menu">SWITCH PLAYER</button>
     <button class="menu-btn-big btn-danger" id="reset-slot-btn">⚠ RESET CURRENT SLOT</button>
     <button class="menu-btn-big btn-close" id="menu-close-btn2">BACK TO THE VOID</button>
   </div>
 </div>
 
 <script>
-// ============ CONFIG & SLOT SYSTEM ============
+// ============ CONFIG & SLOT SYSTEM (KID PROFILES) ============
 const DEFAULT_CHARACTER = {
   hairLength: 'short',
   hairColor: '#2a2025',
@@ -475,8 +543,12 @@ const DEFAULT_CHARACTER = {
   bottomColor: '#4a4550'
 };
 
-const DEFAULT_CONFIG = {
+const DEFAULT_KID_PROFILE = {
+  id: null,
+  name: '',
+  createdAt: null,
   birthYear: 2016,
+  birthYearSet: false,
   baseRate: 5.00,
   multipliers: {
     opsAvg:        { min: 100, max: 150 },
@@ -529,34 +601,171 @@ const DEFAULT_SLOT = {
 
 const TARGET_HEIGHT = 600;
 
-let CFG, S; // CFG = global config, S = current slot state
+let CFG, S; // CFG = current kid profile, S = current slot state
+let currentKidId = null;
 
-function loadConfig() {
+function generateKidId(name) {
+  const cleanName = name.toLowerCase().replace(/[^a-z]/g, '');
+  const randomHex = Math.random().toString(16).substring(2, 6);
+  return `${cleanName}_${randomHex}`;
+}
+
+function getAllKidIds() {
   try {
-    const raw = localStorage.getItem('arithmetyx_config');
-    CFG = raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(DEFAULT_CONFIG));
-    for (const k in DEFAULT_CONFIG) {
-      if (!(k in CFG)) CFG[k] = typeof DEFAULT_CONFIG[k] === 'object' ? JSON.parse(JSON.stringify(DEFAULT_CONFIG[k])) : DEFAULT_CONFIG[k];
+    const raw = localStorage.getItem('arithmetyx_kids');
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) { return []; }
+}
+
+function saveKidIds(ids) {
+  try { localStorage.setItem('arithmetyx_kids', JSON.stringify(ids)); } catch(e){}
+}
+
+function getCurrentKidId() {
+  if (currentKidId) return currentKidId;
+  try {
+    const raw = localStorage.getItem('arithmetyx_global');
+    const global = raw ? JSON.parse(raw) : {};
+    return global.currentKidId || null;
+  } catch(e) { return null; }
+}
+
+function setCurrentKidId(kidId) {
+  currentKidId = kidId;
+  try {
+    const global = { currentKidId: kidId };
+    localStorage.setItem('arithmetyx_global', JSON.stringify(global));
+  } catch(e){}
+}
+
+function loadKid(kidId) {
+  try {
+    const raw = localStorage.getItem('arithmetyx_kid_' + kidId);
+    if (!raw) return null;
+    CFG = JSON.parse(raw);
+    // Fill in any missing defaults
+    for (const k in DEFAULT_KID_PROFILE) {
+      if (!(k in CFG)) CFG[k] = typeof DEFAULT_KID_PROFILE[k] === 'object' ? JSON.parse(JSON.stringify(DEFAULT_KID_PROFILE[k])) : DEFAULT_KID_PROFILE[k];
     }
-    // Migrate character defaults
     if (!CFG.character) CFG.character = JSON.parse(JSON.stringify(DEFAULT_CHARACTER));
     for (const k in DEFAULT_CHARACTER) { if (!(k in CFG.character)) CFG.character[k] = DEFAULT_CHARACTER[k]; }
     if (!CFG.vividness) CFG.vividness = { background: 100, base: 100, info: 100, foreground: 100 };
     for (const k of ['background','base','info','foreground']) { if (!(k in CFG.vividness)) CFG.vividness[k] = 100; }
-    // Migrate from old globalMoneyScaler to new multiplier chain
-    if ('globalMoneyScaler' in CFG && !('baseRate' in CFG)) {
-      CFG.baseRate = 5.00;
-      delete CFG.globalMoneyScaler;
-    }
-    if (!CFG.baseRate) CFG.baseRate = 5.00;
-    if (!CFG.multipliers) CFG.multipliers = JSON.parse(JSON.stringify(DEFAULT_CONFIG.multipliers));
-    else { for (const k in DEFAULT_CONFIG.multipliers) { if (!(k in CFG.multipliers)) CFG.multipliers[k] = JSON.parse(JSON.stringify(DEFAULT_CONFIG.multipliers[k])); } }
+    if (!CFG.multipliers) CFG.multipliers = JSON.parse(JSON.stringify(DEFAULT_KID_PROFILE.multipliers));
+    else { for (const k in DEFAULT_KID_PROFILE.multipliers) { if (!(k in CFG.multipliers)) CFG.multipliers[k] = JSON.parse(JSON.stringify(DEFAULT_KID_PROFILE.multipliers[k])); } }
     if (!CFG.multiplierLog) CFG.multiplierLog = [];
-    delete CFG.globalMoneyScaler;
-  } catch(e) { CFG = JSON.parse(JSON.stringify(DEFAULT_CONFIG)); }
+    currentKidId = kidId;
+    setCurrentKidId(kidId);
+    return CFG;
+  } catch(e) { return null; }
 }
 
-function saveConfig() { try { localStorage.setItem('arithmetyx_config', JSON.stringify(CFG)); } catch(e){} }
+function saveKid() {
+  if (!currentKidId || !CFG) return;
+  try { localStorage.setItem('arithmetyx_kid_' + currentKidId, JSON.stringify(CFG)); } catch(e){}
+}
+
+function createKid(name, birthYear) {
+  const kidId = generateKidId(name);
+  const kidProfile = JSON.parse(JSON.stringify(DEFAULT_KID_PROFILE));
+  kidProfile.id = kidId;
+  kidProfile.name = name;
+  kidProfile.birthYear = birthYear;
+  kidProfile.birthYearSet = true;
+  kidProfile.createdAt = new Date().toISOString();
+  
+  // Save kid profile
+  try { localStorage.setItem('arithmetyx_kid_' + kidId, JSON.stringify(kidProfile)); } catch(e){}
+  
+  // Add to kids list
+  const kids = getAllKidIds();
+  kids.push(kidId);
+  saveKidIds(kids);
+  
+  return kidId;
+}
+
+function deleteKid(kidId) {
+  // Remove from kids list
+  const kids = getAllKidIds().filter(id => id !== kidId);
+  saveKidIds(kids);
+  
+  // Delete kid profile
+  try { localStorage.removeItem('arithmetyx_kid_' + kidId); } catch(e){}
+  
+  // Delete all kid slots
+  const kidSlotKeys = getAllSlotKeys(kidId);
+  for (const key of kidSlotKeys) {
+    try { localStorage.removeItem('arithmetyx_kid_' + kidId + '_slot_' + key); } catch(e){}
+  }
+  
+  // If this was current kid, clear current
+  if (currentKidId === kidId) {
+    currentKidId = null;
+    setCurrentKidId(null);
+  }
+}
+
+// Migration function
+function migrateToKidProfiles() {
+  try {
+    const oldConfigRaw = localStorage.getItem('arithmetyx_config');
+    const kidsExist = getAllKidIds().length > 0;
+    
+    if (oldConfigRaw && !kidsExist) {
+      const oldConfig = JSON.parse(oldConfigRaw);
+      
+      // Create "Player 1" kid from old config
+      const kidId = createKid('Player 1', oldConfig.birthYear || 2016);
+      const kidProfile = JSON.parse(JSON.stringify(DEFAULT_KID_PROFILE));
+      
+      // Copy old config fields to kid profile
+      for (const key of ['birthYear', 'baseRate', 'multipliers', 'multiplierLog', 'sfxEnabled', 'musicEnabled', 'volume', 'currentSlotKey', 'character', 'vividness']) {
+        if (key in oldConfig) kidProfile[key] = oldConfig[key];
+      }
+      kidProfile.id = kidId;
+      kidProfile.name = 'Player 1';
+      kidProfile.createdAt = new Date().toISOString();
+      kidProfile.birthYearSet = true;
+      
+      // Save migrated kid profile
+      try { localStorage.setItem('arithmetyx_kid_' + kidId, JSON.stringify(kidProfile)); } catch(e){}
+      
+      // Migrate slots
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith('arithmetyx_slot_')) {
+          const slotKey = key.replace('arithmetyx_slot_', '');
+          const slotData = localStorage.getItem(key);
+          try {
+            localStorage.setItem('arithmetyx_kid_' + kidId + '_slot_' + slotKey, slotData);
+            localStorage.removeItem(key);
+          } catch(e){}
+        }
+      }
+      
+      // Set as current kid
+      loadKid(kidId);
+      
+      // Clean up old config
+      localStorage.removeItem('arithmetyx_config');
+      
+      console.log('Migrated old config to kid profile:', kidId);
+    }
+  } catch(e) {
+    console.error('Migration failed:', e);
+  }
+}
+
+function loadConfig() {
+  // This is now just a compatibility wrapper
+  // Real loading happens via loadKid()
+}
+
+function saveConfig() { 
+  // This is now just a compatibility wrapper
+  saveKid();
+}
 
 function getSlotKey(ops, minNum, maxNum) {
   const names = [];
@@ -568,9 +777,12 @@ function getSlotKey(ops, minNum, maxNum) {
   return names.join('_') + '_' + (minNum > 0 ? minNum + '-' : '') + maxNum;
 }
 
-function loadSlot(key) {
+function loadSlot(key, kidId = null) {
+  const useKidId = kidId || currentKidId;
+  if (!useKidId) return;
+  
   try {
-    const raw = localStorage.getItem('arithmetyx_slot_' + key);
+    const raw = localStorage.getItem('arithmetyx_kid_' + useKidId + '_slot_' + key);
     if (raw) {
       S = JSON.parse(raw);
       for (const k in DEFAULT_SLOT) { if (!(k in S)) S[k] = typeof DEFAULT_SLOT[k]==='object'? JSON.parse(JSON.stringify(DEFAULT_SLOT[k])) : DEFAULT_SLOT[k]; }
@@ -590,33 +802,41 @@ function loadSlot(key) {
         S.maxNum = parseInt(rangePart);
       }
     }
-    CFG.currentSlotKey = key;
-    saveConfig();
+    if (CFG) CFG.currentSlotKey = key;
+    saveKid();
     saveSlot();
   } catch(e) {
     S = JSON.parse(JSON.stringify(DEFAULT_SLOT));
   }
 }
 
-function saveSlot() {
-  if (!CFG.currentSlotKey) return;
-  try { localStorage.setItem('arithmetyx_slot_' + CFG.currentSlotKey, JSON.stringify(S)); } catch(e){}
+function saveSlot(kidId = null) {
+  const useKidId = kidId || currentKidId;
+  if (!useKidId || !CFG || !CFG.currentSlotKey) return;
+  try { localStorage.setItem('arithmetyx_kid_' + useKidId + '_slot_' + CFG.currentSlotKey, JSON.stringify(S)); } catch(e){}
 }
 
-function getAllSlotKeys() {
+function getAllSlotKeys(kidId = null) {
+  const useKidId = kidId || currentKidId;
+  if (!useKidId) return [];
+  
   const keys = [];
+  const prefix = 'arithmetyx_kid_' + useKidId + '_slot_';
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
-    if (k.startsWith('arithmetyx_slot_')) keys.push(k.replace('arithmetyx_slot_', ''));
+    if (k.startsWith(prefix)) keys.push(k.replace(prefix, ''));
   }
   return keys;
 }
 
-function getTotalEarnings() {
+function getTotalEarnings(kidId = null) {
+  const useKidId = kidId || currentKidId;
+  if (!useKidId) return 0;
+  
   let total = 0;
-  for (const key of getAllSlotKeys()) {
+  for (const key of getAllSlotKeys(useKidId)) {
     try {
-      const raw = localStorage.getItem('arithmetyx_slot_' + key);
+      const raw = localStorage.getItem('arithmetyx_kid_' + useKidId + '_slot_' + key);
       if (raw) { const s = JSON.parse(raw); total += (s.slotEarnings || 0); }
     } catch(e){}
   }
@@ -629,35 +849,315 @@ function migrateOldState() {
     const raw = localStorage.getItem('arithmetyx_state');
     if (!raw) return;
     const old = JSON.parse(raw);
-    CFG.sfxEnabled = true;
-    CFG.musicEnabled = true;
-    CFG.volume = 0.5;
-    const key = getSlotKey(old.ops || {add:true,sub:true,mul:true,div:true}, old.minNum || 0, old.maxNum || 10);
-    const slot = JSON.parse(JSON.stringify(DEFAULT_SLOT));
-    for (const k of ['ops','mode','numChoices','maxNum','totalCorrect','totalWrong','streak','bestStreak','height','maxHeight','karma','floor','shields','karmaLog','problems','gameBeaten']) {
-      if (k in old) slot[k] = old[k];
-    }
-    localStorage.setItem('arithmetyx_slot_' + key, JSON.stringify(slot));
-    CFG.currentSlotKey = key;
-    saveConfig();
+    // This old state migration will be handled by migrateToKidProfiles()
     localStorage.removeItem('arithmetyx_state');
   } catch(e){}
 }
 
-loadConfig();
-migrateOldState();
+// Initialize the application
+function initializeApp() {
+  // Migrate old config to kid profiles if needed
+  migrateToKidProfiles();
+  migrateOldState();
+  
+  // Try to load current kid
+  const currentKid = getCurrentKidId();
+  if (currentKid && loadKid(currentKid)) {
+    // Initialize current slot if we have one, otherwise default
+    if (CFG.currentSlotKey) {
+      loadSlot(CFG.currentSlotKey);
+    } else {
+      const keys = getAllSlotKeys();
+      if (keys.length > 0) {
+        loadSlot(keys[0]);
+      } else {
+        const key = 'add_sub_mul_div_10';
+        loadSlot(key);
+      }
+    }
+    return true; // Successfully loaded kid
+  }
+  
+  return false; // No kid loaded
+}
 
-if (CFG.currentSlotKey) {
-  loadSlot(CFG.currentSlotKey);
-} else {
-  const key = 'add_sub_mul_div_10';
-  loadSlot(key);
+// Initialize app
+const hasKid = initializeApp();
+
+// ============ NEW NAVIGATION FLOW ============
+
+// Slot creation temporary state
+let createState = {
+  ops: { add: true, sub: true, mul: true, div: true },
+  mode: 'answer',
+  numChoices: 4,
+  minNum: 0,
+  maxNum: 10
+};
+
+// Navigation helper functions
+function showScreen(screenId) {
+  // Hide all screens
+  ['intro-screen', 'kid-select-screen', 'kid-create-screen', 'slot-select-screen', 'slot-create-screen'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  if (screenId) {
+    const el = document.getElementById(screenId);
+    if (el) el.style.display = 'flex';
+  }
+}
+
+function goToKidSelect() {
+  closeMenu();
+  closeParent();
+  showScreen('kid-select-screen');
+  renderKidSelection();
+}
+
+function goToKidCreate() {
+  showScreen('kid-create-screen');
+  initKidCreation();
+}
+
+function goToSlotSelect() {
+  closeMenu();
+  closeParent();
+  showScreen('slot-select-screen');
+  renderSlotSelection();
+  // If no slots exist, auto-go to creation
+  if (getAllSlotKeys().length === 0) {
+    goToSlotCreate();
+  }
+}
+
+function goToSlotCreate() {
+  showScreen('slot-create-screen');
+  initSlotCreation();
+}
+
+function goToGame() {
+  showScreen(null); // hide all overlay screens
+  if (!currentKidId) {
+    goToKidSelect();
+    return;
+  }
+  updateUI();
+  presentProblem();
+}
+
+function initKidCreation() {
+  document.getElementById('kid-name-input').value = '';
+  document.getElementById('kid-birth-year-input').value = 2016;
+  document.getElementById('kid-baserate-input').value = '5.00';
+  updateKidAge();
+  renderKidMultipliers();
+  updateKidCreateButton();
+}
+
+function initSlotCreation() {
+  createState = {
+    ops: { add: true, sub: true, mul: true, div: true },
+    mode: 'answer',
+    numChoices: 4,
+    minNum: 0,
+    maxNum: 10
+  };
+  renderSlotCreation();
+}
+
+function renderKidSelection() {
+  const container = document.getElementById('kid-cards-container');
+  const kidIds = getAllKidIds();
+
+  if (kidIds.length === 0) {
+    goToKidCreate();
+    return;
+  }
+
+  container.innerHTML = kidIds.map(kidId => {
+    try {
+      const kid = loadKid(kidId);
+      if (!kid) return '';
+      const age = Math.floor((Date.now() - new Date(kid.birthYear, 0, 1)) / (365.25 * 24 * 60 * 60 * 1000));
+      const earnings = getTotalEarnings(kidId);
+      const slotCount = getAllSlotKeys(kidId).length;
+      const isCurrent = kidId === currentKidId;
+      return `<div class="slot-card ${isCurrent?'active':''}" data-kid-id="${kidId}" style="cursor:pointer;margin:8px 0">
+        <div class="slot-ops" style="font-size:18px">${kid.name}</div>
+        <div class="slot-range">Age: ${age} · ${slotCount} slots</div>
+        <div class="slot-info">
+          <span style="color:var(--fg-dim);font-size:14px">Created: ${new Date(kid.createdAt).toLocaleDateString()}</span>
+          <span class="slot-earnings">${formatMoney(earnings)}</span>
+        </div>
+      </div>`;
+    } catch(e) { return ''; }
+  }).join('');
+
+  // Add click handlers
+  container.querySelectorAll('.slot-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const kidId = card.dataset.kidId;
+      if (loadKid(kidId)) {
+        goToSlotSelect();
+      }
+    });
+  });
+}
+
+function renderSlotSelection() {
+  if (!currentKidId || !CFG) return;
+  
+  // Update title and earnings
+  const titleEl = document.getElementById('slot-select-title');
+  if (titleEl) titleEl.textContent = `${CFG.name}'s Slots`;
+  
+  const totalEarnings = getTotalEarnings();
+  document.getElementById('total-earnings-display').textContent = formatMoney(totalEarnings);
+  
+  // Render slot cards
+  const container = document.getElementById('slot-cards-container');
+  const keys = getAllSlotKeys();
+  const opSymbols = { add: '+', sub: '−', mul: '×', div: '÷' };
+
+  if (keys.length === 0) {
+    container.innerHTML = '<div style="padding:20px;color:var(--fg-dim);text-align:center">No slots yet. Create your first slot!</div>';
+    return;
+  }
+
+  container.innerHTML = keys.map(key => {
+    try {
+      const raw = localStorage.getItem('arithmetyx_kid_' + currentKidId + '_slot_' + key);
+      if (!raw) return '';
+      const slot = JSON.parse(raw);
+      const isCurrent = key === CFG.currentSlotKey;
+      const ops = Object.entries(slot.ops).filter(([,v])=>v).map(([k])=>opSymbols[k]||k).join(' ');
+      const slotMin = slot.minNum || 0;
+      const allProbs = enumerateSlotProblems(slot.ops, slotMin, slot.maxNum);
+      const th = getAgeThresholds(getAge());
+      let mc = 0;
+      for (const p of allProbs) {
+        const d = slot.problems[p.key];
+        if (d && d.correct >= 2 && d.lastCorrect && (d.lastTime||99999) < th.masterySpeed*1000) mc++;
+      }
+      const mPct = allProbs.length > 0 ? Math.round(mc / allProbs.length * 100) : 0;
+      const slotAvgRate = (slot.playTimeMs > 0) ? ((slot.slotEarnings||0) / slot.playTimeMs) * 3600000 : 0;
+      return `<div class="slot-card ${isCurrent?'active':''}" data-slot-key="${key}" style="cursor:pointer;margin:8px 0">
+        <div class="slot-ops">${ops}</div>
+        <div class="slot-range">Range: ${slotMin}-${slot.maxNum} · Mode: ${slot.mode} · ${slot.numChoices} choices</div>
+        <div class="slot-range" style="font-size:14px">${slot.totalCorrect||0} correct · Best streak: ${slot.bestStreak||0}</div>
+        <div class="slot-mastery"><div class="slot-mastery-fill" style="width:${mPct}%"></div></div>
+        <div class="slot-info">
+          <span style="color:var(--fg-dim);font-size:14px">Mastery: ${mPct}%</span>
+          <span class="slot-earnings">${formatMoney(slot.slotEarnings||0)} · $${slotAvgRate.toFixed(2)}/hr</span>
+        </div>
+      </div>`;
+    } catch(e) { return ''; }
+  }).join('');
+
+  // Add click handlers to slot cards
+  container.querySelectorAll('.slot-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const key = card.dataset.slotKey;
+      saveSlot(); // save current slot first
+      loadSlot(key); // load clicked slot
+      goToGame();
+      showSlotNote('Loaded slot: ' + key);
+    });
+  });
+}
+
+function renderSlotCreation() {
+  // Update operation toggles
+  document.getElementById('create-op-add').classList.toggle('on', createState.ops.add);
+  document.getElementById('create-op-sub').classList.toggle('on', createState.ops.sub);
+  document.getElementById('create-op-mul').classList.toggle('on', createState.ops.mul);
+  document.getElementById('create-op-div').classList.toggle('on', createState.ops.div);
+  
+  // Update mode buttons
+  document.getElementById('create-mode-answer').classList.toggle('active', createState.mode === 'answer');
+  document.getElementById('create-mode-question').classList.toggle('active', createState.mode === 'question');
+  
+  // Update ranges
+  document.getElementById('create-choices-range').value = createState.numChoices;
+  document.getElementById('create-choices-val').textContent = createState.numChoices;
+  document.getElementById('create-minnum-range').value = createState.minNum;
+  document.getElementById('create-minnum-val').textContent = createState.minNum;
+  document.getElementById('create-maxnum-range').value = createState.maxNum;
+  document.getElementById('create-maxnum-val').textContent = createState.maxNum;
+  
+  // Update preview
+  const previewKey = getSlotKey(createState.ops, createState.minNum, createState.maxNum);
+  document.getElementById('slot-key-preview').textContent = previewKey;
+}
+
+function renderKidMultipliers() {
+  const container = document.getElementById('kid-mult-ranges-container');
+  const MULT_LABELS = {
+    opsAvg: 'Ops Avg',
+    additionalOps: 'Additional Ops',
+    range: 'Range',
+    age: 'Age',
+    speed: 'Speed',
+    height: 'Height',
+    questionMode: 'Question Mode',
+    choices: 'Choices'
+  };
+  
+  container.innerHTML = '';
+  for (const key in DEFAULT_KID_PROFILE.multipliers) {
+    const r = DEFAULT_KID_PROFILE.multipliers[key];
+    const row = document.createElement('div');
+    row.className = 'mult-row';
+    row.innerHTML = `<label>${MULT_LABELS[key] || key}</label>
+      <input type="number" class="num-input" data-mult="${key}" data-side="min" value="${r.min}" min="0" max="500" step="1">
+      <span class="mult-dash">% —</span>
+      <input type="number" class="num-input" data-mult="${key}" data-side="max" value="${r.max}" min="0" max="500" step="1">
+      <span class="mult-dash">%</span>`;
+    container.appendChild(row);
+  }
+}
+
+function createKidFromForm() {
+  const name = document.getElementById('kid-name-input').value.trim();
+  const birthYear = parseInt(document.getElementById('kid-birth-year-input').value);
+  const baseRate = parseFloat(document.getElementById('kid-baserate-input').value);
+  
+  if (!name || !birthYear) return;
+  
+  const kidId = createKid(name, birthYear);
+  const kidProfile = loadKid(kidId);
+  if (kidProfile) {
+    kidProfile.baseRate = baseRate;
+    // Copy multiplier settings from form
+    const multContainer = document.getElementById('kid-mult-ranges-container');
+    multContainer.querySelectorAll('input[data-mult]').forEach(inp => {
+      const field = inp.dataset.mult;
+      const side = inp.dataset.side;
+      const value = Math.max(0, Math.min(500, parseInt(inp.value) || 0));
+      kidProfile.multipliers[field][side] = value;
+    });
+    saveKid();
+    goToSlotSelect();
+  }
+}
+
+function createSlotFromState() {
+  // Create the actual slot
+  saveSlot(); // save current slot first
+  switchSlot(createState.ops, createState.minNum, createState.maxNum);
+  // Set the mode and choices (not part of slot key)
+  S.mode = createState.mode;
+  S.numChoices = createState.numChoices;
+  saveSlot();
+  goToGame();
+  showSlotNote('Created new slot!');
 }
 
 function switchSlot(ops, minNum, maxNum) {
   saveSlot();
   const key = getSlotKey(ops, minNum, maxNum);
-  const isNew = !localStorage.getItem('arithmetyx_slot_' + key);
+  const isNew = !localStorage.getItem('arithmetyx_kid_' + currentKidId + '_slot_' + key);
   loadSlot(key);
   showSlotNote(isNew ? 'Created new slot: ' + key : 'Switched to slot: ' + key);
 }
@@ -667,6 +1167,19 @@ function showSlotNote(text) {
   el.textContent = text;
   el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+function updateKidAge() {
+  const birthYear = parseInt(document.getElementById('kid-birth-year-input').value);
+  const age = Math.floor((Date.now() - new Date(birthYear, 0, 1)) / (365.25 * 24 * 60 * 60 * 1000));
+  document.getElementById('kid-age-display').textContent = `Age: ${age}`;
+}
+
+function updateKidCreateButton() {
+  const name = document.getElementById('kid-name-input').value.trim();
+  const birthYear = parseInt(document.getElementById('kid-birth-year-input').value);
+  const btn = document.getElementById('kid-create-confirm');
+  btn.disabled = !name || !birthYear || birthYear < 2005 || birthYear > 2024;
 }
 
 // ============ VIVIDNESS ============
@@ -729,13 +1242,12 @@ let idleTimer = null;
 let problemShownAt = 0;
 let lastActiveAt = Date.now();
 let menuOpen = false;
-let slotsOpen = false;
 let timeDisplayInterval = null;
 
 function updateIdleIndicator() {
   const el = document.getElementById('idle-indicator');
   if (!el) return;
-  if (menuOpen || slotsOpen) {
+  if (menuOpen || parentOpen) {
     el.textContent = '⏸ MENU';
     el.style.color = '#c9a84c';
   } else if (isIdle) {
@@ -1273,7 +1785,7 @@ function generateDistractors(correct, count, p) {
 }
 
 function trackTimeOnAnswer() {
-  if (!problemShownAt || menuOpen || slotsOpen) return;
+  if (!problemShownAt || menuOpen || parentOpen) return;
   const elapsed = Date.now() - problemShownAt;
   if (elapsed > 30000) {
     S.playTimeMs = (S.playTimeMs || 0) + 30000;
@@ -1558,23 +2070,14 @@ function closeMenu() {
   updateIdleIndicator();
   document.getElementById('menu-overlay').classList.remove('open');
   saveSlot();
-  saveConfig();
-  presentProblem();
+  saveKid();
+  if (currentKidId) presentProblem();
 }
 
 function renderMenu() {
-  document.querySelectorAll('.toggle[data-op]').forEach(el => {
-    el.classList.toggle('on', S.ops[el.dataset.op]);
-  });
-  document.querySelectorAll('.mode-btn').forEach(el => {
-    if (el.dataset.mode) el.classList.toggle('active', el.dataset.mode === S.mode);
-  });
-  document.getElementById('choices-range').value = S.numChoices;
-  document.getElementById('choices-val').textContent = S.numChoices;
-  document.getElementById('minnum-range').value = S.minNum || 0;
-  document.getElementById('minnum-val').textContent = S.minNum || 0;
-  document.getElementById('maxnum-range').value = S.maxNum;
-  document.getElementById('maxnum-val').textContent = S.maxNum;
+  if (!CFG) return;
+  
+  // Operation toggles, mode buttons, choices and ranges removed - now in slot creation
   document.getElementById('toggle-sfx').classList.toggle('on', CFG.sfxEnabled);
   document.getElementById('toggle-music').classList.toggle('on', CFG.musicEnabled);
   document.getElementById('volume-range').value = Math.round(CFG.volume * 100);
@@ -1599,6 +2102,8 @@ const BOTTOM_COLORS = ['#4a4550','#5a3a28','#2a3a5a','#2a2025','#5a2020','#2a4a2
 
 function buildColorPresets(containerId, colors, configKey) {
   const container = document.getElementById(containerId);
+  if (!CFG || !container) return;
+  
   container.innerHTML = '';
   colors.forEach(c => {
     const swatch = document.createElement('div');
@@ -1606,7 +2111,7 @@ function buildColorPresets(containerId, colors, configKey) {
     swatch.style.background = c;
     swatch.addEventListener('click', () => {
       CFG.character[configKey] = c;
-      saveConfig();
+      saveKid();
       container.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
       swatch.classList.add('active');
       updateCharPreview();
@@ -1617,11 +2122,13 @@ function buildColorPresets(containerId, colors, configKey) {
 
 function buildTextPresets(containerId, configKey) {
   const container = document.getElementById(containerId);
+  if (!CFG || !container) return;
+  
   container.querySelectorAll('.mode-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.val === CFG.character[configKey]);
     btn.onclick = () => {
       CFG.character[configKey] = btn.dataset.val;
-      saveConfig();
+      saveKid();
       container.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       updateCharPreview();
@@ -1978,72 +2485,7 @@ function renderReportCard() {
   `;
 }
 
-// Slots overlay
-function openSlots() {
-  AudioEngine.playMenuOpen();
-  slotsOpen = true;
-  updateIdleIndicator();
-  document.getElementById('slots-overlay').classList.add('open');
-  renderSlotsList();
-}
-function closeSlots() {
-  AudioEngine.playMenuClose();
-  slotsOpen = false;
-  updateIdleIndicator();
-  document.getElementById('slots-overlay').classList.remove('open');
-}
-
-function renderSlotsList() {
-  const list = document.getElementById('slots-list');
-  const keys = getAllSlotKeys();
-  const opSymbols = { add: '+', sub: '−', mul: '×', div: '÷' };
-
-  if (keys.length === 0) {
-    list.innerHTML = '<div style="padding:20px;color:var(--fg-dim);text-align:center">No slots yet. Start playing!</div>';
-    return;
-  }
-
-  list.innerHTML = keys.map(key => {
-    try {
-      const raw = localStorage.getItem('arithmetyx_slot_' + key);
-      if (!raw) return '';
-      const slot = JSON.parse(raw);
-      const isCurrent = key === CFG.currentSlotKey;
-      const ops = Object.entries(slot.ops).filter(([,v])=>v).map(([k])=>opSymbols[k]||k).join(' ');
-      const slotMin = slot.minNum || 0;
-      const allProbs = enumerateSlotProblems(slot.ops, slotMin, slot.maxNum);
-      const th = getAgeThresholds(getAge());
-      let mc = 0;
-      for (const p of allProbs) {
-        const d = slot.problems[p.key];
-        if (d && d.correct >= 2 && d.lastCorrect && (d.lastTime||99999) < th.masterySpeed*1000) mc++;
-      }
-      const mPct = allProbs.length > 0 ? Math.round(mc / allProbs.length * 100) : 0;
-      const slotAvgRate = (slot.playTimeMs > 0) ? ((slot.slotEarnings||0) / slot.playTimeMs) * 3600000 : 0;
-      return `<div class="slot-card ${isCurrent?'active':''}" data-slot-key="${key}">
-        <div class="slot-ops">${ops}</div>
-        <div class="slot-range">Range: ${slotMin}-${slot.maxNum} · ${slot.totalCorrect||0} correct</div>
-        <div class="slot-mastery"><div class="slot-mastery-fill" style="width:${mPct}%"></div></div>
-        <div class="slot-info">
-          <span style="color:var(--fg-dim);font-size:14px">Mastery: ${mPct}%</span>
-          <span class="slot-earnings">${formatMoney(slot.slotEarnings||0)} · $${slotAvgRate.toFixed(2)}/hr</span>
-        </div>
-      </div>`;
-    } catch(e) { return ''; }
-  }).join('');
-
-  list.querySelectorAll('.slot-card').forEach(card => {
-    card.addEventListener('click', () => {
-      const key = card.dataset.slotKey;
-      saveSlot();
-      loadSlot(key);
-      closeSlots();
-      updateUI();
-      presentProblem();
-      showSlotNote('Switched to slot: ' + key);
-    });
-  });
-}
+// Old slots overlay removed - now using slot-select-screen
 
 // ============ PARENT CONFIG ============
 let parentOpen = false;
@@ -2060,7 +2502,7 @@ function closeParent() {
   parentOpen = false;
   updateIdleIndicator();
   document.getElementById('parent-overlay').classList.remove('open');
-  saveConfig();
+  saveKid();
 }
 
 const MULT_LABELS = {
@@ -2075,6 +2517,11 @@ const MULT_LABELS = {
 };
 
 function renderParentMenu() {
+  if (!CFG) return;
+  
+  // Update kid name display
+  document.getElementById('parent-kid-name').textContent = `Player: ${CFG.name || 'Unknown'}`;
+  
   document.getElementById('birth-year-input').value = CFG.birthYear;
   document.getElementById('age-display').textContent = 'Age: ' + getAge();
   document.getElementById('baserate-input').value = CFG.baseRate.toFixed(2);
@@ -2109,7 +2556,7 @@ function renderParentMenu() {
         if (!CFG.multiplierLog) CFG.multiplierLog = [];
         CFG.multiplierLog.push({ date: new Date().toISOString(), field, from, to });
         if (CFG.multiplierLog.length > 50) CFG.multiplierLog = CFG.multiplierLog.slice(-50);
-        saveConfig();
+        saveKid();
         renderMultLog();
       }
     });
@@ -2138,6 +2585,7 @@ function renderMultLog() {
 }
 
 document.getElementById('baserate-input').addEventListener('blur', (e) => {
+  if (!CFG) return;
   const oldRate = CFG.baseRate;
   const newRate = Math.max(0.50, Math.min(50, parseFloat(e.target.value) || 5.00));
   e.target.value = newRate.toFixed(2);
@@ -2146,7 +2594,7 @@ document.getElementById('baserate-input').addEventListener('blur', (e) => {
     if (!CFG.multiplierLog) CFG.multiplierLog = [];
     CFG.multiplierLog.push({ date: new Date().toISOString(), field: 'baseRate', from: oldRate.toFixed(2), to: newRate.toFixed(2) });
     if (CFG.multiplierLog.length > 50) CFG.multiplierLog = CFG.multiplierLog.slice(-50);
-    saveConfig();
+    saveKid();
     renderMultLog();
   }
 });
@@ -2155,99 +2603,56 @@ document.getElementById('baserate-input').addEventListener('blur', (e) => {
 document.getElementById('menu-open-btn').addEventListener('click', openMenu);
 document.getElementById('menu-close-btn').addEventListener('click', closeMenu);
 document.getElementById('menu-close-btn2').addEventListener('click', closeMenu);
-document.getElementById('slots-open-btn').addEventListener('click', openSlots);
-document.getElementById('slots-close-btn').addEventListener('click', closeSlots);
 document.getElementById('parent-open-btn').addEventListener('click', openParent);
 document.getElementById('parent-close-btn').addEventListener('click', closeParent);
 document.getElementById('parent-close-btn2').addEventListener('click', closeParent);
-document.getElementById('new-slot-btn').addEventListener('click', () => {
-  closeSlots();
-  openMenu();
-});
 
-document.querySelectorAll('.toggle[data-op]').forEach(el => {
-  el.addEventListener('click', () => {
-    const op = el.dataset.op;
-    const newOps = { ...S.ops };
-    newOps[op] = !newOps[op];
-    if (!Object.values(newOps).some(v => v)) newOps[op] = true;
-    el.classList.toggle('on', newOps[op]);
-    switchSlot(newOps, S.minNum || 0, S.maxNum);
-    renderMenu();
-  });
-});
-
-document.querySelectorAll('.mode-btn[data-mode]').forEach(el => {
-  el.addEventListener('click', () => {
-    S.mode = el.dataset.mode;
-    document.querySelectorAll('.mode-btn[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === S.mode));
-    saveSlot();
-  });
-});
-
-document.getElementById('choices-range').addEventListener('input', (e) => {
-  S.numChoices = parseInt(e.target.value);
-  document.getElementById('choices-val').textContent = S.numChoices;
-  saveSlot();
-});
-
-document.getElementById('minnum-range').addEventListener('input', (e) => {
-  let newMin = parseInt(e.target.value);
-  if (newMin >= S.maxNum) newMin = S.maxNum - 1;
-  document.getElementById('minnum-val').textContent = newMin;
-  e.target.value = newMin;
-  switchSlot(S.ops, newMin, S.maxNum);
-  renderMenu();
-});
-
-document.getElementById('maxnum-range').addEventListener('input', (e) => {
-  let newMax = parseInt(e.target.value);
-  const curMin = S.minNum || 0;
-  if (newMax <= curMin) newMax = curMin + 1;
-  document.getElementById('maxnum-val').textContent = newMax;
-  e.target.value = newMax;
-  switchSlot(S.ops, curMin, newMax);
-  renderMenu();
-});
+// Operation toggles, mode buttons, choices and range controls removed
+// These are now handled in the slot creation screen
 
 document.getElementById('birth-year-input').addEventListener('change', (e) => {
+  if (!CFG) return;
   CFG.birthYear = Math.max(2005, Math.min(2024, parseInt(e.target.value) || 2016));
   e.target.value = CFG.birthYear;
   document.getElementById('age-display').textContent = 'Age: ' + getAge();
-  saveConfig();
+  saveKid();
 });
 
 document.getElementById('toggle-sfx').addEventListener('click', function() {
+  if (!CFG) return;
   this.classList.toggle('on');
   CFG.sfxEnabled = this.classList.contains('on');
   AudioEngine.setSfxEnabled(CFG.sfxEnabled);
-  saveConfig();
+  saveKid();
 });
 
 document.getElementById('toggle-music').addEventListener('click', function() {
+  if (!CFG) return;
   this.classList.toggle('on');
   CFG.musicEnabled = this.classList.contains('on');
   AudioEngine.setMusicEnabled(CFG.musicEnabled);
-  saveConfig();
+  saveKid();
 });
 
 document.getElementById('volume-range').addEventListener('input', (e) => {
+  if (!CFG) return;
   const v = parseInt(e.target.value);
   document.getElementById('volume-val').textContent = v;
   CFG.volume = v / 100;
   AudioEngine.setVolume(CFG.volume);
-  saveConfig();
+  saveKid();
 });
 
 // Vividness controls
 ['bg','base','info','fg'].forEach(key => {
   const cfgKey = {bg:'background',base:'base',info:'info',fg:'foreground'}[key];
   document.getElementById(`vivid-${key}-range`).addEventListener('input', (e) => {
+    if (!CFG) return;
     const v = parseInt(e.target.value);
     document.getElementById(`vivid-${key}-val`).textContent = v + '%';
     CFG.vividness[cfgKey] = v;
     updateVividnessCSS();
-    saveConfig();
+    saveKid();
   });
 });
 
@@ -2272,25 +2677,35 @@ document.getElementById('reset-slot-btn').addEventListener('click', () => {
 });
 
 document.getElementById('reset-btn').addEventListener('click', () => {
-  if (confirm('Destroy ALL progress across ALL slots? This cannot be undone.')) {
+  if (!currentKidId || !CFG) return;
+  
+  if (confirm(`Reset ALL progress for ${CFG.name}? This will delete all slots and restart their progress. This cannot be undone.`)) {
     const keys = getAllSlotKeys();
-    for (const k of keys) localStorage.removeItem('arithmetyx_slot_' + k);
-    localStorage.removeItem('arithmetyx_config');
-    CFG = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
-    saveConfig();
+    for (const k of keys) {
+      try { localStorage.removeItem('arithmetyx_kid_' + currentKidId + '_slot_' + k); } catch(e){}
+    }
+    
+    // Reset the kid profile but keep basic info
+    const resetProfile = JSON.parse(JSON.stringify(DEFAULT_KID_PROFILE));
+    resetProfile.id = CFG.id;
+    resetProfile.name = CFG.name;
+    resetProfile.birthYear = CFG.birthYear;
+    resetProfile.createdAt = CFG.createdAt;
+    
+    // Copy current rates and multipliers to preserve parent settings
+    resetProfile.baseRate = CFG.baseRate;
+    resetProfile.multipliers = JSON.parse(JSON.stringify(CFG.multipliers));
+    resetProfile.multiplierLog = CFG.multiplierLog || [];
+    
+    CFG = resetProfile;
+    saveKid();
+    
     const key = 'add_sub_mul_div_10';
     loadSlot(key);
-    renderMenu();
-    renderHardList();
+    renderParentMenu();
     updateUI();
     playerY = 0;
     targetPlayerY = 0;
-    // Close parent overlay and return to intro screen
-    document.getElementById('parent-overlay').classList.remove('open');
-    document.getElementById('intro-screen').style.display = '';
-    document.getElementById('intro-screen').querySelector('.tagline').textContent =
-      'In a world where numbers are all that remain, climb the infinite tower. Every wrong answer sends you plummeting. There is no mercy — only arithmetic.';
-    document.getElementById('start-btn').textContent = 'BEGIN DESCENT';
   }
 });
 
@@ -2904,20 +3319,120 @@ const AudioEngine = (() => {
 // ============ INTRO / START ============
 updateVividnessCSS();
 
+// ============ EVENT LISTENERS ============
+
+// Title screen
 document.getElementById('start-btn').addEventListener('click', () => {
   AudioEngine.init();
   AudioEngine.startMusic();
   AudioEngine.playClick();
-  document.getElementById('intro-screen').style.display = 'none';
-  resetIdleTimer();
-  updateUI();
-  presentProblem();
+  
+  if (hasKid) {
+    goToSlotSelect();
+  } else {
+    goToKidSelect();
+  }
 });
 
-if (S.totalCorrect > 0) {
+// Make title clickable to go to slots
+document.getElementById('title-link').addEventListener('click', () => {
+  if (currentKidId) {
+    goToSlotSelect();
+  } else {
+    goToKidSelect();
+  }
+});
+
+// Kid Select Screen
+document.getElementById('new-kid-btn').addEventListener('click', goToKidCreate);
+
+// Kid Create Screen
+document.getElementById('kid-create-back').addEventListener('click', goToKidSelect);
+document.getElementById('kid-create-confirm').addEventListener('click', createKidFromForm);
+
+document.getElementById('kid-name-input').addEventListener('input', updateKidCreateButton);
+document.getElementById('kid-birth-year-input').addEventListener('input', () => {
+  updateKidAge();
+  updateKidCreateButton();
+});
+
+// Slot Select Screen
+document.getElementById('switch-player-btn').addEventListener('click', goToKidSelect);
+document.getElementById('new-slot-btn-main').addEventListener('click', goToSlotCreate);
+
+// Slot Create Screen
+document.getElementById('slot-create-back').addEventListener('click', goToSlotSelect);
+document.getElementById('slot-create-confirm').addEventListener('click', createSlotFromState);
+
+// Menu navigation
+document.getElementById('back-to-slots-btn').addEventListener('click', () => {
+  closeMenu();
+  goToSlotSelect();
+});
+document.getElementById('switch-player-btn-menu').addEventListener('click', () => {
+  closeMenu();
+  goToKidSelect();
+});
+
+// Parent menu - delete player
+document.getElementById('delete-player-btn').addEventListener('click', () => {
+  if (confirm(`Delete ${CFG ? CFG.name : 'this player'} and all their progress? This cannot be undone.`)) {
+    const kidToDelete = currentKidId;
+    deleteKid(kidToDelete);
+    closeParent();
+    goToKidSelect();
+  }
+});
+
+// Slot creation controls
+['add', 'sub', 'mul', 'div'].forEach(op => {
+  document.getElementById('create-op-' + op).addEventListener('click', function() {
+    const current = createState.ops[op];
+    createState.ops[op] = !current;
+    // Ensure at least one operation is enabled
+    const anyEnabled = Object.values(createState.ops).some(v => v);
+    if (!anyEnabled) createState.ops[op] = true;
+    renderSlotCreation();
+  });
+});
+
+document.getElementById('create-mode-answer').addEventListener('click', () => {
+  createState.mode = 'answer';
+  renderSlotCreation();
+});
+document.getElementById('create-mode-question').addEventListener('click', () => {
+  createState.mode = 'question';
+  renderSlotCreation();
+});
+
+document.getElementById('create-choices-range').addEventListener('input', (e) => {
+  createState.numChoices = parseInt(e.target.value);
+  renderSlotCreation();
+});
+
+document.getElementById('create-minnum-range').addEventListener('input', (e) => {
+  let newMin = parseInt(e.target.value);
+  if (newMin >= createState.maxNum) newMin = createState.maxNum - 1;
+  createState.minNum = newMin;
+  e.target.value = newMin;
+  renderSlotCreation();
+});
+
+document.getElementById('create-maxnum-range').addEventListener('input', (e) => {
+  let newMax = parseInt(e.target.value);
+  if (newMax <= createState.minNum) newMax = createState.minNum + 1;
+  createState.maxNum = newMax;
+  e.target.value = newMax;
+  renderSlotCreation();
+});
+
+// Update startup behavior
+if (hasKid && S && S.totalCorrect > 0) {
   document.getElementById('intro-screen').querySelector('.tagline').textContent =
     `You've answered ${S.totalCorrect} problems. Height: ${S.height}. The tower awaits.`;
   document.getElementById('start-btn').textContent = 'RESUME';
+} else if (hasKid) {
+  document.getElementById('start-btn').textContent = 'CONTINUE';
 }
 
 requestAnimationFrame(render);
