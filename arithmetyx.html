@@ -2304,6 +2304,10 @@ function handleAnswer(val, btn) {
       S.last10pays.push({ pay: answerPay, timestamp: Date.now(), responseMs: elapsed });
       if (S.last10pays.length > 10) S.last10pays.shift();
 
+      // Store computed rates on S so they persist to localStorage
+      S.lastEffectiveRate = effectiveRate;
+      S.lastAvgRate = S.playTimeMs > 0 ? (S.slotEarnings / S.playTimeMs) * 3600000 : 0;
+
       // Store last answer breakdown for popup
       lastAnswerBreakdown = {
         problem: `${currentProblem.a} ${currentProblem.op} ${currentProblem.b}`,
@@ -2496,8 +2500,8 @@ function updateUI() {
   document.getElementById('stat-correct').textContent = S.totalCorrect;
   document.getElementById('stat-wrong').textContent = S.totalWrong;
   document.getElementById('stat-money').textContent = formatMoney(getTotalEarnings());
-  const curRate = lastAnswerBreakdown ? lastAnswerBreakdown.effectiveRate : getCurrentRate();
-  const avgRate = getAvgRate();
+  const curRate = S.lastEffectiveRate || 0;
+  const avgRate = S.lastAvgRate || getAvgRate();
   const rateEl = document.getElementById('stat-rate');
   rateEl.textContent = '$' + curRate.toFixed(2) + '/hr';
   rateEl.style.color = curRate > avgRate && curRate > 0 ? '#3fb855' : '#8a8580';
@@ -2874,15 +2878,9 @@ function renderReportCard() {
   let rows = '';
   for (const key of allSlotKeys) {
     try {
-      // Use live S object for current slot, localStorage for others
-      let slot;
-      if (S && key === CFG.currentSlotKey) {
-        slot = S;
-      } else {
-        const raw = localStorage.getItem('arithmetyx_kid_' + currentKidId + '_slot_' + key);
-        if (!raw) continue;
-        slot = JSON.parse(raw);
-      }
+      const raw = localStorage.getItem('arithmetyx_kid_' + currentKidId + '_slot_' + key);
+      if (!raw) continue;
+      const slot = JSON.parse(raw);
       const allProbs = enumerateSlotProblems(slot.ops, slot.minNum, slot.maxNum);
       const th = getAgeThresholds(age);
       let mc = 0;
@@ -2897,20 +2895,8 @@ function renderReportCard() {
       totalPlayTime += slotPlay;
       totalIdleTime += slotIdle;
       const isCurrent = S && key === CFG.currentSlotKey;
-      let slotCurRate, slotAvgRate;
-      if (isCurrent) {
-        slotCurRate = lastAnswerBreakdown ? lastAnswerBreakdown.effectiveRate : getCurrentRate();
-        slotAvgRate = getAvgRate();
-      } else {
-        slotAvgRate = slotPlay > 0 ? ((slot.slotEarnings||0) / slotPlay) * 3600000 : 0;
-        const slotLast10 = slot.last10pays || [];
-        slotCurRate = 0;
-        if (slotLast10.length >= 1) {
-          const tp = slotLast10.reduce((s,p) => s + p.pay, 0);
-          const ts = slotLast10.reduce((s,p) => s + (p.responseMs || 3000) / 1000, 0);
-          if (ts > 0) slotCurRate = (tp / ts) * 3600;
-        }
-      }
+      const slotCurRate = slot.lastEffectiveRate || 0;
+      const slotAvgRate = slot.lastAvgRate || (slotPlay > 0 ? ((slot.slotEarnings||0) / slotPlay) * 3600000 : 0);
       rows += `<div style="padding:6px 0;border-bottom:1px solid rgba(200,192,184,0.05);${isCurrent?'color:var(--accent2)':''}">
         <strong>${key}</strong> — Mastery: ${Math.round(mPct*100)}%
         <br><span class="rpt-money">Earned: ${formatMoney(slot.slotEarnings||0)}</span> · Avg: $${slotAvgRate.toFixed(2)}/hr · Current: $${slotCurRate.toFixed(2)}/hr
