@@ -507,7 +507,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
       <h1 style="font-family:var(--font-display);font-size:clamp(20px,5vw,32px);color:var(--accent2);letter-spacing:3px;margin:0;text-shadow:0 0 20px rgba(184,48,48,0.6)" id="slot-select-title">Player's Slots</h1>
       <div style="font-size:16px;color:var(--fg);margin-top:4px">Total Earnings: <span id="total-earnings-display" style="color:var(--gold);font-family:var(--font-mono)">$0.0000</span></div>
     </div>
-    <button class="menu-btn" id="switch-player-btn">← SWITCH PLAYER</button>
+    <button class="menu-btn" id="back-to-title-btn">← BACK TO TITLE</button>
   </div>
   
   <div id="slot-cards-container" style="width:100%;max-width:500px;max-height:55vh;overflow-y:auto;margin-bottom:20px"></div>
@@ -643,8 +643,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
     <div id="report-card"></div>
 
     <h2>ACTIONS</h2>
-    <button class="menu-btn-big btn-close" id="back-to-slots-btn">BACK TO SLOTS</button>
-    <button class="menu-btn-big btn-close" id="switch-player-btn-menu">SWITCH PLAYER</button>
+    <button class="menu-btn-big btn-close" id="back-to-title-btn-menu">BACK TO TITLE</button>
     <button class="menu-btn-big btn-close" id="menu-close-btn2">BACK TO THE VOID</button>
   </div>
 </div>
@@ -3790,13 +3789,9 @@ document.getElementById('start-btn').addEventListener('click', () => {
   }
 });
 
-// Make title clickable to go to slots
+// Make title clickable - reload to title
 document.getElementById('title-link').addEventListener('click', () => {
-  if (currentKidId) {
-    goToSlotSelect();
-  } else {
-    goToKidSelect();
-  }
+  location.reload();
 });
 
 // Kid Select Screen
@@ -3813,7 +3808,7 @@ document.getElementById('kid-birth-year-input').addEventListener('input', () => 
 });
 
 // Slot Select Screen
-document.getElementById('switch-player-btn').addEventListener('click', goToKidSelect);
+document.getElementById('back-to-title-btn').addEventListener('click', () => location.reload());
 document.getElementById('new-slot-btn-main').addEventListener('click', goToSlotCreate);
 
 // Slot Create Screen
@@ -3821,13 +3816,9 @@ document.getElementById('slot-create-back').addEventListener('click', goToSlotSe
 document.getElementById('slot-create-confirm').addEventListener('click', createSlotFromState);
 
 // Menu navigation
-document.getElementById('back-to-slots-btn').addEventListener('click', () => {
+document.getElementById('back-to-title-btn-menu').addEventListener('click', () => {
   closeMenu();
-  goToSlotSelect();
-});
-document.getElementById('switch-player-btn-menu').addEventListener('click', () => {
-  closeMenu();
-  goToKidSelect();
+  location.reload();
 });
 
 // Parent menu - delete player
