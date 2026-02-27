@@ -2896,15 +2896,21 @@ function renderReportCard() {
       const slotIdle = slot.idleTimeMs || 0;
       totalPlayTime += slotPlay;
       totalIdleTime += slotIdle;
-      const slotAvgRate = slotPlay > 0 ? ((slot.slotEarnings||0) / slotPlay) * 3600000 : 0;
-      const slotLast10 = slot.last10pays || [];
-      let slotCurRate = 0;
-      if (slotLast10.length >= 2) {
-        const tp = slotLast10.reduce((s,p) => s + p.pay, 0);
-        const ts = (slotLast10[slotLast10.length-1].timestamp - slotLast10[0].timestamp) / 1000;
-        if (ts > 0) slotCurRate = (tp / ts) * 3600;
+      const isCurrent = S && key === CFG.currentSlotKey;
+      let slotCurRate, slotAvgRate;
+      if (isCurrent) {
+        slotCurRate = lastAnswerBreakdown ? lastAnswerBreakdown.effectiveRate : getCurrentRate();
+        slotAvgRate = getAvgRate();
+      } else {
+        slotAvgRate = slotPlay > 0 ? ((slot.slotEarnings||0) / slotPlay) * 3600000 : 0;
+        const slotLast10 = slot.last10pays || [];
+        slotCurRate = 0;
+        if (slotLast10.length >= 1) {
+          const tp = slotLast10.reduce((s,p) => s + p.pay, 0);
+          const ts = slotLast10.reduce((s,p) => s + (p.responseMs || 3000) / 1000, 0);
+          if (ts > 0) slotCurRate = (tp / ts) * 3600;
+        }
       }
-      const isCurrent = key === CFG.currentSlotKey;
       rows += `<div style="padding:6px 0;border-bottom:1px solid rgba(200,192,184,0.05);${isCurrent?'color:var(--accent2)':''}">
         <strong>${key}</strong> — Mastery: ${Math.round(mPct*100)}%
         <br><span class="rpt-money">Earned: ${formatMoney(slot.slotEarnings||0)}</span> · Avg: $${slotAvgRate.toFixed(2)}/hr · Current: $${slotCurRate.toFixed(2)}/hr
