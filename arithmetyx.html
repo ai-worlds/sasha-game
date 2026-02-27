@@ -301,6 +301,26 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
       <span style="color:var(--fg-dim);font-size:14px">/hr</span>
     </div>
 
+    <h3 style="font-family:var(--font-display);color:var(--gold);font-size:14px;margin:14px 0 8px">MIN RATE ($/HR)</h3>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+      <span style="color:var(--gold);font-size:16px">$</span>
+      <input type="number" min="0.50" max="50" step="0.50" value="0.50" class="num-input" id="kid-minrate-input" style="width:70px">
+      <span style="color:var(--fg-dim);font-size:14px">/hr</span>
+    </div>
+
+    <h3 style="font-family:var(--font-display);color:var(--gold);font-size:14px;margin:14px 0 8px">MAX RATE ($/HR)</h3>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+      <span style="color:var(--gold);font-size:16px">$</span>
+      <input type="number" min="1" max="500" step="0.50" value="100.00" class="num-input" id="kid-maxrate-input" style="width:70px">
+      <span style="color:var(--fg-dim);font-size:14px">/hr</span>
+    </div>
+
+    <h3 style="font-family:var(--font-display);color:var(--gold);font-size:14px;margin:14px 0 8px">IDLE TIMEOUT</h3>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+      <input type="number" min="5" max="120" step="1" value="10" class="num-input" id="kid-idletimeout-input" style="width:70px">
+      <span style="color:var(--fg-dim);font-size:14px">sec</span>
+    </div>
+
     <h3 style="font-family:var(--font-display);color:var(--gold);font-size:14px;margin:14px 0 8px">MULTIPLIER RANGES</h3>
     <div id="kid-mult-ranges-container"></div>
 
@@ -353,6 +373,32 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
         <span style="color:var(--gold);font-size:16px">$</span>
         <input type="number" min="0.50" max="50" step="0.50" value="5.00" class="num-input" id="baserate-input" style="width:70px">
         <span style="color:var(--fg-dim);font-size:14px">/hr</span>
+      </div>
+    </div>
+
+    <div class="menu-row">
+      <label>Min Rate ($/hr)</label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="color:var(--gold);font-size:16px">$</span>
+        <input type="number" min="0.50" max="50" step="0.50" value="0.50" class="num-input" id="minrate-input" style="width:70px">
+        <span style="color:var(--fg-dim);font-size:14px">/hr</span>
+      </div>
+    </div>
+
+    <div class="menu-row">
+      <label>Max Rate ($/hr)</label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="color:var(--gold);font-size:16px">$</span>
+        <input type="number" min="1" max="500" step="0.50" value="100.00" class="num-input" id="maxrate-input" style="width:70px">
+        <span style="color:var(--fg-dim);font-size:14px">/hr</span>
+      </div>
+    </div>
+
+    <div class="menu-row">
+      <label>Idle Timeout</label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="number" min="5" max="120" step="1" value="10" class="num-input" id="idletimeout-input" style="width:70px">
+        <span style="color:var(--fg-dim);font-size:14px">sec</span>
       </div>
     </div>
 
@@ -550,6 +596,9 @@ const DEFAULT_KID_PROFILE = {
   birthYear: 2016,
   birthYearSet: false,
   baseRate: 5.00,
+  minRate: 0.50,
+  maxRate: 100.00,
+  idleTimeoutSec: 10,
   multipliers: {
     opsAvg:        { min: 100, max: 150 },
     additionalOps: { min: 100, max: 120 },
@@ -956,6 +1005,9 @@ function initKidCreation() {
   document.getElementById('kid-name-input').value = '';
   document.getElementById('kid-birth-year-input').value = 2016;
   document.getElementById('kid-baserate-input').value = '5.00';
+  document.getElementById('kid-minrate-input').value = '0.50';
+  document.getElementById('kid-maxrate-input').value = '100.00';
+  document.getElementById('kid-idletimeout-input').value = '10';
   updateKidAge();
   renderKidMultipliers();
   updateKidCreateButton();
@@ -1158,6 +1210,9 @@ function createKidFromForm() {
   const name = document.getElementById('kid-name-input').value.trim();
   const birthYear = parseInt(document.getElementById('kid-birth-year-input').value);
   const baseRate = parseFloat(document.getElementById('kid-baserate-input').value);
+  const minRate = parseFloat(document.getElementById('kid-minrate-input').value);
+  const maxRate = parseFloat(document.getElementById('kid-maxrate-input').value);
+  const idleTimeoutSec = parseInt(document.getElementById('kid-idletimeout-input').value);
   
   if (!name || !birthYear) return;
   
@@ -1165,6 +1220,9 @@ function createKidFromForm() {
   const kidProfile = loadKid(kidId);
   if (kidProfile) {
     kidProfile.baseRate = baseRate;
+    kidProfile.minRate = minRate;
+    kidProfile.maxRate = maxRate;
+    kidProfile.idleTimeoutSec = idleTimeoutSec;
     // Copy multiplier settings from form
     const multContainer = document.getElementById('kid-mult-ranges-container');
     multContainer.querySelectorAll('input[data-mult]').forEach(inp => {
@@ -1240,7 +1298,7 @@ function applyVividness(hexColor, vividnessPercent) {
       case b: h = ((r-g)/d + 4)/6; break;
     }
   }
-  const vf = vividnessPercent / 100;
+  const vf = vividnessPercent / 50;
   s = Math.min(1, Math.max(0, s * vf));
   l = Math.min(0.95, Math.max(0.05, l * (1 + (vf - 1) * 0.5)));
   // HSL to RGB
@@ -1305,7 +1363,7 @@ function resetIdleTimer() {
   lastActiveAt = Date.now();
   clearTimeout(idleTimer);
   if (wasIdle && S) AudioEngine.playVoice('idle_return', 10000);
-  idleTimer = setTimeout(() => { isIdle = true; updateIdleIndicator(); AudioEngine.playVoice('idle_start', 60000); }, 30000);
+  idleTimer = setTimeout(() => { isIdle = true; updateIdleIndicator(); AudioEngine.playVoice('idle_start', 60000); }, (CFG && CFG.idleTimeoutSec || 10) * 1000);
   updateIdleIndicator();
 }
 
@@ -1683,9 +1741,16 @@ function renderRatePopup() {
       <span class="bp-running">→ ${fmtR(r9)}</span>
     </div>
 
+    ${b.rateClamped ? `<div class="bp-divider"></div>
+    <div class="bp-row">
+      <span class="bp-label">${b.clampType === 'cap' ? '⬇ Max Cap' : '⬆ Min Floor'}</span>
+      <span class="bp-mult">${b.clampType === 'cap' ? '-' : '+'}${fmtR(b.clampAmount)}</span>
+      <span class="bp-running">→ ${fmtR(b.effectiveRate)}</span>
+    </div>` : ''}
+
     <div class="bp-total">
-      <span>YOUR RATE</span>
-      <span>${fmtR(r9)}</span>
+      <span>${b.rateClamped ? 'CLAMPED RATE' : 'YOUR RATE'}</span>
+      <span>${fmtR(b.effectiveRate)}</span>
     </div>
     <div class="bp-earned">
       <span>Earned</span>
@@ -1831,9 +1896,10 @@ function generateDistractors(correct, count, p) {
 function trackTimeOnAnswer() {
   if (!problemShownAt || menuOpen || parentOpen) return;
   const elapsed = Date.now() - problemShownAt;
-  if (elapsed > 30000) {
-    S.playTimeMs = (S.playTimeMs || 0) + 30000;
-    S.idleTimeMs = (S.idleTimeMs || 0) + (elapsed - 30000);
+  const idleTimeoutMs = (CFG && CFG.idleTimeoutSec || 10) * 1000;
+  if (elapsed > idleTimeoutMs) {
+    S.playTimeMs = (S.playTimeMs || 0) + idleTimeoutMs;
+    S.idleTimeMs = (S.idleTimeMs || 0) + (elapsed - idleTimeoutMs);
   } else {
     S.playTimeMs = (S.playTimeMs || 0) + elapsed;
   }
@@ -1924,8 +1990,29 @@ function handleAnswer(val, btn) {
       const { digitBonus, digitParts } = getDigitBonus(currentProblem.a, currentProblem.op, currentProblem.b);
 
       const preSpeedRate = CFG.baseRate * opsAvgMult * additionalOpsMult * rangeMult * ageMult * heightMult * questionModeMult * choicesMult * digitBonus;
-      const effectiveRate = preSpeedRate * speedMult;
-      const answerPay = (expectedTimeSec / 3600) * preSpeedRate * speedMult;
+      let effectiveRate = preSpeedRate * speedMult;
+      
+      // Apply rate clamping
+      let rateClamped = false;
+      let clampType = null;
+      let clampAmount = 0;
+      const originalRate = effectiveRate;
+      const minRate = CFG.minRate || 0.50;
+      const maxRate = CFG.maxRate || 100.00;
+      
+      if (effectiveRate < minRate) {
+        clampAmount = minRate - effectiveRate;
+        effectiveRate = minRate;
+        rateClamped = true;
+        clampType = 'floor';
+      } else if (effectiveRate > maxRate) {
+        clampAmount = effectiveRate - maxRate;
+        effectiveRate = maxRate;
+        rateClamped = true;
+        clampType = 'cap';
+      }
+      
+      const answerPay = (expectedTimeSec / 3600) * effectiveRate;
 
       S.slotEarnings += answerPay;
       if (!S.last10pays) S.last10pays = [];
@@ -1946,7 +2033,9 @@ function handleAnswer(val, btn) {
         choicesMult, numChoices: S.numChoices,
         digitBonus, digitParts,
         effectiveRate, answerPay,
-        difficulty: probDiff
+        difficulty: probDiff,
+        originalRate, rateClamped, clampType, clampAmount,
+        minRate, maxRate
       };
     }
 
@@ -1972,10 +2061,21 @@ function handleAnswer(val, btn) {
 
     if (!S.bonusActive) {
       const zoneBefore = getZone(S.height).name;
+      const oldHeight = S.height;
       S.height++;
       if (S.height > S.maxHeight) S.maxHeight = S.height;
       const zoneAfter = getZone(S.height).name;
       if (zoneBefore !== zoneAfter) AudioEngine.playVoice('zone_advance');
+      
+      // Start jump animation for height increase
+      jumpAnim = {
+        active: true,
+        startY: oldHeight,
+        endY: S.height,
+        peakY: oldHeight + 1.5, // Peak above new position for nice arc
+        startTime: performance.now(),
+        duration: 450
+      };
     }
 
     showFeedback(true);
@@ -2076,7 +2176,7 @@ function updateUI() {
   document.getElementById('stat-correct').textContent = S.totalCorrect;
   document.getElementById('stat-wrong').textContent = S.totalWrong;
   document.getElementById('stat-money').textContent = formatMoney(getTotalEarnings());
-  const curRate = getCurrentRate();
+  const curRate = lastAnswerBreakdown ? lastAnswerBreakdown.effectiveRate : getCurrentRate();
   const avgRate = getAvgRate();
   const rateEl = document.getElementById('stat-rate');
   rateEl.textContent = '$' + curRate.toFixed(2) + '/hr';
@@ -2112,7 +2212,7 @@ function updateUI() {
 // ============ MENU ============
 function openMenu() {
   AudioEngine.playMenuOpen();
-  AudioEngine.playVoice('menu_open', 10000);
+  AudioEngine.playVoiceWithCooldown('menu_open', 10000);
   menuOpen = true;
   updateIdleIndicator();
   document.getElementById('menu-overlay').classList.add('open');
@@ -2583,6 +2683,9 @@ function renderParentMenu() {
   document.getElementById('birth-year-input').value = CFG.birthYear;
   document.getElementById('age-display').textContent = 'Age: ' + getAge();
   document.getElementById('baserate-input').value = CFG.baseRate.toFixed(2);
+  document.getElementById('minrate-input').value = (CFG.minRate || 0.50).toFixed(2);
+  document.getElementById('maxrate-input').value = (CFG.maxRate || 100.00).toFixed(2);
+  document.getElementById('idletimeout-input').value = CFG.idleTimeoutSec || 10;
 
   // Build multiplier range inputs
   const container = document.getElementById('mult-ranges-container');
@@ -2655,6 +2758,30 @@ document.getElementById('baserate-input').addEventListener('blur', (e) => {
     saveKid();
     renderMultLog();
   }
+});
+
+document.getElementById('minrate-input').addEventListener('blur', (e) => {
+  if (!CFG) return;
+  const newRate = Math.max(0.50, Math.min(50, parseFloat(e.target.value) || 0.50));
+  e.target.value = newRate.toFixed(2);
+  CFG.minRate = newRate;
+  saveKid();
+});
+
+document.getElementById('maxrate-input').addEventListener('blur', (e) => {
+  if (!CFG) return;
+  const newRate = Math.max(1, Math.min(500, parseFloat(e.target.value) || 100.00));
+  e.target.value = newRate.toFixed(2);
+  CFG.maxRate = newRate;
+  saveKid();
+});
+
+document.getElementById('idletimeout-input').addEventListener('blur', (e) => {
+  if (!CFG) return;
+  const newTimeout = Math.max(5, Math.min(120, parseInt(e.target.value) || 10));
+  e.target.value = newTimeout;
+  CFG.idleTimeoutSec = newTimeout;
+  saveKid();
 });
 
 // Menu events
@@ -2847,6 +2974,16 @@ let lastTime = 0;
 let frameCount = 0;
 let screenShake = 0;
 
+// Jump animation state
+let jumpAnim = {
+  active: false,
+  startY: 0,
+  endY: 0,
+  peakY: 0,
+  startTime: 0,
+  duration: 450
+};
+
 // Old drawCharacter wrapper — calls the new shared function on the main canvas ctx
 function drawCharacter(cx, cy, zone) {
   if (!CFG || !CFG.character) return;
@@ -2859,7 +2996,32 @@ function render(timestamp) {
   frameCount++;
 
   targetPlayerY = S ? S.height : 0;
-  playerY += (targetPlayerY - playerY) * Math.min(1, dt * 5);
+  
+  // Handle jump animation
+  if (jumpAnim.active) {
+    const elapsed = timestamp - jumpAnim.startTime;
+    const progress = Math.min(1, elapsed / jumpAnim.duration);
+    
+    if (progress >= 1) {
+      // Animation complete
+      jumpAnim.active = false;
+      playerY = jumpAnim.endY;
+    } else {
+      // Compute parabolic arc position
+      // Use quadratic bezier curve: start -> peak -> end
+      const t = progress;
+      const startY = jumpAnim.startY;
+      const peakY = jumpAnim.peakY;
+      const endY = jumpAnim.endY;
+      
+      // Parabolic interpolation: y = (1-t)²*start + 2*(1-t)*t*peak + t²*end
+      playerY = Math.pow(1-t, 2) * startY + 2 * (1-t) * t * peakY + t * t * endY;
+    }
+  } else {
+    // Normal smooth movement when not jumping
+    playerY += (targetPlayerY - playerY) * Math.min(1, dt * 5);
+  }
+  
   playerBob += dt * 3;
 
   const zone = getZone(playerY);
@@ -3085,6 +3247,10 @@ const AudioEngine = (() => {
     if (Math.random() > probability) return;
     const idx = Math.floor(Math.random() * count) + 1;
     playVoice(prefix + '_' + idx, cooldownMs || 3000);
+  }
+
+  function playVoiceWithCooldown(name, cooldownMs) {
+    playVoice(name, cooldownMs || 3000);
   }
 
   function setVolume(v) { volume = v; if (masterGain) masterGain.gain.value = v; }
@@ -3366,7 +3532,7 @@ const AudioEngine = (() => {
     init, setVolume, setMusicEnabled, setSfxEnabled,
     playCorrect, playWrong, playFall, playClick, playStreak,
     playVictory, playMenuOpen, playMenuClose, playShieldBreak, playShieldGain,
-    startMusic, stopMusic, playVoice, playRandomVoice,
+    startMusic, stopMusic, playVoice, playRandomVoice, playVoiceWithCooldown,
     get musicEnabled() { return musicEnabled; },
     get sfxEnabled() { return enabled; },
     get volume() { return volume; }
