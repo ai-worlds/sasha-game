@@ -200,6 +200,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
       <span>✗<span class="val" id="stat-wrong">0</span></span>
       <span>💰<span class="val" id="stat-money">$0.0000</span></span>
       <span>📈<span class="val" id="stat-rate">$0.00/hr</span></span>
+      <span>⌀<span class="val" id="stat-avgrate">$0.00/hr</span></span>
       <span>⏱<span class="val" id="stat-time">0:00</span></span>
     </div>
     <div class="top-btns">
@@ -218,6 +219,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
     <span class="height-val" id="height-display">HEIGHT: 0</span>
     <span id="shield-display" style="color:#4ad4d4;font-family:var(--font-display);font-size:13px">SHIELDS: 0</span>
     <span class="nerf-val" id="nerf-display">KARMA: 0</span>
+    <span id="idle-indicator" style="font-family:var(--font-display);font-size:12px;color:#3fb855;letter-spacing:1px">▶ PLAY</span>
   </div>
 
   <div id="feedback"><span class="fb-text"></span></div>
@@ -638,11 +640,27 @@ let menuOpen = false;
 let slotsOpen = false;
 let timeDisplayInterval = null;
 
+function updateIdleIndicator() {
+  const el = document.getElementById('idle-indicator');
+  if (!el) return;
+  if (menuOpen || slotsOpen) {
+    el.textContent = '⏸ MENU';
+    el.style.color = '#c9a84c';
+  } else if (isIdle) {
+    el.textContent = '⏸ IDLE';
+    el.style.color = '#d04040';
+  } else {
+    el.textContent = '▶ PLAY';
+    el.style.color = '#3fb855';
+  }
+}
+
 function resetIdleTimer() {
   isIdle = false;
   lastActiveAt = Date.now();
   clearTimeout(idleTimer);
-  idleTimer = setTimeout(() => { isIdle = true; }, 30000);
+  idleTimer = setTimeout(() => { isIdle = true; updateIdleIndicator(); }, 30000);
+  updateIdleIndicator();
 }
 
 function formatTime(ms) {
@@ -830,11 +848,12 @@ function formatMoney(amount) {
 
 function getCurrentRate() {
   const last10 = S.last10pays || [];
-  if (last10.length < 2) return 0;
+  if (last10.length < 1) return 0;
   const totalPay = last10.reduce((s, p) => s + p.pay, 0);
-  const timeSpan = (last10[last10.length-1].timestamp - last10[0].timestamp) / 1000;
-  if (timeSpan <= 0) return 0;
-  return (totalPay / timeSpan) * 3600;
+  // Use sum of actual response times (excludes idle gaps between problems)
+  const totalResponseSec = last10.reduce((s, p) => s + (p.responseMs || 3000) / 1000, 0);
+  if (totalResponseSec <= 0) return 0;
+  return (totalPay / totalResponseSec) * 3600;
 }
 
 function getAvgRate() {
@@ -1039,7 +1058,7 @@ function handleAnswer(val, btn) {
       const answerPay = (expectedTimeSec / 3600) * 20 * slotRateMult * speedMult * CFG.globalMoneyScaler;
       S.slotEarnings += answerPay;
       if (!S.last10pays) S.last10pays = [];
-      S.last10pays.push({ pay: answerPay, timestamp: Date.now() });
+      S.last10pays.push({ pay: answerPay, timestamp: Date.now(), responseMs: elapsed });
       if (S.last10pays.length > 10) S.last10pays.shift();
     }
 
@@ -1163,7 +1182,11 @@ function updateUI() {
   const rateEl = document.getElementById('stat-rate');
   rateEl.textContent = '$' + curRate.toFixed(2) + '/hr';
   rateEl.style.color = curRate > avgRate && curRate > 0 ? '#3fb855' : '#8a8580';
+  const avgRateEl = document.getElementById('stat-avgrate');
+  avgRateEl.textContent = '$' + avgRate.toFixed(2) + '/hr';
+  avgRateEl.style.color = '#8a8580';
   document.getElementById('stat-time').textContent = formatTime(S.playTimeMs || 0);
+  updateIdleIndicator();
   document.getElementById('height-display').textContent = `HEIGHT: ${S.height} / ${TARGET_HEIGHT}`;
   document.getElementById('nerf-display').textContent = `KARMA: ${S.karma}`;
   const shieldIcons = '●'.repeat(S.shields) + '○'.repeat(5 - S.shields);
@@ -1190,6 +1213,7 @@ function updateUI() {
 function openMenu() {
   AudioEngine.playMenuOpen();
   menuOpen = true;
+  updateIdleIndicator();
   document.getElementById('menu-overlay').classList.add('open');
   renderMenu();
   renderHardList();
@@ -1200,6 +1224,7 @@ function openMenu() {
 function closeMenu() {
   AudioEngine.playMenuClose();
   menuOpen = false;
+  updateIdleIndicator();
   document.getElementById('menu-overlay').classList.remove('open');
   saveSlot();
   saveConfig();
@@ -1625,12 +1650,14 @@ function renderReportCard() {
 function openSlots() {
   AudioEngine.playMenuOpen();
   slotsOpen = true;
+  updateIdleIndicator();
   document.getElementById('slots-overlay').classList.add('open');
   renderSlotsList();
 }
 function closeSlots() {
   AudioEngine.playMenuClose();
   slotsOpen = false;
+  updateIdleIndicator();
   document.getElementById('slots-overlay').classList.remove('open');
 }
 
