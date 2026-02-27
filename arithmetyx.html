@@ -192,6 +192,19 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 }
 
 /* Rate breakdown popup */
+#height-popup{position:fixed;bottom:52px;left:8px;z-index:90;background:rgba(12,12,18,0.96);
+  border:1px solid rgba(200,168,76,0.35);padding:14px;display:none;min-width:240px;max-width:340px;
+  border-radius:4px;font-family:var(--font-body);font-size:16px;color:var(--fg)}
+#height-popup.show{display:block}
+#height-popup .hp-title{font-family:var(--font-display);font-size:12px;color:var(--gold);
+  letter-spacing:2px;margin-bottom:8px;text-transform:uppercase}
+#height-popup .hp-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;
+  border-bottom:1px solid rgba(200,192,184,0.06)}
+#height-popup .hp-label{color:var(--fg-dim)}
+#height-popup .hp-val{color:var(--fg);font-family:var(--font-mono);font-size:15px}
+#height-popup .hp-result{font-family:var(--font-display);font-size:14px;color:var(--red-bright);
+  margin-top:8px;padding-top:6px;border-top:1px solid rgba(184,48,48,0.3)}
+#height-popup .hp-safe{color:var(--green-bright)}
 #rate-popup{position:fixed;top:52px;right:8px;z-index:90;background:rgba(12,12,18,0.96);
   border:1px solid rgba(210,64,64,0.4);border-radius:6px;padding:12px 14px;
   max-width:320px;min-width:240px;display:none;font-family:var(--font-body);
@@ -246,7 +259,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 
   <div id="progress-bar"><div id="progress-fill"></div></div>
   <div id="climb-info">
-    <span class="height-val" id="height-display">HEIGHT: 0</span>
+    <span class="height-val" id="height-display" style="cursor:pointer" onclick="toggleHeightPopup()">HEIGHT: 0</span>
     <span id="shield-display" style="color:#4ad4d4;font-family:var(--font-display);font-size:13px">SHIELDS: 0</span>
     <span class="nerf-val" id="nerf-display">KARMA: 0</span>
     <span id="idle-indicator" style="font-family:var(--font-display);font-size:12px;color:#3fb855;letter-spacing:1px">▶ PLAY</span>
@@ -260,6 +273,9 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 <!-- Rate Breakdown Popup -->
 <div id="rate-popup">
   <div id="rate-popup-content"></div>
+</div>
+<div id="height-popup">
+  <div id="height-popup-content"></div>
 </div>
 
 <!-- Intro -->
@@ -1771,8 +1787,68 @@ function toggleRatePopup() {
   }
 }
 
-// Close popup when clicking elsewhere
+let heightPopupVisible = false;
+function toggleHeightPopup() {
+  const popup = document.getElementById('height-popup');
+  heightPopupVisible = !heightPopupVisible;
+  if (heightPopupVisible) {
+    renderHeightPopup();
+    popup.classList.add('show');
+  } else {
+    popup.classList.remove('show');
+  }
+}
+
+function renderHeightPopup() {
+  if (!S) return;
+  const popup = document.getElementById('height-popup-content');
+  const floor = S.floor || 0;
+  const shields = S.shields || 0;
+  const karma = S.karma || 0;
+  const height = S.height;
+  const zone = getZone(height);
+
+  // Calculate what happens on wrong answer
+  let fallResult;
+  if (shields > 0) {
+    // Shield absorbs — no fall
+    fallResult = { shielded: true, fallDist: 0, newHeight: height, lostKarma: 0 };
+  } else {
+    // Falls to floor, loses 1 karma
+    const newHeight = Math.max(floor, 0);
+    fallResult = { shielded: false, fallDist: height - newHeight, newHeight, lostKarma: Math.min(1, karma) };
+  }
+
+  const newZone = getZone(fallResult.newHeight);
+
+  let html = `<div class="hp-title">FALL FORECAST</div>`;
+  html += `<div class="hp-row"><span class="hp-label">Current Height</span><span class="hp-val">${height}</span></div>`;
+  html += `<div class="hp-row"><span class="hp-label">Current Zone</span><span class="hp-val">${zone.name}</span></div>`;
+  html += `<div class="hp-row"><span class="hp-label">Floor</span><span class="hp-val">${floor}</span></div>`;
+  html += `<div class="hp-row"><span class="hp-label">Shields</span><span class="hp-val">${'●'.repeat(shields)}${'○'.repeat(5 - shields)} (${shields}/5)</span></div>`;
+  html += `<div class="hp-row"><span class="hp-label">Karma</span><span class="hp-val">${karma}</span></div>`;
+
+  if (fallResult.shielded) {
+    html += `<div class="hp-result hp-safe">🛡 Shield absorbs the fall — no height lost, no karma lost</div>`;
+  } else if (fallResult.fallDist === 0) {
+    html += `<div class="hp-result hp-safe">Already at floor — no fall possible</div>`;
+  } else {
+    html += `<div class="hp-result">💀 Fall: ${height} → ${fallResult.newHeight} (−${fallResult.fallDist} height)</div>`;
+    html += `<div class="hp-result">Zone: ${zone.name} → ${newZone.name}</div>`;
+    if (fallResult.lostKarma > 0) {
+      html += `<div class="hp-result">Karma: ${karma} → ${karma - fallResult.lostKarma} (−${fallResult.lostKarma})</div>`;
+    }
+  }
+
+  popup.innerHTML = html;
+}
+
+// Close popups when clicking elsewhere
 document.addEventListener('click', (e) => {
+  if (heightPopupVisible && !e.target.closest('#height-popup') && !e.target.closest('#height-display')) {
+    document.getElementById('height-popup').classList.remove('show');
+    heightPopupVisible = false;
+  }
   if (ratePopupVisible && !e.target.closest('#rate-popup') && !e.target.closest('#stat-rate') && !e.target.closest('#stat-avgrate')) {
     document.getElementById('rate-popup').classList.remove('show');
     ratePopupVisible = false;
@@ -2968,6 +3044,8 @@ function spawnParticle(zone) {
 
 let playerY = S ? S.height : 0;
 let targetPlayerY = S ? S.height : 0;
+let playerX = 0;
+let targetPlayerX = 0;
 let playerBob = 0;
 let cameraY = 0;
 let lastTime = 0;
@@ -3117,7 +3195,9 @@ function render(timestamp) {
 
   const currentPlat = getPlatform(Math.floor(playerY));
   const charScreenY = H - (playerY * platH - cameraY);
-  const charX = currentPlat.x * W + currentPlat.width * W * 0.5;
+  targetPlayerX = currentPlat.x * W + currentPlat.width * W * 0.5;
+  playerX += (targetPlayerX - playerX) * Math.min(1, dt * 8);
+  const charX = playerX;
   drawCharacter(charX, charScreenY - 10, zone);
 
   const particleRate = Math.max(1, Math.floor(4 - (zone.intensity || 0) * 3));
