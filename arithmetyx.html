@@ -394,6 +394,12 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
       <span style="color:var(--fg-dim);font-size:14px">sec</span>
     </div>
 
+    <h3 style="font-family:var(--font-display);color:var(--gold);font-size:14px;margin:14px 0 8px">DEFAULT EXPECTED TIME</h3>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+      <input type="number" min="1" max="30" step="0.5" value="3.5" class="num-input" id="kid-expectedtime-input" style="width:70px">
+      <span style="color:var(--fg-dim);font-size:14px">sec (for new problems)</span>
+    </div>
+
     <h3 style="font-family:var(--font-display);color:var(--gold);font-size:14px;margin:14px 0 8px">MULTIPLIER RANGES</h3>
     <div id="kid-mult-ranges-container"></div>
 
@@ -471,6 +477,14 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
       <label>Idle Timeout</label>
       <div style="display:flex;align-items:center;gap:6px">
         <input type="number" min="5" max="120" step="1" value="10" class="num-input" id="idletimeout-input" style="width:70px">
+        <span style="color:var(--fg-dim);font-size:14px">sec</span>
+      </div>
+    </div>
+
+    <div class="menu-row">
+      <label>Default Expected Time</label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="number" min="1" max="30" step="0.5" value="3.5" class="num-input" id="expectedtime-input" style="width:70px">
         <span style="color:var(--fg-dim);font-size:14px">sec</span>
       </div>
     </div>
@@ -670,6 +684,7 @@ const DEFAULT_KID_PROFILE = {
   baseRate: 20.00,
   minRate: 10.00,
   maxRate: 40.00,
+  defaultExpectedTimeSec: 3.5,
   idleTimeoutSec: 10,
   multipliers: {
     opsAvg:        { min: 100, max: 150 },
@@ -1083,6 +1098,7 @@ function initKidCreation() {
   document.getElementById('kid-minrate-input').value = '0.50';
   document.getElementById('kid-maxrate-input').value = '100.00';
   document.getElementById('kid-idletimeout-input').value = '10';
+  document.getElementById('kid-expectedtime-input').value = '3.5';
   updateKidAge();
   renderKidMultipliers();
   updateKidCreateButton();
@@ -1288,6 +1304,7 @@ function createKidFromForm() {
   const minRate = parseFloat(document.getElementById('kid-minrate-input').value);
   const maxRate = parseFloat(document.getElementById('kid-maxrate-input').value);
   const idleTimeoutSec = parseInt(document.getElementById('kid-idletimeout-input').value);
+  const defaultExpectedTimeSec = parseFloat(document.getElementById('kid-expectedtime-input').value) || 3.5;
   
   if (!name || !birthYear) return;
   
@@ -1298,6 +1315,7 @@ function createKidFromForm() {
     kidProfile.minRate = minRate;
     kidProfile.maxRate = maxRate;
     kidProfile.idleTimeoutSec = idleTimeoutSec;
+    kidProfile.defaultExpectedTimeSec = defaultExpectedTimeSec;
     // Copy multiplier settings from form
     const multContainer = document.getElementById('kid-mult-ranges-container');
     multContainer.querySelectorAll('input[data-mult]').forEach(inp => {
@@ -1591,8 +1609,9 @@ function getExpectedTime(problemDifficulty, age, pd) {
     // Lifetime average
     return pd.totalTimeMs / pd.correct / 1000;
   }
-  // No history yet — age-based default (difficulty is 1.0)
-  return 3.5 * getAgeSpeedFactor(age);
+  // No history yet — configurable default × age factor
+  const base = (CFG && CFG.defaultExpectedTimeSec) || 3.5;
+  return base * getAgeSpeedFactor(age);
 }
 
 // --- Multiplier chain functions ---
@@ -3062,6 +3081,7 @@ function renderParentMenu() {
   document.getElementById('minrate-input').value = (CFG.minRate || 10.00).toFixed(2);
   document.getElementById('maxrate-input').value = (CFG.maxRate || 40.00).toFixed(2);
   document.getElementById('idletimeout-input').value = CFG.idleTimeoutSec || 10;
+  document.getElementById('expectedtime-input').value = CFG.defaultExpectedTimeSec || 3.5;
 
   // Build multiplier range inputs
   const container = document.getElementById('mult-ranges-container');
@@ -3169,6 +3189,14 @@ document.getElementById('idletimeout-input').addEventListener('blur', (e) => {
   const newTimeout = Math.max(5, Math.min(120, parseInt(e.target.value) || 10));
   e.target.value = newTimeout;
   CFG.idleTimeoutSec = newTimeout;
+  saveKid();
+});
+
+document.getElementById('expectedtime-input').addEventListener('blur', (e) => {
+  if (!CFG) return;
+  const newVal = Math.max(1, Math.min(30, parseFloat(e.target.value) || 3.5));
+  e.target.value = newVal;
+  CFG.defaultExpectedTimeSec = newVal;
   saveKid();
 });
 
