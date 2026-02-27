@@ -1459,6 +1459,11 @@ function updateTimeDisplay() {
   const dsWasActive = S.deathSpiralCurrent > 0;
   if (S.deathSpiralCurrent > 0) { S.deathSpiralCurrent--; }
   if (dsWasActive && S.deathSpiralCurrent <= 0) { AudioEngine.playVoice('death_spiral_expire', 5000); }
+  // Refresh open popups every second so timers stay live
+  if (heightPopupVisible) renderHeightPopup();
+  if (shieldPopupVisible) renderShieldPopup();
+  if (karmaPopupVisible) renderKarmaPopup();
+  if (timePopupVisible) renderTimePopup();
 }
 
 // Add idle detection listeners
@@ -2867,9 +2872,15 @@ function renderReportCard() {
   let rows = '';
   for (const key of allSlotKeys) {
     try {
-      const raw = localStorage.getItem('arithmetyx_kid_' + currentKidId + '_slot_' + key);
-      if (!raw) continue;
-      const slot = JSON.parse(raw);
+      // Use live S object for current slot, localStorage for others
+      let slot;
+      if (S && key === CFG.currentSlotKey) {
+        slot = S;
+      } else {
+        const raw = localStorage.getItem('arithmetyx_kid_' + currentKidId + '_slot_' + key);
+        if (!raw) continue;
+        slot = JSON.parse(raw);
+      }
       const allProbs = enumerateSlotProblems(slot.ops, slot.minNum, slot.maxNum);
       const th = getAgeThresholds(age);
       let mc = 0;
