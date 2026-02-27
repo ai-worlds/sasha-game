@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<link rel="icon" href="data:,">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>ARITHMETYX — The Descent</title>
@@ -920,8 +921,8 @@ function goToKidCreate() {
 }
 
 function goToSlotSelect() {
-  closeMenu();
-  closeParent();
+  if (menuOpen) closeMenu();
+  if (parentOpen) closeParent();
   showScreen('slot-select-screen');
   renderSlotSelection();
   // If no slots exist, auto-go to creation
@@ -1830,6 +1831,7 @@ function trackTimeOnAnswer() {
 }
 
 function presentProblem() {
+  if (!S) return;
   if (S.bonusActive) {
     currentProblem = selectBonusProblem();
   } else {
@@ -2106,7 +2108,7 @@ function closeMenu() {
   document.getElementById('menu-overlay').classList.remove('open');
   saveSlot();
   saveKid();
-  if (currentKidId) presentProblem();
+  if (currentKidId && S) presentProblem();
 }
 
 function renderMenu() {
@@ -2361,7 +2363,7 @@ function drawCharacterOnCtx(c, cx, cy, zone, bob) {
   }
 
   // Shields
-  const shields = S.shields || 0;
+  const shields = (S && S.shields) || 0;
   if (shields > 0) {
     const orbitRadius = 22;
     const orbitSpeed = bob * 0.8;
@@ -2708,6 +2710,7 @@ document.getElementById('apply-karma-btn').addEventListener('click', () => {
 });
 
 function renderKarmaUI() {
+  if (!S) return;
   document.getElementById('menu-karma-val').textContent = S.karma;
   document.getElementById('menu-floor-val').textContent = S.floor || S.karma * 5;
   document.getElementById('karma-range').value = S.karma;
