@@ -1092,6 +1092,9 @@ function initializeApp() {
   return false; // No kid loaded
 }
 
+// Check integrity BEFORE initializeApp (which re-saves and heals hashes)
+const integrityFailed = checkAllIntegrity();
+
 // Initialize app
 const hasKid = initializeApp();
 
@@ -4054,8 +4057,8 @@ document.getElementById('start-btn').addEventListener('click', () => {
   AudioEngine.playClick();
   AudioEngine.playVoice('title_intro');
   
-  // Check integrity on entry
-  if (checkAllIntegrity()) {
+  // Check integrity (was checked before initializeApp healed hashes)
+  if (integrityFailed) {
     setTimeout(showHackerEasterEgg, 500);
     return;
   }
