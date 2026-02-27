@@ -288,6 +288,58 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
   </div>
 </div>
 
+<!-- Parent Config -->
+<div id="parent-overlay">
+  <div id="parent-content">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h2 style="margin:0;border:none;padding:0;font-family:var(--font-display);color:var(--accent2);font-size:18px;letter-spacing:2px">PARENT CONFIG</h2>
+      <button class="menu-btn" id="parent-close-btn">✕ CLOSE</button>
+    </div>
+
+    <h3>PLAYER</h3>
+    <div class="menu-row">
+      <label>Birth Year</label>
+      <div style="display:flex;align-items:center;gap:10px">
+        <input type="number" min="2005" max="2024" value="2016" class="num-input" id="birth-year-input">
+        <span style="color:var(--fg-dim);font-size:16px" id="age-display">Age: 10</span>
+      </div>
+    </div>
+
+    <h3>COMPENSATION</h3>
+    <div class="menu-row">
+      <label>Base Rate</label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="color:var(--gold);font-size:16px">$</span>
+        <input type="number" min="0.50" max="50" step="0.50" value="5.00" class="num-input" id="baserate-input" style="width:70px">
+        <span style="color:var(--fg-dim);font-size:14px">/hr</span>
+      </div>
+    </div>
+
+    <h3>MULTIPLIER RANGES</h3>
+    <div id="mult-ranges-container"></div>
+
+    <h3>MULTIPLIER CHANGE LOG</h3>
+    <div id="mult-log" style="max-height:180px;overflow-y:auto"></div>
+
+    <h2>KARMA &amp; FLOOR</h2>
+    <div style="font-size:16px;color:var(--fg-dim);padding:4px 0;margin-bottom:6px">
+      Current Karma: <span style="color:var(--purple)" id="menu-karma-val">0</span> · 
+      Floor: <span style="color:var(--gold)" id="menu-floor-val">0</span>
+    </div>
+    <div class="range-row">
+      <span style="font-size:16px;color:var(--fg-dim)">Set Karma:</span>
+      <input type="range" min="0" max="200" value="0" id="karma-range">
+      <span class="range-val" id="karma-range-val">0</span>
+    </div>
+    <button class="menu-btn-big btn-close" id="apply-karma-btn">APPLY KARMA</button>
+    <div id="karma-log" style="margin-top:10px;max-height:150px;overflow-y:auto"></div>
+
+    <h2>ACTIONS</h2>
+    <button class="menu-btn-big btn-danger" id="reset-btn">⚠ RESET ALL PROGRESS</button>
+    <button class="menu-btn-big btn-close" id="parent-close-btn2">BACK TO THE VOID</button>
+  </div>
+</div>
+
 <!-- Menu -->
 <div id="menu-overlay">
   <div id="menu-content">
@@ -364,25 +416,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
       <span class="range-val" id="maxnum-val">10</span>
     </div>
 
-    <h2>KARMA &amp; FLOOR</h2>
-    <div style="font-size:16px;color:var(--fg-dim);padding:4px 0;margin-bottom:6px">
-      Current Karma: <span style="color:var(--purple)" id="menu-karma-val">0</span> · 
-      Floor: <span style="color:var(--gold)" id="menu-floor-val">0</span>
-    </div>
-    <div class="range-row">
-      <span style="font-size:16px;color:var(--fg-dim)">Set Karma:</span>
-      <input type="range" min="0" max="200" value="0" id="karma-range">
-      <span class="range-val" id="karma-range-val">0</span>
-    </div>
-    <button class="menu-btn-big btn-close" id="apply-karma-btn">APPLY KARMA</button>
-    <div class="range-row" style="margin-top:10px">
-      <span style="font-size:16px;color:var(--fg-dim)">Set Floor:</span>
-      <input type="range" min="0" max="600" value="0" step="5" id="floor-range">
-      <span class="range-val" id="floor-range-val">0</span>
-    </div>
-    <button class="menu-btn-big btn-close" id="apply-floor-btn">APPLY FLOOR</button>
-    <div id="karma-log" style="margin-top:10px;max-height:150px;overflow-y:auto"></div>
-
     <h2>YOUR HARDEST PROBLEMS</h2>
     <div class="hard-list" id="hard-list"></div>
 
@@ -422,7 +455,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 
     <h2>ACTIONS</h2>
     <button class="menu-btn-big btn-danger" id="reset-slot-btn">⚠ RESET CURRENT SLOT</button>
-    <button class="menu-btn-big btn-danger" id="reset-btn">⚠ RESET ALL PROGRESS</button>
     <button class="menu-btn-big btn-close" id="menu-close-btn2">BACK TO THE VOID</button>
   </div>
 </div>
@@ -1515,12 +1547,10 @@ function renderMenu() {
   });
   document.getElementById('choices-range').value = S.numChoices;
   document.getElementById('choices-val').textContent = S.numChoices;
+  document.getElementById('minnum-range').value = S.minNum || 0;
+  document.getElementById('minnum-val').textContent = S.minNum || 0;
   document.getElementById('maxnum-range').value = S.maxNum;
   document.getElementById('maxnum-val').textContent = S.maxNum;
-  document.getElementById('birth-year-input').value = CFG.birthYear;
-  document.getElementById('age-display').textContent = 'Age: ' + getAge();
-  document.getElementById('scaler-range').value = Math.round(CFG.globalMoneyScaler * 100);
-  document.getElementById('scaler-val').textContent = Math.round(CFG.globalMoneyScaler * 100) + '%';
   document.getElementById('toggle-sfx').classList.toggle('on', CFG.sfxEnabled);
   document.getElementById('toggle-music').classList.toggle('on', CFG.musicEnabled);
   document.getElementById('volume-range').value = Math.round(CFG.volume * 100);
@@ -1534,7 +1564,6 @@ function renderMenu() {
   document.getElementById('vivid-info-val').textContent = CFG.vividness.info + '%';
   document.getElementById('vivid-fg-range').value = CFG.vividness.foreground;
   document.getElementById('vivid-fg-val').textContent = CFG.vividness.foreground + '%';
-  renderKarmaUI();
 }
 
 // ============ CHARACTER CUSTOMIZATION ============
@@ -1987,7 +2016,7 @@ document.querySelectorAll('.toggle[data-op]').forEach(el => {
     newOps[op] = !newOps[op];
     if (!Object.values(newOps).some(v => v)) newOps[op] = true;
     el.classList.toggle('on', newOps[op]);
-    switchSlot(newOps, S.maxNum);
+    switchSlot(newOps, S.minNum || 0, S.maxNum);
     renderMenu();
   });
 });
@@ -2006,10 +2035,22 @@ document.getElementById('choices-range').addEventListener('input', (e) => {
   saveSlot();
 });
 
+document.getElementById('minnum-range').addEventListener('input', (e) => {
+  let newMin = parseInt(e.target.value);
+  if (newMin >= S.maxNum) newMin = S.maxNum - 1;
+  document.getElementById('minnum-val').textContent = newMin;
+  e.target.value = newMin;
+  switchSlot(S.ops, newMin, S.maxNum);
+  renderMenu();
+});
+
 document.getElementById('maxnum-range').addEventListener('input', (e) => {
-  const newMax = parseInt(e.target.value);
+  let newMax = parseInt(e.target.value);
+  const curMin = S.minNum || 0;
+  if (newMax <= curMin) newMax = curMin + 1;
   document.getElementById('maxnum-val').textContent = newMax;
-  switchSlot(S.ops, newMax);
+  e.target.value = newMax;
+  switchSlot(S.ops, curMin, newMax);
   renderMenu();
 });
 
@@ -2017,12 +2058,6 @@ document.getElementById('birth-year-input').addEventListener('change', (e) => {
   CFG.birthYear = Math.max(2005, Math.min(2024, parseInt(e.target.value) || 2016));
   e.target.value = CFG.birthYear;
   document.getElementById('age-display').textContent = 'Age: ' + getAge();
-  saveConfig();
-});
-
-document.getElementById('scaler-range').addEventListener('input', (e) => {
-  CFG.globalMoneyScaler = parseInt(e.target.value) / 100;
-  document.getElementById('scaler-val').textContent = parseInt(e.target.value) + '%';
   saveConfig();
 });
 
@@ -2092,6 +2127,12 @@ document.getElementById('reset-btn').addEventListener('click', () => {
     updateUI();
     playerY = 0;
     targetPlayerY = 0;
+    // Close parent overlay and return to intro screen
+    document.getElementById('parent-overlay').classList.remove('open');
+    document.getElementById('intro-screen').style.display = '';
+    document.getElementById('intro-screen').querySelector('.tagline').textContent =
+      'In a world where numbers are all that remain, climb the infinite tower. Every wrong answer sends you plummeting. There is no mercy — only arithmetic.';
+    document.getElementById('start-btn').textContent = 'BEGIN DESCENT';
   }
 });
 
