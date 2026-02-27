@@ -1186,7 +1186,7 @@ function renderSlotSelection() {
       let mc = 0;
       for (const p of allProbs) {
         const d = slot.problems[p.key];
-        if (d && d.correct >= 2 && d.lastCorrect && (d.lastTime||99999) < th.masterySpeed*1000) mc++;
+        if (d && d.masteredAt !== null) mc++;
       }
       const mPct = allProbs.length > 0 ? Math.round(mc / allProbs.length * 100) : 0;
       const slotAvgRate = (slot.playTimeMs > 0) ? ((slot.slotEarnings||0) / slot.playTimeMs) * 3600000 : 0;
@@ -1476,7 +1476,7 @@ function updateTimeDisplay() {
 timeDisplayInterval = setInterval(updateTimeDisplay, 1000);
 
 // ============ DIFFICULTY & MASTERY ============
-function calcProblemDifficulty(a, op, b, maxNum) {
+function calcProblemDifficulty(a, op, b, maxNum, pd) {
   const opBase = { '+': 1.0, '-': 1.2, '×': 1.5, '÷': 1.8 };
   const size = (a + b) / (2 * maxNum);
   const interference = (a >= 6 && b >= 6) ? 1.5 : 1.0;
@@ -1488,7 +1488,7 @@ function calcProblemDifficulty(a, op, b, maxNum) {
   let crossing = 1.0;
   if (op === '+' && a % 10 + b % 10 >= 10) crossing = 1.3;
   if (op === '-' && a % 10 < b % 10) crossing = 1.3;
-  let score = opBase[op] * (0.3 + 0.7 * size) * interference * trick * crossing;
+  let staticDiff = opBase[op] * (0.3 + 0.7 * size) * interference * trick * crossing;
   const NOTORIOUS = {
     '6×7':3.5,'7×6':3.5,'6×8':3.3,'8×6':3.3,'7×8':3.5,'8×7':3.5,
     '8×9':3.2,'9×8':3.2,'7×9':3.2,'9×7':3.2,'6×9':3.0,'9×6':3.0,
@@ -1499,8 +1499,18 @@ function calcProblemDifficulty(a, op, b, maxNum) {
     '7+8':2.2,'8+7':2.2,'6+7':2.0,'7+6':2.0,'8+9':2.2,'9+8':2.2,'9+6':2.0,'6+9':2.0
   };
   const key = `${a}${op}${b}`;
-  if (NOTORIOUS[key]) score = Math.max(score, NOTORIOUS[key]);
-  return Math.round(score * 100) / 100;
+  if (NOTORIOUS[key]) staticDiff = Math.max(staticDiff, NOTORIOUS[key]);
+  
+  // If we have enough historical data, blend in personal difficulty
+  if (pd && (pd.correct + pd.wrong) >= 3) {
+    const accuracy = pd.correct / (pd.correct + pd.wrong);
+    const recentAcc = pd.recent.length >= 3 ? pd.recent.filter(r => r.c).length / pd.recent.length : accuracy;
+    const personalDiff = staticDiff * (2 - accuracy) * (2 - recentAcc) / 1;
+    const finalDiff = staticDiff * 0.3 + personalDiff * 0.7;
+    return Math.round(finalDiff * 100) / 100;
+  }
+  
+  return Math.round(staticDiff * 100) / 100;
 }
 
 function getAge() {
@@ -1549,10 +1559,10 @@ function getSlotMasteryInfo() {
   const allProbs = enumerateSlotProblems(S.ops, S.minNum, S.maxNum);
   let masteredCount = 0, masteredValue = 0, totalValue = 0;
   for (const p of allProbs) {
-    const diff = calcProblemDifficulty(p.a, p.op, p.b, S.maxNum);
+    const diff = calcProblemDifficulty(p.a, p.op, p.b, S.maxNum, S.problems[p.key]);
     totalValue += diff;
     const d = S.problems[p.key];
-    if (d && d.correct >= 2 && d.lastCorrect === true && (d.lastTime || 99999) < th.masterySpeed * 1000) {
+    if (d && d.masteredAt !== null) {
       masteredCount++;
       masteredValue += diff;
     }
@@ -1586,7 +1596,7 @@ function checkCompletionRequirements() {
   let zeroAccCount = 0;
   for (const key in S.problems) {
     const d = S.problems[key];
-    if (d.attempts > 0 && d.correct === 0) zeroAccCount++;
+    if ((d.correct + d.wrong) > 0 && d.correct === 0) zeroAccCount++;
   }
   if (zeroAccCount > 3) return false;
   return true;
@@ -1602,8 +1612,24 @@ function getAgeSpeedFactor(age) {
   return 0.7;
 }
 
-function getExpectedTime(problemDifficulty, age) {
-  return (2 + problemDifficulty * 1.5) * getAgeSpeedFactor(age);
+function getExpectedTime(problemDifficulty, age, pd) {
+  const staticExpected = (2 + problemDifficulty * 1.5) * getAgeSpeedFactor(age);
+  
+  // If we have enough historical data, blend in personal expected time
+  if (pd && pd.correct >= 3) {
+    let personalExpected;
+    // Use rolling average of recent correct times if available
+    const recentCorrect = pd.recent.filter(r => r.c);
+    if (recentCorrect.length >= 3) {
+      personalExpected = recentCorrect.reduce((sum, r) => sum + r.t, 0) / recentCorrect.length / 1000;
+    } else {
+      personalExpected = pd.totalTimeMs / pd.correct / 1000; // convert to seconds
+    }
+    const finalExpected = staticExpected * 0.3 + personalExpected * 0.7;
+    return finalExpected;
+  }
+  
+  return staticExpected;
 }
 
 // --- Multiplier chain functions ---
@@ -2104,11 +2130,12 @@ function problemKey(p) { return `${p.a}${p.op}${p.b}`; }
 function getProblemWeight(key) {
   const d = S.problems[key];
   if (!d) return 1.0;
-  const lastTime = d.lastTime || 5000;
-  const wrongRate = d.attempts > 0 ? d.wrong / d.attempts : 0;
-  const timeScore = Math.min(lastTime / 3000, 3);
+  const avgTime = d.correct > 0 ? d.totalTimeMs / d.correct : 5000;
+  const totalAttempts = d.correct + d.wrong;
+  const wrongRate = totalAttempts > 0 ? d.wrong / totalAttempts : 0;
+  const timeScore = Math.min(avgTime / 3000, 3);
   const wrongScore = 1 + wrongRate * 3;
-  const easyPenalty = (d.correct >= 3 && d.wrong === 0 && lastTime < 3000) ? 0.2 : 1;
+  const easyPenalty = (d.correct >= 3 && d.wrong === 0 && avgTime < 3000) ? 0.2 : 1;
   return timeScore * wrongScore * easyPenalty;
 }
 
@@ -2128,7 +2155,7 @@ function selectProblem() {
 
 function selectBonusProblem() {
   const allProbs = enumerateSlotProblems(S.ops, S.minNum, S.maxNum);
-  const weighted = allProbs.map(p => ({ ...p, diff: calcProblemDifficulty(p.a, p.op, p.b, S.maxNum) }));
+  const weighted = allProbs.map(p => ({ ...p, diff: calcProblemDifficulty(p.a, p.op, p.b, S.maxNum, undefined) }));
   weighted.sort((a, b) => b.diff - a.diff);
   const top = Math.max(10, Math.floor(weighted.length * 0.3));
   const pool = weighted.slice(0, top);
@@ -2230,7 +2257,57 @@ function handleAnswer(val, btn) {
   const key = problemKey(currentProblem);
   const elapsed = Date.now() - problemStartTime;
 
-  if (!S.problems[key]) S.problems[key] = { correct: 0, wrong: 0, lastTime: 0, attempts: 0, lastCorrect: false, mastered: false };
+  if (!S.problems[key]) {
+    S.problems[key] = {
+      // === COUNTS ===
+      correct: 0,        // total correct
+      wrong: 0,          // total wrong
+      
+      // === STREAKS ===
+      streak: 0,         // current: positive=correct run, negative=wrong run
+      bestStreak: 0,     // longest correct streak ever
+      worstStreak: 0,    // longest wrong streak ever (positive number)
+      
+      // === MOMENTUM ===
+      net: 0,            // lifetime correct − wrong (can go negative)
+      
+      // === TIMESTAMPS ===
+      firstSeen: null,   // first time presented
+      lastAsked: null,   // last time presented
+      lastCorrectAt: null, // last correct timestamp
+      lastWrongAt: null, // last wrong timestamp
+      
+      // === TIME STATS (correct answers only) ===
+      totalTimeMs: 0,    // sum of all correct response times
+      bestTimeMs: null,   // fastest correct
+      worstTimeMs: null,  // slowest correct
+      
+      // === ROLLING HISTORY (last 20 attempts) ===
+      recent: [],        // [{c: bool, t: timeMs, ts: timestamp}]
+      
+      // === MASTERY ===
+      masteredAt: null      // timestamp when mastered, null when not mastered
+      
+      // === DERIVED STATS (not stored, computed on the fly) ===
+      // accuracy = correct / (correct + wrong)
+      // avgTimeMs = totalTimeMs / correct
+      // recentAccuracy = recent.filter(r => r.c).length / recent.length
+      // recentAvgTimeMs = avg of recent.filter(r => r.c).map(r => r.t)
+      // timeTrend = linear regression slope on recent correct times (negative = improving)
+      // consistency = stddev of recent correct times
+      // confidence = net / (correct + wrong) — ranges -1 to +1
+      // staleness = Date.now() - lastAsked (for spaced repetition)
+      // forgettingRisk = Date.now() - lastCorrectAt vs historical accuracy
+      // recoveryRate = how often correct follows wrong in recent
+      // temperature = streak < 0 means hot/struggling
+      // speedAfterErrors = compare times after wrong vs normal in recent
+      // timeSinceMastery = masteredAt ? Date.now() - masteredAt : null (for spaced repetition)
+      // rollingBestWorstAvg = (bestTimeMs + worstTimeMs + avgTimeMs) / 3 (blends peak, worst, lifetime avg)
+      // rollingAvgAskedAt = average of recent.map(r => r.ts) — weighted toward recent history since old entries roll off. If 19 attempts were 100 years ago and 1 was yesterday, the rolling average skews old. This is useful for spaced repetition: problems with an old rollingAvgAskedAt haven't been practiced recently.
+    };
+    S.problems[key].firstSeen = Date.now();
+    S.problems[key].lastAsked = Date.now();
+  }
   const pd = S.problems[key];
 
   if (val === correctVal) {
@@ -2243,22 +2320,30 @@ function handleAnswer(val, btn) {
     trackTimeOnAnswer();
 
     pd.correct++;
-    pd.lastTime = elapsed;
-    pd.attempts++;
-    pd.lastCorrect = true;
+    pd.streak = pd.streak > 0 ? pd.streak + 1 : 1;
+    if (pd.streak > pd.bestStreak) pd.bestStreak = pd.streak;
+    pd.net++;
+    pd.lastAsked = Date.now();
+    pd.lastCorrectAt = Date.now();
+    pd.totalTimeMs += elapsed;
+    if (pd.bestTimeMs === null || elapsed < pd.bestTimeMs) pd.bestTimeMs = elapsed;
+    if (pd.worstTimeMs === null || elapsed > pd.worstTimeMs) pd.worstTimeMs = elapsed;
+    pd.recent.push({ c: true, t: elapsed, ts: Date.now() });
+    if (pd.recent.length > 20) pd.recent.shift();
 
     const age = getAge();
     const th = getAgeThresholds(age);
-    pd.mastered = pd.correct >= 2 && pd.lastCorrect && elapsed < th.masterySpeed * 1000;
+    const meetsMastery = pd.correct >= 2 && pd.streak > 0 && elapsed < th.masterySpeed * 1000;
+    if (meetsMastery) pd.masteredAt = Date.now();
 
     if (elapsed >= 1500) {
       S.last50.push({ firstTryCorrect: wrongThisProblem === 0, responseTime: elapsed });
       if (S.last50.length > 50) S.last50.shift();
 
       // Per-answer pay (multiplier chain)
-      const probDiff = calcProblemDifficulty(currentProblem.a, currentProblem.op, currentProblem.b, S.maxNum);
+      const probDiff = calcProblemDifficulty(currentProblem.a, currentProblem.op, currentProblem.b, S.maxNum, pd);
       const age = getAge();
-      const expectedTimeSec = getExpectedTime(probDiff, age);
+      const expectedTimeSec = getExpectedTime(probDiff, age, pd);
       const actualTimeSec = elapsed / 1000;
 
       const enabledOps = Object.entries(S.ops).filter(([k,v]) => v).map(([k]) => k);
@@ -2394,9 +2479,14 @@ function handleAnswer(val, btn) {
     btn.classList.add('wrong-flash');
     wrongThisProblem++;
     pd.wrong++;
-    pd.attempts++;
-    pd.lastCorrect = false;
-    pd.mastered = false;
+    pd.streak = pd.streak < 0 ? pd.streak - 1 : -1;
+    if (Math.abs(pd.streak) > pd.worstStreak) pd.worstStreak = Math.abs(pd.streak);
+    pd.net--;
+    pd.lastAsked = Date.now();
+    pd.lastWrongAt = Date.now();
+    pd.recent.push({ c: false, t: elapsed, ts: Date.now() });
+    if (pd.recent.length > 20) pd.recent.shift();
+    pd.masteredAt = null;
     S.totalWrong++;
     S.streak = 0;
 
@@ -2844,7 +2934,7 @@ function renderHardList() {
   const entries = Object.entries(S.problems)
     .map(([key, d]) => ({
       key,
-      difficulty: (d.lastTime || 0) * (1 + (d.wrong / Math.max(1, d.attempts)) * 3),
+      difficulty: (d.worstTimeMs || 0) * (1 + (d.wrong / Math.max(1, d.correct + d.wrong)) * 3),
       ...d
     }))
     .sort((a, b) => b.difficulty - a.difficulty)
@@ -2856,14 +2946,14 @@ function renderHardList() {
   }
 
   list.innerHTML = entries.map(e => {
-    const last = e.lastTime ? (e.lastTime / 1000).toFixed(1) : '?';
-    const wr = e.attempts > 0 ? Math.round(e.wrong / e.attempts * 100) : 0;
+    const last = e.worstTimeMs ? (e.worstTimeMs / 1000).toFixed(1) : '?';
+    const wr = (e.correct + e.wrong) > 0 ? Math.round(e.wrong / (e.correct + e.wrong) * 100) : 0;
     return `<div class="hard-item">
       <span class="prob">${e.key}</span>
       <span class="hstats">
-        <span class="slow">${last}s last</span> · 
+        <span class="slow">${last}s worst</span> · 
         <span class="bad">${wr}% err</span> · 
-        ${e.attempts} tries
+        ${e.correct + e.wrong} tries
       </span>
     </div>`;
   }).join('');
@@ -2887,7 +2977,7 @@ function renderReportCard() {
       let mc = 0;
       for (const p of allProbs) {
         const d = slot.problems[p.key];
-        if (d && d.correct >= 2 && d.lastCorrect && (d.lastTime||99999) < th.masterySpeed*1000) mc++;
+        if (d && d.masteredAt !== null) mc++;
       }
       const mPct = allProbs.length > 0 ? mc / allProbs.length : 0;
       totalEarnings += (slot.slotEarnings || 0);
