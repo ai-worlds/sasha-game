@@ -1437,8 +1437,8 @@ function resetIdleTimer() {
   isIdle = false;
   lastActiveAt = Date.now();
   clearTimeout(idleTimer);
-  if (wasIdle && S) AudioEngine.playVoice('idle_return', 10000);
-  idleTimer = setTimeout(() => { isIdle = true; updateIdleIndicator(); AudioEngine.playVoice('idle_start', 60000); }, (CFG && CFG.idleTimeoutSec || 10) * 1000);
+  if (wasIdle && S) AudioEngine.playRandomFromList(['idle_return','idle_return_2','idle_return_3'], 10000);
+  idleTimer = setTimeout(() => { isIdle = true; updateIdleIndicator(); AudioEngine.playRandomFromList(['idle_start','idle_start_2','idle_start_3'], 60000); }, (CFG && CFG.idleTimeoutSec || 10) * 1000);
   updateIdleIndicator();
 }
 
@@ -1456,8 +1456,10 @@ function updateTimeDisplay() {
   const el = document.getElementById('stat-time');
   if (el) el.textContent = formatTime(S.playTimeMs || 0);
   // Tick death spiral protection down by 1 per second
+  const dsWasActive = S.deathSpiralCurrent > 0;
   if (S.deathSpiralMax > 0) { S.deathSpiralMax--; }
   if (S.deathSpiralCurrent > 0) { S.deathSpiralCurrent--; }
+  if (dsWasActive && S.deathSpiralCurrent <= 0) { AudioEngine.playVoice('death_spiral_expire', 5000); }
   // Clamp current to max
   if (S.deathSpiralCurrent > S.deathSpiralMax) S.deathSpiralCurrent = S.deathSpiralMax;
 }
@@ -2227,7 +2229,7 @@ function handleAnswer(val, btn) {
     answersLocked = true;
     btn.classList.add('correct-flash');
     AudioEngine.playCorrect();
-    AudioEngine.playRandomVoice('correct', 7, 0.10, 5000);
+    AudioEngine.playRandomVoice('correct', 14, 0.10, 5000);
 
     // Track time
     trackTimeOnAnswer();
@@ -2318,7 +2320,7 @@ function handleAnswer(val, btn) {
     S.streak++;
     if (S.streak > S.bestStreak) S.bestStreak = S.streak;
     AudioEngine.playStreak(S.streak);
-    if (S.streak > 0 && S.streak % 10 === 0) AudioEngine.playVoice('streak', 8000);
+    if (S.streak > 0 && S.streak % 10 === 0) AudioEngine.playRandomFromList(['streak','streak_2','streak_3'], 8000);
 
     if (S.totalCorrect % 10 === 0) S.karma++;
     if (S.streak % 5 === 0 && S.shields < 5) { S.shields++; AudioEngine.playShieldGain(); }
@@ -2340,7 +2342,7 @@ function handleAnswer(val, btn) {
       S.height++;
       if (S.height > S.maxHeight) S.maxHeight = S.height;
       const zoneAfter = getZone(S.height).name;
-      if (zoneBefore !== zoneAfter) AudioEngine.playVoice('zone_advance');
+      if (zoneBefore !== zoneAfter) AudioEngine.playRandomFromList(['zone_advance','zone_advance_2','zone_advance_3']);
       
       // Start jump animation for height increase
       const oldPlat = getPlatform(oldHeight);
@@ -2366,7 +2368,7 @@ function handleAnswer(val, btn) {
       S.gameBeaten = true;
       saveSlot();
       AudioEngine.playVictory();
-      AudioEngine.playVoice('victory');
+      AudioEngine.playRandomFromList(['victory','victory_2']);
       setTimeout(showVictory, 600);
       return;
     }
@@ -2398,11 +2400,13 @@ function handleAnswer(val, btn) {
       let karmaProtected = false;
       if (S.deathSpiralCurrent > 0) {
         karmaProtected = true; // karma safe, but still fall
+        AudioEngine.playVoice('death_spiral_karma_safe', 5000);
       } else {
         S.karma = Math.max(0, S.karma - 1);
         // Activate death spiral protection
         S.deathSpiralMax = (S.deathSpiralMax + 1) * 2;
         S.deathSpiralCurrent = S.deathSpiralMax;
+        AudioEngine.playVoice('death_spiral_activate', 5000);
       }
       const karmaFloor = S.karma * 5;
       const manualFloor = S.floor || 0;
@@ -2411,12 +2415,12 @@ function handleAnswer(val, btn) {
       const heightBefore = S.height;
       S.height = Math.max(floor, 0);
       const zoneAfter = getZone(S.height).name;
-      if (zoneBefore !== zoneAfter) AudioEngine.playVoice('zone_retreat', 5000);
+      if (zoneBefore !== zoneAfter) AudioEngine.playRandomFromList(['zone_retreat','zone_retreat_2','zone_retreat_3'], 5000);
       if (heightBefore - S.height > 5) AudioEngine.playFall();
     }
 
     AudioEngine.playWrong();
-    AudioEngine.playRandomVoice('wrong', 8, 0.50, 3000);
+    AudioEngine.playRandomVoice('wrong', 16, 0.50, 3000);
     screenShake = Math.min(25, shielded ? 3 : 5 + S.height * 0.02);
 
     showFeedback(false, shielded);
@@ -2451,7 +2455,7 @@ function startBonusRound() {
   S.bonusCorrect = 0;
   saveSlot();
   showSlotNote(`Bonus Round ${S.bonusRound} started! 20 problems.`);
-  AudioEngine.playVoice('bonus_start');
+  AudioEngine.playRandomFromList(['bonus_start','bonus_start_2']);
   presentProblem();
 }
 
@@ -3520,10 +3524,18 @@ const AudioEngine = (() => {
   function preloadAllVoices() {
     const names = [
       'title_intro','kid_select','kid_create','slot_select','slot_create',
-      'game_start','menu_open','victory','streak','bonus_start',
-      'zone_advance','zone_retreat','idle_start','idle_return',
+      'game_start','menu_open','victory','victory_2','streak','streak_2','streak_3',
+      'bonus_start','bonus_start_2',
+      'zone_advance','zone_advance_2','zone_advance_3',
+      'zone_retreat','zone_retreat_2','zone_retreat_3',
+      'idle_start','idle_start_2','idle_start_3',
+      'idle_return','idle_return_2','idle_return_3',
+      'shield_gain','shield_break_2',
+      'death_spiral_activate','death_spiral_karma_safe','death_spiral_expire',
       'correct_1','correct_2','correct_3','correct_4','correct_5','correct_6','correct_7',
-      'wrong_1','wrong_2','wrong_3','wrong_4','wrong_5','wrong_6','wrong_7','wrong_8'
+      'correct_8','correct_9','correct_10','correct_11','correct_12','correct_13','correct_14',
+      'wrong_1','wrong_2','wrong_3','wrong_4','wrong_5','wrong_6','wrong_7','wrong_8',
+      'wrong_9','wrong_10','wrong_11','wrong_12','wrong_13','wrong_14','wrong_15','wrong_16'
     ];
     names.forEach(preloadVoice);
   }
@@ -3548,6 +3560,11 @@ const AudioEngine = (() => {
   }
 
   function playVoiceWithCooldown(name, cooldownMs) {
+    playVoice(name, cooldownMs || 3000);
+  }
+
+  function playRandomFromList(names, cooldownMs) {
+    const name = names[Math.floor(Math.random() * names.length)];
     playVoice(name, cooldownMs || 3000);
   }
 
