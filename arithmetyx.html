@@ -2845,8 +2845,8 @@ function render(timestamp) {
     screenShake *= 0.9;
   }
 
-  const bgv = CFG.vividness.background;
-  const bsv = CFG.vividness.base;
+  const bgv = CFG && CFG.vividness ? CFG.vividness.background : 100;
+  const bsv = CFG && CFG.vividness ? CFG.vividness.base : 100;
 
   const grad = ctx.createLinearGradient(0, 0, 0, H);
   grad.addColorStop(0, applyVividness(zone.bg2, bgv));
