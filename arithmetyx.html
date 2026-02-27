@@ -82,10 +82,14 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 #progress-bar{position:relative;z-index:10;height:4px;background:rgba(184,48,48,0.15)}
 #progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));transition:width .3s;width:0%}
 
-#menu-overlay,#slots-overlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:100;
+#menu-overlay,#slots-overlay,#parent-overlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:100;
   background:rgba(5,5,8,0.95);display:none;overflow-y:auto;-webkit-overflow-scrolling:touch}
-#menu-overlay.open,#slots-overlay.open{display:flex;flex-direction:column;align-items:center}
-#menu-content,#slots-content{width:100%;max-width:480px;padding:20px 16px 40px}
+#menu-overlay.open,#slots-overlay.open,#parent-overlay.open{display:flex;flex-direction:column;align-items:center}
+#menu-content,#slots-content,#parent-content{width:100%;max-width:480px;padding:20px 16px 40px}
+.mult-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(200,192,184,0.06);gap:6px}
+.mult-row label{font-size:16px;color:var(--fg);flex:1;min-width:90px}
+.mult-row .num-input{width:54px;font-size:14px;padding:4px 4px}
+.mult-row .mult-dash{color:var(--fg-dim);font-size:14px;margin:0 2px}
 #menu-content h2{font-family:var(--font-display);color:var(--accent2);font-size:18px;
   margin:20px 0 12px;letter-spacing:2px;border-bottom:1px solid rgba(184,48,48,0.3);padding-bottom:6px}
 #menu-content h3{font-family:var(--font-display);color:var(--gold);font-size:14px;margin:14px 0 8px}
@@ -227,6 +231,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
     </div>
     <div class="top-btns">
       <button class="menu-btn" id="slots-open-btn">📋 SLOTS</button>
+      <button class="menu-btn" id="parent-open-btn">👤 PARENT</button>
       <button class="menu-btn" id="menu-open-btn">☰ MENU</button>
     </div>
   </div>
@@ -291,22 +296,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
       <button class="menu-btn" id="menu-close-btn">✕ CLOSE</button>
     </div>
 
-    <h3>PLAYER</h3>
-    <div class="menu-row">
-      <label>Birth Year</label>
-      <div style="display:flex;align-items:center;gap:10px">
-        <input type="number" min="2005" max="2024" value="2016" class="num-input" id="birth-year-input">
-        <span style="color:var(--fg-dim);font-size:16px" id="age-display">Age: 10</span>
-      </div>
-    </div>
-    <div class="menu-row">
-      <label>Money Scaler</label>
-      <div style="display:flex;align-items:center;gap:10px">
-        <input type="range" min="0" max="100" value="25" id="scaler-range" style="width:100px;accent-color:var(--accent2)">
-        <span class="range-val" id="scaler-val">25%</span>
-      </div>
-    </div>
-
     <h2>CHARACTER</h2>
     <div class="char-preview-wrap">
       <canvas id="char-preview-canvas" width="120" height="80" style="width:240px;height:160px;image-rendering:pixelated"></canvas>
@@ -359,11 +348,16 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
     <h3>ANSWER CHOICES</h3>
     <div class="range-row">
       <span style="font-size:16px;color:var(--fg-dim)">Choices:</span>
-      <input type="range" min="4" max="8" value="4" id="choices-range">
+      <input type="range" min="2" max="8" value="4" id="choices-range">
       <span class="range-val" id="choices-val">4</span>
     </div>
 
     <h3>NUMBER RANGE</h3>
+    <div class="range-row">
+      <span style="font-size:16px;color:var(--fg-dim)">Min:</span>
+      <input type="range" min="0" max="15" value="0" id="minnum-range">
+      <span class="range-val" id="minnum-val">0</span>
+    </div>
     <div class="range-row">
       <span style="font-size:16px;color:var(--fg-dim)">Max:</span>
       <input type="range" min="6" max="20" value="10" id="maxnum-range">
@@ -381,6 +375,12 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
       <span class="range-val" id="karma-range-val">0</span>
     </div>
     <button class="menu-btn-big btn-close" id="apply-karma-btn">APPLY KARMA</button>
+    <div class="range-row" style="margin-top:10px">
+      <span style="font-size:16px;color:var(--fg-dim)">Set Floor:</span>
+      <input type="range" min="0" max="600" value="0" step="5" id="floor-range">
+      <span class="range-val" id="floor-range-val">0</span>
+    </div>
+    <button class="menu-btn-big btn-close" id="apply-floor-btn">APPLY FLOOR</button>
     <div id="karma-log" style="margin-top:10px;max-height:150px;overflow-y:auto"></div>
 
     <h2>YOUR HARDEST PROBLEMS</h2>
@@ -442,7 +442,18 @@ const DEFAULT_CHARACTER = {
 
 const DEFAULT_CONFIG = {
   birthYear: 2016,
-  globalMoneyScaler: 0.25,
+  baseRate: 5.00,
+  multipliers: {
+    opsAvg:        { min: 100, max: 150 },
+    additionalOps: { min: 100, max: 120 },
+    range:         { min: 95,  max: 110 },
+    age:           { min: 80,  max: 120 },
+    speed:         { min: 50,  max: 200 },
+    height:        { min: 90,  max: 110 },
+    questionMode:  { min: 100, max: 115 },
+    choices:       { min: 88,  max: 110 }
+  },
+  multiplierLog: [],
   sfxEnabled: true,
   musicEnabled: true,
   volume: 0.5,
@@ -455,6 +466,7 @@ const DEFAULT_SLOT = {
   ops: { add: true, sub: true, mul: true, div: true },
   mode: 'answer',
   numChoices: 4,
+  minNum: 0,
   maxNum: 10,
   totalCorrect: 0,
   totalWrong: 0,
@@ -463,6 +475,7 @@ const DEFAULT_SLOT = {
   height: 0,
   maxHeight: 0,
   karma: 0,
+  floor: 0,
   shields: 0,
   karmaLog: [],
   problems: {},
@@ -495,19 +508,29 @@ function loadConfig() {
     for (const k in DEFAULT_CHARACTER) { if (!(k in CFG.character)) CFG.character[k] = DEFAULT_CHARACTER[k]; }
     if (!CFG.vividness) CFG.vividness = { background: 100, base: 100, info: 100, foreground: 100 };
     for (const k of ['background','base','info','foreground']) { if (!(k in CFG.vividness)) CFG.vividness[k] = 100; }
+    // Migrate from old globalMoneyScaler to new multiplier chain
+    if ('globalMoneyScaler' in CFG && !('baseRate' in CFG)) {
+      CFG.baseRate = 5.00;
+      delete CFG.globalMoneyScaler;
+    }
+    if (!CFG.baseRate) CFG.baseRate = 5.00;
+    if (!CFG.multipliers) CFG.multipliers = JSON.parse(JSON.stringify(DEFAULT_CONFIG.multipliers));
+    else { for (const k in DEFAULT_CONFIG.multipliers) { if (!(k in CFG.multipliers)) CFG.multipliers[k] = JSON.parse(JSON.stringify(DEFAULT_CONFIG.multipliers[k])); } }
+    if (!CFG.multiplierLog) CFG.multiplierLog = [];
+    delete CFG.globalMoneyScaler;
   } catch(e) { CFG = JSON.parse(JSON.stringify(DEFAULT_CONFIG)); }
 }
 
 function saveConfig() { try { localStorage.setItem('arithmetyx_config', JSON.stringify(CFG)); } catch(e){} }
 
-function getSlotKey(ops, maxNum) {
+function getSlotKey(ops, minNum, maxNum) {
   const names = [];
   if (ops.add) names.push('add');
   if (ops.sub) names.push('sub');
   if (ops.mul) names.push('mul');
   if (ops.div) names.push('div');
   if (names.length === 0) names.push('add');
-  return names.join('_') + '_' + maxNum;
+  return names.join('_') + '_' + (minNum > 0 ? minNum + '-' : '') + maxNum;
 }
 
 function loadSlot(key) {
@@ -519,11 +542,18 @@ function loadSlot(key) {
     } else {
       S = JSON.parse(JSON.stringify(DEFAULT_SLOT));
       const parts = key.split('_');
-      const maxNum = parseInt(parts[parts.length - 1]);
+      const rangePart = parts[parts.length - 1];
       const opNames = parts.slice(0, -1);
       S.ops = { add: false, sub: false, mul: false, div: false };
       for (const n of opNames) S.ops[n] = true;
-      S.maxNum = maxNum;
+      if (rangePart.includes('-')) {
+        const [mn, mx] = rangePart.split('-').map(Number);
+        S.minNum = mn;
+        S.maxNum = mx;
+      } else {
+        S.minNum = 0;
+        S.maxNum = parseInt(rangePart);
+      }
     }
     CFG.currentSlotKey = key;
     saveConfig();
@@ -567,9 +597,9 @@ function migrateOldState() {
     CFG.sfxEnabled = true;
     CFG.musicEnabled = true;
     CFG.volume = 0.5;
-    const key = getSlotKey(old.ops || {add:true,sub:true,mul:true,div:true}, old.maxNum || 10);
+    const key = getSlotKey(old.ops || {add:true,sub:true,mul:true,div:true}, old.minNum || 0, old.maxNum || 10);
     const slot = JSON.parse(JSON.stringify(DEFAULT_SLOT));
-    for (const k of ['ops','mode','numChoices','maxNum','totalCorrect','totalWrong','streak','bestStreak','height','maxHeight','karma','shields','karmaLog','problems','gameBeaten']) {
+    for (const k of ['ops','mode','numChoices','maxNum','totalCorrect','totalWrong','streak','bestStreak','height','maxHeight','karma','floor','shields','karmaLog','problems','gameBeaten']) {
       if (k in old) slot[k] = old[k];
     }
     localStorage.setItem('arithmetyx_slot_' + key, JSON.stringify(slot));
@@ -589,9 +619,9 @@ if (CFG.currentSlotKey) {
   loadSlot(key);
 }
 
-function switchSlot(ops, maxNum) {
+function switchSlot(ops, minNum, maxNum) {
   saveSlot();
-  const key = getSlotKey(ops, maxNum);
+  const key = getSlotKey(ops, minNum, maxNum);
   const isNew = !localStorage.getItem('arithmetyx_slot_' + key);
   loadSlot(key);
   showSlotNote(isNew ? 'Created new slot: ' + key : 'Switched to slot: ' + key);
@@ -751,27 +781,28 @@ function getAgeThresholds(age) {
   return { speedGate: 4, masterySpeed: 3, last50Acc: 0.90, minUnique: 200, minHard: 70 };
 }
 
-function enumerateSlotProblems(ops, maxNum) {
+function enumerateSlotProblems(ops, minNum, maxNum) {
+  const mn = minNum || 0;
   const problems = [];
   if (ops.add) {
-    for (let a = 0; a <= maxNum; a++)
-      for (let b = 0; b <= maxNum; b++)
+    for (let a = mn; a <= maxNum; a++)
+      for (let b = mn; b <= maxNum; b++)
         problems.push({ a, b, op: '+', key: a+'+'+b });
   }
   if (ops.sub) {
-    for (let a = 0; a <= maxNum; a++)
-      for (let b = 0; b <= a; b++)
+    for (let a = mn; a <= maxNum; a++)
+      for (let b = mn; b <= a; b++)
         problems.push({ a, b, op: '-', key: a+'-'+b });
   }
   if (ops.mul) {
-    for (let a = 0; a <= maxNum; a++)
-      for (let b = 0; b <= maxNum; b++)
+    for (let a = mn; a <= maxNum; a++)
+      for (let b = mn; b <= maxNum; b++)
         problems.push({ a, b, op: '×', key: a+'×'+b });
   }
   if (ops.div) {
-    for (let b = 1; b <= maxNum; b++)
+    for (let b = Math.max(1, mn); b <= maxNum; b++)
       for (let a = b; a <= maxNum * maxNum; a += b) {
-        if (a / b <= maxNum)
+        if (a / b <= maxNum && a / b >= mn)
           problems.push({ a, b, op: '÷', key: a+'÷'+b });
       }
   }
@@ -781,7 +812,7 @@ function enumerateSlotProblems(ops, maxNum) {
 function getSlotMasteryInfo() {
   const age = getAge();
   const th = getAgeThresholds(age);
-  const allProbs = enumerateSlotProblems(S.ops, S.maxNum);
+  const allProbs = enumerateSlotProblems(S.ops, S.minNum, S.maxNum);
   let masteredCount = 0, masteredValue = 0, totalValue = 0;
   for (const p of allProbs) {
     const diff = calcProblemDifficulty(p.a, p.op, p.b, S.maxNum);
@@ -827,26 +858,7 @@ function checkCompletionRequirements() {
   return true;
 }
 
-// ============ PAYOUT (per-answer pay-as-you-go) ============
-const OP_WEIGHTS = { add: 1.0, sub: 1.2, mul: 1.5, div: 1.8 };
-
-function getSlotDifficulty(ops, maxNum) {
-  const rangeMult = maxNum / 10;
-  let sum = 0;
-  for (const op in ops) { if (ops[op]) sum += OP_WEIGHTS[op]; }
-  return sum * rangeMult;
-}
-
-function getAgeExpected(age) {
-  if (age <= 5) return 0.5;
-  if (age <= 6) return 1.1;
-  if (age <= 7) return 2.2;
-  if (age <= 8) return 3.7;
-  if (age <= 9) return 3.7;
-  if (age <= 10) return 5.5;
-  if (age <= 11) return 6.6;
-  return 6.6;
-}
+// ============ PAYOUT (multiplier chain) ============
 
 function getAgeSpeedFactor(age) {
   if (age <= 6) return 1.5;
@@ -860,17 +872,81 @@ function getExpectedTime(problemDifficulty, age) {
   return (2 + problemDifficulty * 1.5) * getAgeSpeedFactor(age);
 }
 
-function getSlotRateMultiplier(ops) {
-  const numOps = Object.values(ops).filter(v => v).length;
-  return Math.pow(1.2, numOps - 1);
+// --- Multiplier chain functions ---
+
+function getOpWeight(op, cfg) {
+  const r = cfg.multipliers.opsAvg;
+  const map = { add: 0, sub: 1/3, mul: 2/3, div: 1 };
+  return (r.min + (r.max - r.min) * map[op]) / 100;
+}
+
+function getOpsAvgMult(enabledOps, cfg) {
+  if (enabledOps.length === 0) return 1.0;
+  const weights = enabledOps.map(op => getOpWeight(op, cfg));
+  return weights.reduce((s, w) => s + w, 0) / weights.length;
+}
+
+function getAdditionalOpsMult(numOps, cfg) {
+  const r = cfg.multipliers.additionalOps;
+  return (r.min + (r.max - r.min) * (numOps - 1) / 3) / 100;
+}
+
+function getRangeMult(maxNum, cfg) {
+  const r = cfg.multipliers.range;
+  if (maxNum <= 10) return (r.min + (100 - r.min) * (maxNum - 5) / 5) / 100;
+  return (100 + (r.max - 100) * (maxNum - 10) / 10) / 100;
+}
+
+function getAgeExpectedWeight(age) {
+  if (age <= 6) return 1.0;
+  if (age <= 8) return 1.1;
+  if (age <= 10) return 1.2;
+  if (age <= 12) return 1.3;
+  return 1.4;
+}
+
+function getAgeMult(opsAvgWeight, age, cfg) {
+  const r = cfg.multipliers.age;
+  const expected = getAgeExpectedWeight(age);
+  const ratio = opsAvgWeight / expected;
+  if (ratio <= 1.0) {
+    return (r.min + (100 - r.min) * ratio) / 100;
+  } else {
+    return Math.min(r.max, 100 + (r.max - 100) * (ratio - 1)) / 100;
+  }
+}
+
+function getSpeedMult(expectedTimeSec, actualTimeSec, cfg) {
+  const r = cfg.multipliers.speed;
+  return Math.max(r.min / 100, Math.min(r.max / 100, expectedTimeSec / actualTimeSec));
+}
+
+function getHeightMult(height, cfg) {
+  const r = cfg.multipliers.height;
+  if (height <= TARGET_HEIGHT) {
+    return (r.min + (100 - r.min) * height / TARGET_HEIGHT) / 100;
+  } else {
+    const bonusProgress = Math.min((height - TARGET_HEIGHT) / 400, 1);
+    return (100 + (r.max - 100) * bonusProgress) / 100;
+  }
+}
+
+function getQuestionModeMult(mode, cfg) {
+  const r = cfg.multipliers.questionMode;
+  return (mode === 'question' ? r.max : r.min) / 100;
+}
+
+function getChoicesMult(numChoices, cfg) {
+  const r = cfg.multipliers.choices;
+  if (numChoices <= 4) {
+    return (100 + (r.max - 100) * (4 - numChoices)) / 100;
+  } else {
+    return (100 - (100 - r.min) * (numChoices - 4) / 4) / 100;
+  }
 }
 
 function getNumOps(ops) {
   return Object.values(ops).filter(v => v).length;
-}
-
-function getSpeedMultiplier(expectedTimeSec, actualTimeSec) {
-  return Math.max(0.5, Math.min(2.0, expectedTimeSec / actualTimeSec));
 }
 
 function formatMoney(amount) {
@@ -899,77 +975,113 @@ function renderRatePopup() {
     return;
   }
   const b = lastAnswerBreakdown;
-  const opNames = { '+': 'Addition', '-': 'Subtraction', '×': 'Multiplication', '÷': 'Division' };
-  const enabledOps = Object.entries(S.ops).filter(([k,v]) => v).map(([k]) => k);
   const opSymbols = { add: '+', sub: '−', mul: '×', div: '÷' };
-  const opWeightMap = { '+': 1.0, '-': 1.2, '×': 1.5, '÷': 1.8 };
+  const opLabels = { add: 'Addition', sub: 'Subtraction', mul: 'Multiplication', div: 'Division' };
 
-  // Compute enabled ops average weight
-  const enabledWeights = enabledOps.map(k => OP_WEIGHTS[k]);
-  const opBaseAvg = enabledWeights.reduce((s,w) => s + w, 0) / enabledWeights.length;
+  let running = b.baseRate;
+  const fmtR = (v) => '$' + v.toFixed(2) + '/hr';
+  const fmtP = (v) => Math.round(v * 100) + '%';
 
-  // Running rate calculation
-  let running = 20; // base
+  // Build op sub-lines
+  let opLines = b.enabledOps.map((op, i) => {
+    const w = b.opWeights[i];
+    return `<div class="bp-row" style="padding-left:18px;font-size:14px"><span class="bp-label" style="font-size:13px">${opSymbols[op] || op} ${opLabels[op] || op}</span><span class="bp-mult" style="font-size:13px">${fmtP(w)}</span></div>`;
+  }).join('');
 
-  // Step 1: Op difficulty (this problem's op)
-  const r1 = running * b.opWeight;
+  let r1 = running * b.opsAvgMult;
+  let r2 = r1 * b.additionalOpsMult;
+  let r3 = r2 * b.rangeMult;
+  let r4 = r3 * b.ageMult;
+  let r5 = r4 * b.speedMult;
+  let r6 = r5 * b.heightMult;
+  let r7 = r6 * b.questionModeMult;
+  let r8 = r7 * b.choicesMult;
 
-  // Step 2: Op count bonus
-  const r2 = running * b.opCountMult; // base × opCountMult
-
-  // Step 3: Speed bonus
-  const r3 = r2 * b.speedMult;
-
-  // Step 4: Scaler
-  const r4 = r3 * b.globalScaler;
+  const rOA = CFG.multipliers.opsAvg;
+  const rAO = CFG.multipliers.additionalOps;
+  const rRn = CFG.multipliers.range;
+  const rAg = CFG.multipliers.age;
+  const rSp = CFG.multipliers.speed;
+  const rHt = CFG.multipliers.height;
+  const rQM = CFG.multipliers.questionMode;
+  const rCh = CFG.multipliers.choices;
 
   popup.innerHTML = `
     <div class="bp-title">RATE BREAKDOWN</div>
-    <div class="bp-problem">${b.problem} (${opNames[b.op] || b.op})</div>
-    <div class="bp-sub">Difficulty: ${b.difficulty.toFixed(2)} · Expected: ${b.expectedTimeSec.toFixed(1)}s · Actual: ${b.actualTimeSec.toFixed(1)}s</div>
+    <div class="bp-problem">${b.problem}</div>
+    <div class="bp-sub">Difficulty: ${b.difficulty ? b.difficulty.toFixed(2) : '?'} · Expected: ${b.expectedTimeSec.toFixed(1)}s · Actual: ${b.actualTimeSec.toFixed(1)}s</div>
     <div style="height:6px"></div>
 
     <div class="bp-row">
       <span class="bp-label">Base Rate</span>
-      <span class="bp-running">$20.00/hr</span>
+      <span class="bp-running">${fmtR(running)}</span>
     </div>
     <div class="bp-divider"></div>
 
     <div class="bp-row">
-      <span class="bp-label">× Op Count (${b.numOps} op${b.numOps>1?'s':''}) 1.2^${b.numOps-1}</span>
-      <span class="bp-mult">×${b.opCountMult.toFixed(2)}</span>
+      <span class="bp-label">× Ops Avg (${rOA.min}-${rOA.max}%)</span>
+      <span class="bp-mult">${fmtP(b.opsAvgMult)}</span>
+      <span class="bp-running">→ ${fmtR(r1)}</span>
     </div>
+    ${opLines}
+    <div class="bp-divider"></div>
+
     <div class="bp-row">
-      <span class="bp-label"></span>
-      <span class="bp-running">$${r2.toFixed(2)}/hr</span>
+      <span class="bp-label">× Additional Ops (${rAO.min}-${rAO.max}%)</span>
+      <span class="bp-mult">${fmtP(b.additionalOpsMult)}</span>
+      <span class="bp-running">→ ${fmtR(r2)}</span>
     </div>
     <div class="bp-divider"></div>
 
     <div class="bp-row">
-      <span class="bp-label">× Speed (${b.expectedTimeSec.toFixed(1)}s/${b.actualTimeSec.toFixed(1)}s)</span>
-      <span class="bp-mult">×${b.speedMult.toFixed(2)}</span>
-    </div>
-    <div class="bp-row">
-      <span class="bp-label"></span>
-      <span class="bp-running">$${r3.toFixed(2)}/hr</span>
+      <span class="bp-label">× Range ${S.minNum}-${b.maxNum} (${rRn.min}-${rRn.max}%)</span>
+      <span class="bp-mult">${fmtP(b.rangeMult)}</span>
+      <span class="bp-running">→ ${fmtR(r3)}</span>
     </div>
     <div class="bp-divider"></div>
 
     <div class="bp-row">
-      <span class="bp-label">× Scaler (${Math.round(b.globalScaler*100)}%)</span>
-      <span class="bp-mult">×${b.globalScaler.toFixed(2)}</span>
+      <span class="bp-label">× Age ${b.age}yr (${rAg.min}-${rAg.max}%)</span>
+      <span class="bp-mult">${fmtP(b.ageMult)}</span>
+      <span class="bp-running">→ ${fmtR(r4)}</span>
     </div>
+    <div class="bp-divider"></div>
+
+    <div class="bp-row">
+      <span class="bp-label">× Speed ${b.actualTimeSec.toFixed(1)}s (${rSp.min}-${rSp.max}%)</span>
+      <span class="bp-mult">${fmtP(b.speedMult)}</span>
+      <span class="bp-running">→ ${fmtR(r5)}</span>
+    </div>
+    <div class="bp-divider"></div>
+
+    <div class="bp-row">
+      <span class="bp-label">× Height ${b.height} (${rHt.min}-${rHt.max}%)</span>
+      <span class="bp-mult">${fmtP(b.heightMult)}</span>
+      <span class="bp-running">→ ${fmtR(r6)}</span>
+    </div>
+    <div class="bp-divider"></div>
+
+    <div class="bp-row">
+      <span class="bp-label">× ${b.mode === 'question' ? 'Question' : 'Answer'} Mode (${rQM.min}-${rQM.max}%)</span>
+      <span class="bp-mult">${fmtP(b.questionModeMult)}</span>
+      <span class="bp-running">→ ${fmtR(r7)}</span>
+    </div>
+    <div class="bp-divider"></div>
+
+    <div class="bp-row">
+      <span class="bp-label">× Choices ${b.numChoices} (${rCh.min}-${rCh.max}%)</span>
+      <span class="bp-mult">${fmtP(b.choicesMult)}</span>
+      <span class="bp-running">→ ${fmtR(r8)}</span>
+    </div>
+
     <div class="bp-total">
-      <span>Effective Rate</span>
-      <span>$${r4.toFixed(2)}/hr</span>
+      <span>YOUR RATE</span>
+      <span>${fmtR(r8)}</span>
     </div>
     <div class="bp-earned">
-      <span>You earned</span>
+      <span>Earned</span>
       <span>${formatMoney(b.answerPay)} in ${b.actualTimeSec.toFixed(1)}s</span>
     </div>
-    <div style="height:6px"></div>
-    <div class="bp-sub">Op weights: ${enabledOps.map(k => opSymbols[k] + '=' + (OP_WEIGHTS[k]*100).toFixed(0) + '%').join(', ')}</div>
-    <div class="bp-sub">Avg op weight: ${(opBaseAvg*100).toFixed(0)}%</div>
   `;
 }
 
@@ -1016,13 +1128,14 @@ function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) 
 function generateProblem() {
   const ops = getOps();
   const op = ops[randInt(0, ops.length - 1)];
+  const mn = S.minNum || 0;
   const mx = S.maxNum;
   let a, b, answer;
   switch(op) {
-    case '+': a = randInt(0, mx); b = randInt(0, mx); answer = a + b; break;
-    case '-': a = randInt(0, mx); b = randInt(0, a); answer = a - b; break;
-    case '×': a = randInt(0, mx); b = randInt(0, mx); answer = a * b; break;
-    case '÷': b = randInt(1, mx); answer = randInt(0, mx); a = b * answer; break;
+    case '+': a = randInt(mn, mx); b = randInt(mn, mx); answer = a + b; break;
+    case '-': a = randInt(mn, mx); b = randInt(mn, a); answer = a - b; break;
+    case '×': a = randInt(mn, mx); b = randInt(mn, mx); answer = a * b; break;
+    case '÷': b = randInt(Math.max(1, mn), mx); answer = randInt(mn, mx); a = b * answer; break;
   }
   return { a, b, op, answer };
 }
@@ -1055,7 +1168,7 @@ function selectProblem() {
 }
 
 function selectBonusProblem() {
-  const allProbs = enumerateSlotProblems(S.ops, S.maxNum);
+  const allProbs = enumerateSlotProblems(S.ops, S.minNum, S.maxNum);
   const weighted = allProbs.map(p => ({ ...p, diff: calcProblemDifficulty(p.a, p.op, p.b, S.maxNum) }));
   weighted.sort((a, b) => b.diff - a.diff);
   const top = Math.max(10, Math.floor(weighted.length * 0.3));
@@ -1179,16 +1292,28 @@ function handleAnswer(val, btn) {
       S.last50.push({ firstTryCorrect: wrongThisProblem === 0, responseTime: elapsed });
       if (S.last50.length > 50) S.last50.shift();
 
-      // Per-answer pay
+      // Per-answer pay (multiplier chain)
       const probDiff = calcProblemDifficulty(currentProblem.a, currentProblem.op, currentProblem.b, S.maxNum);
       const age = getAge();
       const expectedTimeSec = getExpectedTime(probDiff, age);
       const actualTimeSec = elapsed / 1000;
-      const opWeight = { '+': 1.0, '-': 1.2, '×': 1.5, '÷': 1.8 }[currentProblem.op] || 1.0;
-      const slotRateMult = getSlotRateMultiplier(S.ops);
-      const numOps = getNumOps(S.ops);
-      const speedMult = getSpeedMultiplier(expectedTimeSec, actualTimeSec);
-      const answerPay = (expectedTimeSec / 3600) * 20 * slotRateMult * speedMult * CFG.globalMoneyScaler;
+
+      const enabledOps = Object.entries(S.ops).filter(([k,v]) => v).map(([k]) => k);
+      const opWeights = enabledOps.map(op => getOpWeight(op, CFG));
+      const opsAvgMult = getOpsAvgMult(enabledOps, CFG);
+      const numOps = enabledOps.length;
+      const additionalOpsMult = getAdditionalOpsMult(numOps, CFG);
+      const rangeMult = getRangeMult(S.maxNum, CFG);
+      const ageMult = getAgeMult(opsAvgMult, age, CFG);
+      const speedMult = getSpeedMult(expectedTimeSec, actualTimeSec, CFG);
+      const heightMult = getHeightMult(S.height, CFG);
+      const questionModeMult = getQuestionModeMult(S.mode, CFG);
+      const choicesMult = getChoicesMult(S.numChoices, CFG);
+
+      const preSpeedRate = CFG.baseRate * opsAvgMult * additionalOpsMult * rangeMult * ageMult * heightMult * questionModeMult * choicesMult;
+      const effectiveRate = preSpeedRate * speedMult;
+      const answerPay = (expectedTimeSec / 3600) * preSpeedRate * speedMult;
+
       S.slotEarnings += answerPay;
       if (!S.last10pays) S.last10pays = [];
       S.last10pays.push({ pay: answerPay, timestamp: Date.now(), responseMs: elapsed });
@@ -1197,17 +1322,17 @@ function handleAnswer(val, btn) {
       // Store last answer breakdown for popup
       lastAnswerBreakdown = {
         problem: `${currentProblem.a} ${currentProblem.op} ${currentProblem.b}`,
-        op: currentProblem.op,
-        opWeight: opWeight,
-        difficulty: probDiff,
-        expectedTimeSec: expectedTimeSec,
-        actualTimeSec: actualTimeSec,
-        speedMult: speedMult,
-        opCountMult: slotRateMult,
-        numOps: numOps,
-        globalScaler: CFG.globalMoneyScaler,
-        answerPay: answerPay,
-        effectiveRate: (answerPay / actualTimeSec) * 3600
+        baseRate: CFG.baseRate,
+        opsAvgMult, opWeights, enabledOps,
+        additionalOpsMult, numOps,
+        rangeMult, maxNum: S.maxNum,
+        ageMult, age,
+        speedMult, expectedTimeSec, actualTimeSec,
+        heightMult, height: S.height,
+        questionModeMult, mode: S.mode,
+        choicesMult, numChoices: S.numChoices,
+        effectiveRate, answerPay,
+        difficulty: probDiff
       };
     }
 
@@ -1271,7 +1396,7 @@ function handleAnswer(val, btn) {
     if (S.shields > 0) { S.shields--; shielded = true; AudioEngine.playShieldBreak(); }
     else { S.karma = Math.max(0, S.karma - 1); }
 
-    const floor = S.karma * 5;
+    const floor = S.floor || 0;
     const heightBefore = S.height;
     S.height = Math.max(floor, 0);
 
@@ -1710,7 +1835,7 @@ function renderReportCard() {
       const raw = localStorage.getItem('arithmetyx_slot_' + key);
       if (!raw) continue;
       const slot = JSON.parse(raw);
-      const allProbs = enumerateSlotProblems(slot.ops, slot.maxNum);
+      const allProbs = enumerateSlotProblems(slot.ops, slot.minNum, slot.maxNum);
       const th = getAgeThresholds(age);
       let mc = 0;
       for (const p of allProbs) {
@@ -1810,7 +1935,7 @@ function renderSlotsList() {
       const slot = JSON.parse(raw);
       const isCurrent = key === CFG.currentSlotKey;
       const ops = Object.entries(slot.ops).filter(([,v])=>v).map(([k])=>opSymbols[k]||k).join(' ');
-      const allProbs = enumerateSlotProblems(slot.ops, slot.maxNum);
+      const allProbs = enumerateSlotProblems(slot.ops, slot.minNum, slot.maxNum);
       const th = getAgeThresholds(getAge());
       let mc = 0;
       for (const p of allProbs) {
@@ -1986,11 +2111,26 @@ document.getElementById('apply-karma-btn').addEventListener('click', () => {
   updateUI();
 });
 
+document.getElementById('floor-range').addEventListener('input', (e) => {
+  document.getElementById('floor-range-val').textContent = e.target.value;
+});
+
+document.getElementById('apply-floor-btn').addEventListener('click', () => {
+  const newFloor = parseInt(document.getElementById('floor-range').value);
+  S.floor = newFloor;
+  if (S.height < newFloor) S.height = newFloor;
+  saveSlot();
+  renderKarmaUI();
+  updateUI();
+});
+
 function renderKarmaUI() {
   document.getElementById('menu-karma-val').textContent = S.karma;
-  document.getElementById('menu-floor-val').textContent = S.karma * 5;
+  document.getElementById('menu-floor-val').textContent = S.floor || 0;
   document.getElementById('karma-range').value = S.karma;
   document.getElementById('karma-range-val').textContent = S.karma;
+  document.getElementById('floor-range').value = S.floor || 0;
+  document.getElementById('floor-range-val').textContent = S.floor || 0;
 
   const log = document.getElementById('karma-log');
   const entries = (S.karmaLog || []).slice().reverse();
@@ -2001,7 +2141,7 @@ function renderKarmaUI() {
     return `<div style="font-size:14px;color:var(--fg-dim);padding:3px 0;border-bottom:1px solid rgba(200,192,184,0.05)">
       <span style="color:var(--fg)">${dateStr}</span> · 
       Karma <span style="color:var(--red-bright)">${e.from}</span> → <span style="color:var(--green-bright)">${e.to}</span>
-      (floor ${e.to * 5})
+      ${e.floor !== undefined ? '(floor ' + e.floor + ')' : ''}
     </div>`;
   }).join('');
 }
