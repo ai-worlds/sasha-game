@@ -1,0 +1,1650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ARITHMETYX — The Descent</title>
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Silkscreen:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+:root{
+  --bg:#0a0a0c;--bg2:#111116;--fg:#c8c0b8;--fg-dim:#5a5650;--accent:#b83030;--accent2:#d44;
+  --green:#2a7a3a;--green-bright:#3fb855;--red:#8a1a1a;--red-bright:#d43030;
+  --gold:#c9a84c;--purple:#6a3a8a;--cyan:#2a8a8a;
+  --font-display:'Silkscreen',monospace;--font-body:'VT323',monospace;--font-mono:'JetBrains Mono',monospace;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-family:var(--font-body)}
+#app{height:100%;display:flex;flex-direction:column;position:relative;overflow:hidden}
+
+/* Scanlines */
+#app::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px);
+  pointer-events:none;z-index:9999}
+
+/* Background game canvas */
+#game-canvas{position:absolute;top:0;left:0;width:100%;height:100%;z-index:0}
+
+/* Overlay for readability */
+#overlay{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;
+  background:radial-gradient(ellipse at center,rgba(10,10,12,0.35) 0%,rgba(10,10,12,0.6) 100%);
+  pointer-events:none}
+
+/* Top bar */
+#top-bar{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px;background:rgba(10,10,12,0.85);border-bottom:1px solid rgba(184,48,48,0.3);min-height:48px}
+#top-bar .title{font-family:var(--font-display);font-size:14px;color:var(--accent2);letter-spacing:2px}
+#top-bar .stats{display:flex;gap:12px;font-size:18px;color:var(--fg-dim)}
+#top-bar .stats span{display:flex;align-items:center;gap:3px}
+#top-bar .stats .val{color:var(--fg)}
+.menu-btn{background:none;border:1px solid var(--accent);color:var(--accent2);
+  font-family:var(--font-display);font-size:12px;padding:6px 12px;cursor:pointer;
+  letter-spacing:1px;transition:all .2s}
+.menu-btn:hover,.menu-btn:active{background:var(--accent);color:#fff}
+
+/* Main question area */
+#question-area{position:relative;z-index:10;flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;padding:16px;gap:12px}
+
+#problem-display{font-family:var(--font-display);font-size:clamp(28px,7vw,52px);
+  color:#fff;text-shadow:0 0 20px rgba(184,48,48,0.5),0 2px 8px rgba(0,0,0,0.8);
+  padding:16px 24px;background:rgba(10,10,12,0.7);border:1px solid rgba(184,48,48,0.25);
+  border-radius:4px;text-align:center;min-width:280px;letter-spacing:2px;
+  animation:pulse-glow 3s ease-in-out infinite}
+@keyframes pulse-glow{0%,100%{box-shadow:0 0 15px rgba(184,48,48,0.15)}50%{box-shadow:0 0 25px rgba(184,48,48,0.3)}}
+
+/* Feedback flash */
+#feedback{position:fixed;top:0;left:0;right:0;bottom:0;z-index:50;pointer-events:none;
+  display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s}
+#feedback.correct{background:rgba(42,122,58,0.25);opacity:1}
+#feedback.wrong{background:rgba(138,26,26,0.35);opacity:1}
+#feedback .fb-text{font-family:var(--font-display);font-size:clamp(32px,10vw,64px);
+  text-shadow:0 0 30px currentColor}
+#feedback.correct .fb-text{color:var(--green-bright)}
+#feedback.wrong .fb-text{color:var(--red-bright)}
+
+/* Answer grid */
+#answers{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;width:100%;max-width:420px;
+  padding:0 8px}
+#answers.cols-3{grid-template-columns:repeat(3,1fr)}
+#answers.cols-4{grid-template-columns:repeat(4,1fr)}
+.answer-btn{font-family:var(--font-body);font-size:clamp(22px,5vw,34px);
+  padding:14px 8px;background:rgba(20,18,22,0.85);border:1px solid rgba(200,192,184,0.15);
+  color:var(--fg);cursor:pointer;border-radius:4px;transition:all .15s;
+  text-align:center;min-height:54px;display:flex;align-items:center;justify-content:center;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.answer-btn:hover{border-color:var(--accent);background:rgba(184,48,48,0.12)}
+.answer-btn:active{transform:scale(0.95);background:rgba(184,48,48,0.25);border-color:var(--accent2)}
+.answer-btn.correct-flash{background:rgba(42,122,58,0.5)!important;border-color:var(--green-bright)!important;color:#fff!important}
+.answer-btn.wrong-flash{background:rgba(138,26,26,0.5)!important;border-color:var(--red-bright)!important;color:#fff!important}
+
+/* Height / nerf info */
+#climb-info{position:relative;z-index:10;display:flex;justify-content:space-between;align-items:center;
+  padding:6px 12px;background:rgba(10,10,12,0.85);border-top:1px solid rgba(184,48,48,0.2);
+  font-size:16px;color:var(--fg-dim);min-height:36px}
+#climb-info .height-val{color:var(--gold);font-family:var(--font-display);font-size:13px}
+#climb-info .nerf-val{color:var(--purple);font-family:var(--font-display);font-size:13px}
+#progress-bar{position:relative;z-index:10;height:4px;background:rgba(184,48,48,0.15)}
+#progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));transition:width .3s;width:0%}
+
+/* Menu overlay */
+#menu-overlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:100;
+  background:rgba(5,5,8,0.95);display:none;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#menu-overlay.open{display:flex;flex-direction:column;align-items:center}
+#menu-content{width:100%;max-width:480px;padding:20px 16px 40px}
+#menu-content h2{font-family:var(--font-display);color:var(--accent2);font-size:18px;
+  margin:20px 0 12px;letter-spacing:2px;border-bottom:1px solid rgba(184,48,48,0.3);padding-bottom:6px}
+#menu-content h3{font-family:var(--font-display);color:var(--gold);font-size:14px;margin:14px 0 8px}
+.menu-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;
+  border-bottom:1px solid rgba(200,192,184,0.06)}
+.menu-row label{font-size:20px;color:var(--fg)}
+.toggle{position:relative;width:48px;height:26px;background:var(--red);border-radius:13px;
+  cursor:pointer;transition:background .3s;flex-shrink:0}
+.toggle.on{background:var(--green)}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;
+  background:#fff;border-radius:50%;transition:left .2s}
+.toggle.on::after{left:25px}
+.range-row{display:flex;align-items:center;gap:10px;padding:8px 0}
+.range-row input[type=range]{flex:1;accent-color:var(--accent2)}
+.range-row .range-val{font-family:var(--font-mono);font-size:16px;color:var(--accent2);min-width:28px;text-align:center}
+.menu-btn-big{width:100%;padding:14px;font-family:var(--font-display);font-size:14px;
+  cursor:pointer;border-radius:4px;margin:6px 0;letter-spacing:1px;transition:all .2s;text-align:center}
+.btn-danger{background:rgba(138,26,26,0.3);border:1px solid var(--red-bright);color:var(--red-bright)}
+.btn-danger:hover,.btn-danger:active{background:var(--red);color:#fff}
+.btn-close{background:rgba(200,192,184,0.08);border:1px solid rgba(200,192,184,0.2);color:var(--fg)}
+.btn-close:hover,.btn-close:active{background:rgba(200,192,184,0.15)}
+
+/* Hard problems list */
+.hard-list{max-height:320px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.hard-item{display:flex;justify-content:space-between;align-items:center;padding:8px 6px;
+  border-bottom:1px solid rgba(200,192,184,0.05);font-size:17px}
+.hard-item .prob{color:var(--fg);font-family:var(--font-mono);font-size:15px}
+.hard-item .hstats{color:var(--fg-dim);font-size:14px;text-align:right}
+.hard-item .hstats .bad{color:var(--red-bright)}
+.hard-item .hstats .slow{color:var(--gold)}
+
+/* Mode selector in menu */
+.mode-btns{display:flex;gap:8px;margin:8px 0}
+.mode-btn{flex:1;padding:10px;font-family:var(--font-display);font-size:12px;
+  cursor:pointer;border-radius:4px;text-align:center;letter-spacing:1px;transition:all .2s;
+  border:1px solid rgba(200,192,184,0.15);background:rgba(20,18,22,0.8);color:var(--fg-dim)}
+.mode-btn.active{border-color:var(--accent2);color:var(--accent2);background:rgba(184,48,48,0.12)}
+
+/* Intro screen */
+#intro-screen{position:fixed;top:0;left:0;right:0;bottom:0;z-index:200;
+  background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:20px;text-align:center}
+#intro-screen h1{font-family:var(--font-display);font-size:clamp(24px,6vw,40px);
+  color:var(--accent2);letter-spacing:4px;margin-bottom:8px;
+  text-shadow:0 0 30px rgba(184,48,48,0.6)}
+#intro-screen .sub{font-size:22px;color:var(--fg-dim);margin-bottom:30px;font-style:italic}
+#intro-screen .tagline{font-size:18px;color:var(--fg-dim);max-width:320px;line-height:1.6;margin-bottom:30px}
+.start-btn{font-family:var(--font-display);font-size:16px;padding:16px 40px;
+  background:rgba(184,48,48,0.2);border:2px solid var(--accent2);color:var(--accent2);
+  cursor:pointer;letter-spacing:3px;transition:all .3s;border-radius:4px}
+.start-btn:hover,.start-btn:active{background:var(--accent);color:#fff;transform:scale(1.05)}
+
+/* Victory */
+#victory-screen{position:fixed;top:0;left:0;right:0;bottom:0;z-index:200;
+  background:rgba(5,5,8,0.97);display:none;flex-direction:column;align-items:center;justify-content:center;
+  padding:20px;text-align:center}
+#victory-screen.show{display:flex}
+#victory-screen h1{font-family:var(--font-display);font-size:clamp(20px,5vw,36px);color:var(--gold);
+  letter-spacing:3px;margin-bottom:12px;text-shadow:0 0 30px rgba(201,168,76,0.6)}
+#victory-screen p{font-size:20px;color:var(--fg-dim);margin:6px 0;max-width:340px}
+
+/* Responsive */
+@media(max-width:360px){
+  #problem-display{font-size:24px;padding:12px 16px;min-width:auto}
+  .answer-btn{font-size:20px;padding:10px 6px;min-height:46px}
+  #top-bar .stats{gap:6px;font-size:16px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="game-canvas"></canvas>
+  <div id="overlay"></div>
+
+  <div id="top-bar">
+    <div class="title">ARITHMETYX</div>
+    <div class="stats">
+      <span>⚡<span class="val" id="stat-streak">0</span></span>
+      <span>✓<span class="val" id="stat-correct">0</span></span>
+      <span>✗<span class="val" id="stat-wrong">0</span></span>
+    </div>
+    <button class="menu-btn" id="menu-open-btn">☰ MENU</button>
+  </div>
+
+  <div id="question-area">
+    <div id="problem-display">...</div>
+    <div id="answers"></div>
+  </div>
+
+  <div id="progress-bar"><div id="progress-fill"></div></div>
+  <div id="climb-info">
+    <span class="height-val" id="height-display">HEIGHT: 0</span>
+    <span id="shield-display" style="color:#4ad4d4;font-family:var(--font-display);font-size:13px">SHIELDS: 0</span>
+    <span class="nerf-val" id="nerf-display">KARMA: 0</span>
+  </div>
+
+  <div id="feedback"><span class="fb-text"></span></div>
+</div>
+
+<!-- Intro -->
+<div id="intro-screen">
+  <h1>ARITHMETYX</h1>
+  <div class="sub">The Descent</div>
+  <div class="tagline">In a world where numbers are all that remain, climb the infinite tower. Every wrong answer sends you plummeting. There is no mercy — only arithmetic.</div>
+  <button class="start-btn" id="start-btn">BEGIN DESCENT</button>
+</div>
+
+<!-- Victory -->
+<div id="victory-screen">
+  <h1>THE TOWER IS CONQUERED</h1>
+  <p>You have escaped the arithmetic void.</p>
+  <p id="victory-stats"></p>
+  <button class="start-btn" style="margin-top:20px" id="continue-btn">CONTINUE CLIMBING</button>
+</div>
+
+<!-- Menu -->
+<div id="menu-overlay">
+  <div id="menu-content">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h2 style="margin:0;border:none;padding:0">CONFIGURATION</h2>
+      <button class="menu-btn" id="menu-close-btn">✕ CLOSE</button>
+    </div>
+
+    <h3>OPERATIONS</h3>
+    <div class="menu-row"><label>Addition (+)</label><div class="toggle on" data-op="add"></div></div>
+    <div class="menu-row"><label>Subtraction (−)</label><div class="toggle on" data-op="sub"></div></div>
+    <div class="menu-row"><label>Multiplication (×)</label><div class="toggle on" data-op="mul"></div></div>
+    <div class="menu-row"><label>Division (÷)</label><div class="toggle on" data-op="div"></div></div>
+
+    <h3>MODE</h3>
+    <div class="mode-btns">
+      <div class="mode-btn active" data-mode="answer">ANSWER MODE</div>
+      <div class="mode-btn" data-mode="question">QUESTION MODE</div>
+    </div>
+    <div style="font-size:15px;color:var(--fg-dim);padding:4px 0">
+      Answer: pick the result &nbsp;|&nbsp; Question: pick the missing number
+    </div>
+
+    <h3>ANSWER CHOICES</h3>
+    <div class="range-row">
+      <span style="font-size:16px;color:var(--fg-dim)">Choices:</span>
+      <input type="range" min="4" max="8" value="4" id="choices-range">
+      <span class="range-val" id="choices-val">4</span>
+    </div>
+
+    <h3>NUMBER RANGE</h3>
+    <div class="range-row">
+      <span style="font-size:16px;color:var(--fg-dim)">Max:</span>
+      <input type="range" min="6" max="20" value="12" id="maxnum-range">
+      <span class="range-val" id="maxnum-val">12</span>
+    </div>
+
+    <h2>KARMA &amp; FLOOR</h2>
+    <div style="font-size:16px;color:var(--fg-dim);padding:4px 0;margin-bottom:6px">
+      Current Karma: <span style="color:var(--purple)" id="menu-karma-val">0</span> · 
+      Floor: <span style="color:var(--gold)" id="menu-floor-val">0</span>
+    </div>
+    <div class="range-row">
+      <span style="font-size:16px;color:var(--fg-dim)">Set Karma:</span>
+      <input type="range" min="0" max="200" value="0" id="karma-range">
+      <span class="range-val" id="karma-range-val">0</span>
+    </div>
+    <button class="menu-btn-big btn-close" id="apply-karma-btn">APPLY KARMA</button>
+    <div id="karma-log" style="margin-top:10px;max-height:150px;overflow-y:auto"></div>
+
+    <h2>YOUR HARDEST PROBLEMS</h2>
+    <div class="hard-list" id="hard-list"></div>
+
+    <h2>AUDIO</h2>
+    <div class="menu-row"><label>Sound Effects</label><div class="toggle on" id="toggle-sfx"></div></div>
+    <div class="menu-row"><label>Music</label><div class="toggle on" id="toggle-music"></div></div>
+    <div class="range-row">
+      <span style="font-size:16px;color:var(--fg-dim)">Volume:</span>
+      <input type="range" min="0" max="100" value="50" id="volume-range">
+      <span class="range-val" id="volume-val">50</span>
+    </div>
+
+    <h2>ACTIONS</h2>
+    <button class="menu-btn-big btn-danger" id="reset-btn">⚠ RESET ALL PROGRESS</button>
+    <button class="menu-btn-big btn-close" id="menu-close-btn2">BACK TO THE VOID</button>
+  </div>
+</div>
+
+<script>
+// ============ STATE ============
+const DEFAULT_STATE = {
+  ops: { add: true, sub: true, mul: true, div: true },
+  mode: 'answer',
+  numChoices: 4,
+  maxNum: 12,
+  totalCorrect: 0,
+  totalWrong: 0,
+  streak: 0,
+  bestStreak: 0,
+  height: 0,
+  maxHeight: 0,
+  karma: 0, // karma level: +1 per 10 correct, -1 per wrong, no cap
+  shields: 0, // earned by correct streaks, absorb karma loss. +1 per 5 streak, max 5
+  karmaLog: [], // [{date, karma, note}] - manual adjustments log
+  problems: {}, // key -> {correct, wrong, lastTime, attempts}
+  gameBeaten: false
+};
+
+let S;
+const TARGET_HEIGHT = 600; // platforms to "beat" the game
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem('arithmetyx_state');
+    if (raw) { S = JSON.parse(raw); } else { S = JSON.parse(JSON.stringify(DEFAULT_STATE)); }
+    // patch missing fields
+    for (const k in DEFAULT_STATE) { if (!(k in S)) S[k] = typeof DEFAULT_STATE[k]==='object'? JSON.parse(JSON.stringify(DEFAULT_STATE[k])) : DEFAULT_STATE[k]; }
+  } catch(e) { S = JSON.parse(JSON.stringify(DEFAULT_STATE)); }
+}
+function saveState() { try { localStorage.setItem('arithmetyx_state', JSON.stringify(S)); } catch(e){} }
+
+loadState();
+
+// ============ PROBLEM GENERATION ============
+function getOps() {
+  const ops = [];
+  if (S.ops.add) ops.push('+');
+  if (S.ops.sub) ops.push('-');
+  if (S.ops.mul) ops.push('×');
+  if (S.ops.div) ops.push('÷');
+  return ops.length ? ops : ['+'];
+}
+
+function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+function generateProblem() {
+  const ops = getOps();
+  const op = ops[randInt(0, ops.length - 1)];
+  const mx = S.maxNum;
+  let a, b, answer;
+
+  switch(op) {
+    case '+':
+      a = randInt(1, mx); b = randInt(1, mx); answer = a + b; break;
+    case '-':
+      a = randInt(1, mx); b = randInt(1, a); answer = a - b; break;
+    case '×':
+      a = randInt(2, mx); b = randInt(2, mx); answer = a * b; break;
+    case '÷':
+      b = randInt(2, mx); answer = randInt(1, mx); a = b * answer; break;
+  }
+  return { a, b, op, answer };
+}
+
+function problemKey(p) { return `${p.a}${p.op}${p.b}`; }
+
+function getProblemWeight(key) {
+  const d = S.problems[key];
+  if (!d) return 1.0; // never seen = normal weight
+  const lastTime = d.lastTime || 5000;
+  const wrongRate = d.attempts > 0 ? d.wrong / d.attempts : 0;
+  // Hard = slow last answer or high wrong rate => higher weight
+  // Easy = fast last answer and no wrongs => lower weight
+  const timeScore = Math.min(lastTime / 3000, 3); // 3s baseline, max 3x
+  const wrongScore = 1 + wrongRate * 3;
+  const easyPenalty = (d.correct >= 3 && d.wrong === 0 && lastTime < 3000) ? 0.2 : 1;
+  return timeScore * wrongScore * easyPenalty;
+}
+
+function selectProblem() {
+  // Generate a pool of candidates and weight them
+  const candidates = [];
+  for (let i = 0; i < 20; i++) {
+    const p = generateProblem();
+    const key = problemKey(p);
+    const w = getProblemWeight(key);
+    candidates.push({ p, key, w });
+  }
+  // Weighted random selection
+  const totalW = candidates.reduce((s, c) => s + c.w, 0);
+  let r = Math.random() * totalW;
+  for (const c of candidates) {
+    r -= c.w;
+    if (r <= 0) return c.p;
+  }
+  return candidates[candidates.length - 1].p;
+}
+
+// ============ GAME LOGIC ============
+let currentProblem = null;
+let problemStartTime = 0;
+let wrongThisProblem = 0;
+let answersLocked = false;
+
+function formatProblem(p) {
+  if (S.mode === 'answer') {
+    return `${p.a} ${p.op} ${p.b} = ?`;
+  } else {
+    // question mode: hide b
+    return `${p.a} ${p.op} __ = ${p.answer}`;
+  }
+}
+
+function getCorrectValue(p) {
+  return S.mode === 'answer' ? p.answer : p.b;
+}
+
+function generateDistractors(correct, count, p) {
+  const distractors = new Set();
+  distractors.add(correct);
+
+  // Smart distractors near the correct answer
+  const tryAdd = (v) => { if (v > 0 && v !== correct && Number.isInteger(v)) distractors.add(v); };
+
+  // Near misses
+  for (let d = 1; d <= 5; d++) {
+    tryAdd(correct + d);
+    tryAdd(correct - d);
+  }
+  // Common mistakes
+  if (p.op === '×') {
+    tryAdd(p.a + p.b);
+    tryAdd(correct + p.a);
+    tryAdd(correct - p.b);
+  }
+  if (p.op === '+') {
+    tryAdd(p.a * p.b);
+  }
+
+  // Fill remaining randomly
+  let tries = 0;
+  while (distractors.size < count && tries < 200) {
+    const range = Math.max(correct, 20);
+    const v = randInt(Math.max(1, correct - range), correct + range);
+    if (v > 0 && Number.isInteger(v)) distractors.add(v);
+    tries++;
+  }
+
+  const arr = Array.from(distractors).slice(0, count);
+  // Shuffle
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = randInt(0, i);
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function presentProblem() {
+  currentProblem = selectProblem();
+  problemStartTime = Date.now();
+  wrongThisProblem = 0;
+  answersLocked = false;
+
+  document.getElementById('problem-display').textContent = formatProblem(currentProblem);
+
+  const correctVal = getCorrectValue(currentProblem);
+  const choices = generateDistractors(correctVal, S.numChoices, currentProblem);
+  const container = document.getElementById('answers');
+  container.innerHTML = '';
+  container.className = S.numChoices >= 7 ? 'cols-4' : S.numChoices >= 5 ? 'cols-3' : '';
+  if (S.numChoices <= 4) container.className = '';
+
+  choices.forEach(val => {
+    const btn = document.createElement('button');
+    btn.className = 'answer-btn';
+    btn.textContent = val;
+    btn.addEventListener('click', () => handleAnswer(val, btn));
+    btn.addEventListener('touchstart', (e) => { e.preventDefault(); handleAnswer(val, btn); }, { passive: false });
+    container.appendChild(btn);
+  });
+}
+
+function handleAnswer(val, btn) {
+  if (answersLocked) return;
+  const correctVal = getCorrectValue(currentProblem);
+  const key = problemKey(currentProblem);
+  const elapsed = Date.now() - problemStartTime;
+
+  if (!S.problems[key]) S.problems[key] = { correct: 0, wrong: 0, lastTime: 0, attempts: 0 };
+
+  if (val === correctVal) {
+    answersLocked = true;
+    btn.classList.add('correct-flash');
+    Audio.playCorrect();
+    S.problems[key].correct++;
+    S.problems[key].lastTime = elapsed;
+    S.problems[key].attempts++;
+    S.totalCorrect++;
+    S.streak++;
+    if (S.streak > S.bestStreak) S.bestStreak = S.streak;
+    Audio.playStreak(S.streak);
+
+    // Update karma: +1 every 10 correct answers
+    if (S.totalCorrect % 10 === 0) S.karma++;
+
+    // Shields: +1 every 5 streak, max 5
+    if (S.streak % 5 === 0 && S.shields < 5) {
+      S.shields++;
+      Audio.playShieldGain();
+    }
+
+    // Climb
+    S.height++;
+    if (S.height > S.maxHeight) S.maxHeight = S.height;
+
+    showFeedback(true);
+    saveState();
+    updateUI();
+
+    // Check victory
+    if (S.height >= TARGET_HEIGHT && !S.gameBeaten) {
+      S.gameBeaten = true;
+      saveState();
+      Audio.playVictory();
+      setTimeout(showVictory, 600);
+      return;
+    }
+
+    setTimeout(presentProblem, 400);
+  } else {
+    btn.classList.add('wrong-flash');
+    wrongThisProblem++;
+    S.problems[key].wrong++;
+    S.problems[key].attempts++;
+    S.totalWrong++;
+    S.streak = 0;
+
+    // Shields absorb karma loss
+    let shielded = false;
+    if (S.shields > 0) {
+      S.shields--;
+      shielded = true;
+      Audio.playShieldBreak();
+      // No karma loss — shield absorbed it
+    } else {
+      // No shield: lose 1 karma
+      S.karma = Math.max(0, S.karma - 1);
+    }
+
+    // Fall: drop to floor of karma * 5
+    const floor = S.karma * 5;
+    const heightBefore = S.height;
+    S.height = Math.max(floor, 0);
+
+    Audio.playWrong();
+    if (heightBefore - S.height > 5) Audio.playFall();
+    // Screen shake — more intense at higher heights
+    screenShake = Math.min(25, 5 + S.height * 0.02);
+
+    showFeedback(false, shielded);
+    saveState();
+    updateUI();
+
+    setTimeout(() => { btn.classList.remove('wrong-flash'); }, 300);
+  }
+}
+
+function showFeedback(correct, shielded) {
+  const fb = document.getElementById('feedback');
+  fb.querySelector('.fb-text').textContent = correct ? '✓' : shielded ? '🛡' : '✗';
+  fb.className = correct ? 'correct' : 'wrong';
+  setTimeout(() => { fb.className = ''; }, 300);
+}
+
+function updateUI() {
+  document.getElementById('stat-streak').textContent = S.streak;
+  document.getElementById('stat-correct').textContent = S.totalCorrect;
+  document.getElementById('stat-wrong').textContent = S.totalWrong;
+  document.getElementById('height-display').textContent = `HEIGHT: ${S.height} / ${TARGET_HEIGHT}`;
+  document.getElementById('nerf-display').textContent = `KARMA: ${S.karma}`;
+  // Shield display with orb icons
+  const shieldIcons = '●'.repeat(S.shields) + '○'.repeat(5 - S.shields);
+  document.getElementById('shield-display').textContent = shieldIcons;
+  // Progress bar: before 600 shows progress to 600; after 600, shows progress within current 100-level milestone
+  if (S.height < TARGET_HEIGHT) {
+    document.getElementById('progress-fill').style.width = `${(S.height / TARGET_HEIGHT) * 100}%`;
+  } else {
+    const milestone = Math.floor(S.height / 100) * 100;
+    document.getElementById('progress-fill').style.width = `${((S.height - milestone) / 100) * 100}%`;
+  }
+  // Intensity-driven visual escalation
+  const zone = getZone(S.height);
+  const intens = zone.intensity || 0;
+  const pd = document.getElementById('problem-display');
+  const glowStr = Math.round(20 + intens * 30);
+  pd.style.textShadow = `0 0 ${glowStr}px rgba(184,48,48,${0.5 + intens * 0.4}), 0 2px 8px rgba(0,0,0,0.8)`;
+  pd.style.borderColor = `rgba(184,48,48,${0.25 + intens * 0.4})`;
+  // Progress bar color shifts
+  const pf = document.getElementById('progress-fill');
+  if (S.height >= TARGET_HEIGHT) {
+    pf.style.background = `linear-gradient(90deg, ${zone.charGlow || '#d44'}, ${zone.edgeColor || '#c9a84c'})`;
+  }
+}
+
+// ============ MENU ============
+function openMenu() {
+  Audio.playMenuOpen();
+  document.getElementById('menu-overlay').classList.add('open');
+  renderMenu();
+  renderHardList();
+}
+function closeMenu() {
+  Audio.playMenuClose();
+  document.getElementById('menu-overlay').classList.remove('open');
+  saveState();
+  presentProblem();
+}
+
+function renderMenu() {
+  document.querySelectorAll('.toggle[data-op]').forEach(el => {
+    el.classList.toggle('on', S.ops[el.dataset.op]);
+  });
+  document.querySelectorAll('.mode-btn').forEach(el => {
+    el.classList.toggle('active', el.dataset.mode === S.mode);
+  });
+  document.getElementById('choices-range').value = S.numChoices;
+  document.getElementById('choices-val').textContent = S.numChoices;
+  document.getElementById('maxnum-range').value = S.maxNum;
+  document.getElementById('maxnum-val').textContent = S.maxNum;
+  renderKarmaUI();
+}
+
+function renderHardList() {
+  const list = document.getElementById('hard-list');
+  const entries = Object.entries(S.problems)
+    .map(([key, d]) => ({
+      key,
+      difficulty: (d.lastTime || 0) * (1 + (d.wrong / Math.max(1, d.attempts)) * 3),
+      ...d
+    }))
+    .sort((a, b) => b.difficulty - a.difficulty)
+    .slice(0, 20);
+
+  if (entries.length === 0) {
+    list.innerHTML = '<div style="padding:12px;color:var(--fg-dim);font-size:16px">No data yet. Start solving!</div>';
+    return;
+  }
+
+  list.innerHTML = entries.map(e => {
+    const last = e.lastTime ? (e.lastTime / 1000).toFixed(1) : '?';
+    const wr = e.attempts > 0 ? Math.round(e.wrong / e.attempts * 100) : 0;
+    return `<div class="hard-item">
+      <span class="prob">${e.key}</span>
+      <span class="hstats">
+        <span class="slow">${last}s last</span> · 
+        <span class="bad">${wr}% err</span> · 
+        ${e.attempts} tries
+      </span>
+    </div>`;
+  }).join('');
+}
+
+// Menu events
+document.getElementById('menu-open-btn').addEventListener('click', openMenu);
+document.getElementById('menu-close-btn').addEventListener('click', closeMenu);
+document.getElementById('menu-close-btn2').addEventListener('click', closeMenu);
+
+document.querySelectorAll('.toggle[data-op]').forEach(el => {
+  el.addEventListener('click', () => {
+    const op = el.dataset.op;
+    S.ops[op] = !S.ops[op];
+    // Ensure at least one is on
+    if (!Object.values(S.ops).some(v => v)) S.ops[op] = true;
+    el.classList.toggle('on', S.ops[op]);
+    saveState();
+  });
+});
+
+document.querySelectorAll('.mode-btn').forEach(el => {
+  el.addEventListener('click', () => {
+    S.mode = el.dataset.mode;
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === S.mode));
+    saveState();
+  });
+});
+
+document.getElementById('choices-range').addEventListener('input', (e) => {
+  S.numChoices = parseInt(e.target.value);
+  document.getElementById('choices-val').textContent = S.numChoices;
+  saveState();
+});
+
+document.getElementById('maxnum-range').addEventListener('input', (e) => {
+  S.maxNum = parseInt(e.target.value);
+  document.getElementById('maxnum-val').textContent = S.maxNum;
+  saveState();
+});
+
+document.getElementById('toggle-sfx').addEventListener('click', function() {
+  this.classList.toggle('on');
+  Audio.setSfxEnabled(this.classList.contains('on'));
+});
+
+document.getElementById('toggle-music').addEventListener('click', function() {
+  this.classList.toggle('on');
+  Audio.setMusicEnabled(this.classList.contains('on'));
+});
+
+document.getElementById('volume-range').addEventListener('input', (e) => {
+  const v = parseInt(e.target.value);
+  document.getElementById('volume-val').textContent = v;
+  Audio.setVolume(v / 100);
+});
+
+document.getElementById('reset-btn').addEventListener('click', () => {
+  if (confirm('Destroy all progress? This cannot be undone.')) {
+    localStorage.removeItem('arithmetyx_state');
+    S = JSON.parse(JSON.stringify(DEFAULT_STATE));
+    saveState();
+    renderMenu();
+    renderHardList();
+    updateUI();
+    playerY = 0;
+    targetPlayerY = 0;
+  }
+});
+
+document.getElementById('karma-range').addEventListener('input', (e) => {
+  document.getElementById('karma-range-val').textContent = e.target.value;
+});
+
+document.getElementById('apply-karma-btn').addEventListener('click', () => {
+  const newKarma = parseInt(document.getElementById('karma-range').value);
+  const oldKarma = S.karma;
+  S.karma = newKarma;
+  if (!S.karmaLog) S.karmaLog = [];
+  S.karmaLog.push({
+    date: new Date().toISOString(),
+    from: oldKarma,
+    to: newKarma
+  });
+  // Keep last 20 entries
+  if (S.karmaLog.length > 20) S.karmaLog = S.karmaLog.slice(-20);
+  saveState();
+  renderKarmaUI();
+  updateUI();
+});
+
+function renderKarmaUI() {
+  document.getElementById('menu-karma-val').textContent = S.karma;
+  document.getElementById('menu-floor-val').textContent = S.karma * 5;
+  document.getElementById('karma-range').value = S.karma;
+  document.getElementById('karma-range-val').textContent = S.karma;
+
+  const log = document.getElementById('karma-log');
+  const entries = (S.karmaLog || []).slice().reverse();
+  if (entries.length === 0) {
+    log.innerHTML = '';
+    return;
+  }
+  log.innerHTML = entries.map(e => {
+    const d = new Date(e.date);
+    const dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    return `<div style="font-size:14px;color:var(--fg-dim);padding:3px 0;border-bottom:1px solid rgba(200,192,184,0.05)">
+      <span style="color:var(--fg)">${dateStr}</span> · 
+      Karma <span style="color:var(--red-bright)">${e.from}</span> → <span style="color:var(--green-bright)">${e.to}</span>
+      (floor ${e.to * 5})
+    </div>`;
+  }).join('');
+}
+
+// ============ VICTORY ============
+function showVictory() {
+  document.getElementById('victory-stats').textContent =
+    `${S.totalCorrect} correct · ${S.totalWrong} wrong · Best streak: ${S.bestStreak}`;
+  document.getElementById('victory-screen').classList.add('show');
+}
+document.getElementById('continue-btn').addEventListener('click', () => {
+  document.getElementById('victory-screen').classList.remove('show');
+  presentProblem();
+});
+
+// ============ BACKGROUND GAME (ROGUE CLIMBING) ============
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+let W, H;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// Platforms - generated procedurally based on height
+const platformCache = {};
+function getPlatform(index) {
+  if (platformCache[index]) return platformCache[index];
+  // Seeded pseudo-random
+  const seed = index * 2654435761 & 0xFFFFFFFF;
+  const r1 = ((seed >> 16) & 0xFFFF) / 0xFFFF;
+  const r2 = ((seed >> 8) & 0xFFFF) / 0xFFFF;
+  const r3 = (seed & 0xFFFF) / 0xFFFF;
+  
+  const plat = {
+    x: 0.1 + r1 * 0.5,
+    width: 0.15 + r2 * 0.25,
+    decoration: r3
+  };
+  platformCache[index] = plat;
+  return plat;
+}
+
+// Environment zones — endless past 600 with escalating intensity
+function getZone(h) {
+  if (h < 60) return { name: 'THE ABYSS', bg1: '#0e0e14', bg2: '#16151e', platColor: '#3a3550', edgeColor: '#5a5470', fogColor: 'rgba(10,10,14,0.25)', particles: 'ash', charGlow: '#6a6090', intensity: 0 };
+  if (h < 150) return { name: 'CRIMSON DEPTHS', bg1: '#180a0a', bg2: '#221010', platColor: '#5a2020', edgeColor: '#8a3535', fogColor: 'rgba(20,8,8,0.2)', particles: 'embers', charGlow: '#dd4444', intensity: 0.1 };
+  if (h < 280) return { name: 'THE BONEYARD', bg1: '#141008', bg2: '#1e1a0e', platColor: '#4a3d20', edgeColor: '#7a6535', fogColor: 'rgba(18,16,10,0.15)', particles: 'dust', charGlow: '#c9a84c', intensity: 0.2 };
+  if (h < 420) return { name: 'VOID SPIRE', bg1: '#0c0c1a', bg2: '#101028', platColor: '#2a2a5a', edgeColor: '#4a4a8a', fogColor: 'rgba(8,8,20,0.2)', particles: 'void', charGlow: '#8a6ad0', intensity: 0.35 };
+  if (h < 550) return { name: 'STORM REACH', bg1: '#081414', bg2: '#0e2020', platColor: '#1a4a4a', edgeColor: '#2a7a7a', fogColor: 'rgba(6,14,14,0.15)', particles: 'lightning', charGlow: '#4ad4d4', intensity: 0.5 };
+  if (h < 700) return { name: 'THE APEX', bg1: '#141006', bg2: '#2a2210', platColor: '#4a3d15', edgeColor: '#8a7530', fogColor: 'rgba(20,18,8,0.1)', particles: 'gold', charGlow: '#f0d060', intensity: 0.65 };
+
+  // Endless post-game zones — cycle through increasingly intense variants
+  const postH = h - 700;
+  const cycle = Math.floor(postH / 200);
+  const tier = cycle + 1; // 1, 2, 3...
+  const phase = cycle % 5;
+  const intensity = Math.min(1.0, 0.7 + tier * 0.05);
+
+  const postZones = [
+    { name: `BLOOD ZENITH ${tier > 1 ? 'x'+tier : ''}`, bg1: '#1a0606', bg2: '#2a0808', platColor: '#6a1a1a', edgeColor: '#cc3333', fogColor: 'rgba(30,5,5,0.12)', particles: 'embers', charGlow: '#ff4444' },
+    { name: `NULL DIMENSION ${tier > 1 ? 'x'+tier : ''}`, bg1: '#04040e', bg2: '#08081a', platColor: '#1a1a4a', edgeColor: '#5555cc', fogColor: 'rgba(4,4,15,0.12)', particles: 'void', charGlow: '#8888ff' },
+    { name: `ENTROPY FIELD ${tier > 1 ? 'x'+tier : ''}`, bg1: '#0a0e04', bg2: '#121a08', platColor: '#2a4a1a', edgeColor: '#55aa33', fogColor: 'rgba(8,14,4,0.12)', particles: 'ash', charGlow: '#66dd44' },
+    { name: `THE SINGULARITY ${tier > 1 ? 'x'+tier : ''}`, bg1: '#12060e', bg2: '#1e0a18', platColor: '#4a1a3a', edgeColor: '#aa44aa', fogColor: 'rgba(15,5,12,0.1)', particles: 'void', charGlow: '#dd66ff' },
+    { name: `ETERNAL STORM ${tier > 1 ? 'x'+tier : ''}`, bg1: '#0a0a0a', bg2: '#141414', platColor: '#3a3a3a', edgeColor: '#dddddd', fogColor: 'rgba(10,10,10,0.08)', particles: 'lightning', charGlow: '#ffffff' },
+  ];
+  return { ...postZones[phase], intensity };
+}
+
+// Particles
+const particles = [];
+function spawnParticle(zone) {
+  const p = { x: Math.random() * W, y: Math.random() * H, vx: 0, vy: 0, life: 1, maxLife: 1, size: 2, color: '#444' };
+  switch(zone.particles) {
+    case 'ash': p.vy = -0.3 - Math.random()*0.5; p.vx = Math.random()*0.4-0.2; p.size = 2+Math.random()*3; p.color='#6a6460'; p.maxLife=p.life=2+Math.random()*3; break;
+    case 'embers': p.vy = -0.8 - Math.random()*0.8; p.vx = Math.random()-0.5; p.size = 2+Math.random()*3; p.color='#ff6633'; p.maxLife=p.life=1+Math.random()*2; break;
+    case 'dust': p.vy = 0.2+Math.random()*0.3; p.vx = 0.3+Math.random()*0.3; p.size = 1.5+Math.random()*1.5; p.color='#c0a870'; p.maxLife=p.life=3+Math.random()*2; break;
+    case 'void': p.vy = Math.random()-0.5; p.vx = Math.random()-0.5; p.size = 2+Math.random()*4; p.color='#9a7aee'; p.maxLife=p.life=1+Math.random()*4; break;
+    case 'lightning': p.vy = 2+Math.random()*3; p.vx = 0; p.size = 1.5; p.color='#aaddff'; p.maxLife=p.life=0.3+Math.random()*0.3; break;
+    case 'gold': p.vy = -0.2-Math.random()*0.3; p.vx = Math.random()*0.3-0.15; p.size = 2+Math.random()*3; p.color='#f0d060'; p.maxLife=p.life=2+Math.random()*3; break;
+  }
+  particles.push(p);
+}
+
+let playerY = S.height; // in platform units
+let targetPlayerY = S.height;
+let playerBob = 0;
+let cameraY = 0;
+let lastTime = 0;
+let frameCount = 0;
+let screenShake = 0; // decays over time
+
+function drawCharacter(cx, cy, zone) {
+  const bob = Math.sin(playerBob) * 4;
+  const y = cy + bob;
+  const glow = zone.charGlow || '#dd4444';
+  // Expand shorthand hex (#d44 -> #dd4444) for alpha concatenation
+  const expandHex = (c) => c.length === 4 ? '#' + c[1]+c[1]+c[2]+c[2]+c[3]+c[3] : c;
+  const glowFull = expandHex(glow);
+  
+  // Large glow aura behind character
+  const auraGrad = ctx.createRadialGradient(cx, y - 6, 0, cx, y - 6, 40);
+  auraGrad.addColorStop(0, glowFull + '40');
+  auraGrad.addColorStop(0.5, glowFull + '15');
+  auraGrad.addColorStop(1, 'transparent');
+  ctx.fillStyle = auraGrad;
+  ctx.fillRect(cx - 50, y - 50, 100, 80);
+  
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.beginPath();
+  ctx.ellipse(cx, y + 26, 14, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Cape (behind body, bigger)
+  ctx.fillStyle = 'rgba(130,25,25,0.7)';
+  ctx.beginPath();
+  ctx.moveTo(cx - 9, y - 14);
+  ctx.lineTo(cx - 14, y + 18 + Math.sin(playerBob * 0.7) * 3);
+  ctx.lineTo(cx + 14, y + 18 + Math.sin(playerBob * 0.7 + 1) * 3);
+  ctx.lineTo(cx + 9, y - 14);
+  ctx.fill();
+  
+  // Legs
+  ctx.fillStyle = '#4a4550';
+  ctx.fillRect(cx - 6, y + 8, 4, 12);
+  ctx.fillRect(cx + 2, y + 8, 4, 12);
+  
+  // Boots
+  ctx.fillStyle = '#3a3035';
+  ctx.fillRect(cx - 7, y + 18, 5, 4);
+  ctx.fillRect(cx + 1, y + 18, 5, 4);
+  
+  // Body (bigger)
+  ctx.fillStyle = '#b8b0a8';
+  ctx.fillRect(cx - 8, y - 12, 16, 20);
+  
+  // Belt
+  ctx.fillStyle = '#5a4530';
+  ctx.fillRect(cx - 8, y + 2, 16, 3);
+  ctx.fillStyle = glow;
+  ctx.fillRect(cx - 2, y + 2, 4, 3); // belt buckle
+  
+  // Arms
+  ctx.fillStyle = '#a8a098';
+  ctx.fillRect(cx - 12, y - 10, 4, 14);
+  ctx.fillRect(cx + 8, y - 10, 4, 14);
+  
+  // Head (bigger)
+  ctx.fillStyle = '#d0c8c0';
+  ctx.fillRect(cx - 6, y - 24, 12, 12);
+  
+  // Hair/helmet
+  ctx.fillStyle = '#3a3035';
+  ctx.fillRect(cx - 7, y - 26, 14, 5);
+  ctx.fillRect(cx - 7, y - 24, 2, 8);
+  ctx.fillRect(cx + 5, y - 24, 2, 8);
+  
+  // Eyes (glowing!)
+  ctx.fillStyle = glow;
+  ctx.shadowColor = glow;
+  ctx.shadowBlur = 12;
+  ctx.fillRect(cx - 4, y - 20, 3, 3);
+  ctx.fillRect(cx + 1, y - 20, 3, 3);
+  ctx.shadowBlur = 0;
+  
+  // Eye glow trails (when moving)
+  if (Math.abs(targetPlayerY - playerY) > 0.5) {
+    ctx.globalAlpha = 0.4;
+    ctx.fillStyle = glow;
+    ctx.fillRect(cx - 4, y - 19, 2, 6);
+    ctx.fillRect(cx + 2, y - 19, 2, 6);
+    ctx.globalAlpha = 1;
+  }
+
+  // Shield orbs — orbit around character
+  const shields = S.shields || 0;
+  if (shields > 0) {
+    const orbitRadius = 22;
+    const orbitSpeed = playerBob * 0.8;
+    for (let si = 0; si < shields; si++) {
+      const angle = orbitSpeed + (si / shields) * Math.PI * 2;
+      const ox = cx + Math.cos(angle) * orbitRadius;
+      const oy = y - 5 + Math.sin(angle) * orbitRadius * 0.4; // flattened orbit
+      // Outer glow
+      ctx.fillStyle = '#4ad4d4';
+      ctx.shadowColor = '#4ad4d4';
+      ctx.shadowBlur = 10;
+      ctx.globalAlpha = 0.6;
+      ctx.beginPath();
+      ctx.arc(ox, oy, 3, 0, Math.PI * 2);
+      ctx.fill();
+      // Inner bright core
+      ctx.fillStyle = '#aaffff';
+      ctx.globalAlpha = 0.9;
+      ctx.beginPath();
+      ctx.arc(ox, oy, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
+  }
+}
+
+function render(timestamp) {
+  const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+  lastTime = timestamp;
+  frameCount++;
+
+  // Update target from state
+  targetPlayerY = S.height;
+  playerY += (targetPlayerY - playerY) * Math.min(1, dt * 5);
+  playerBob += dt * 3;
+
+  const zone = getZone(playerY);
+
+  // Camera follows player
+  const targetCam = playerY * 40 - H * 0.6;
+  cameraY += (targetCam - cameraY) * Math.min(1, dt * 3);
+
+  // Background gradient
+  // Apply screen shake
+  if (screenShake > 0.5) {
+    ctx.save();
+    const sx = (Math.random() - 0.5) * screenShake;
+    const sy = (Math.random() - 0.5) * screenShake;
+    ctx.translate(sx, sy);
+    screenShake *= 0.9;
+  }
+
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, zone.bg2);
+  grad.addColorStop(1, zone.bg1);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Distant structures (parallax)
+  ctx.globalAlpha = 0.2;
+  for (let i = 0; i < 8; i++) {
+    const bx = (i * W / 5 + 30) % (W + 100) - 50;
+    const bh = 100 + (i * 73 % 200);
+    const by = H - bh + cameraY * 0.1;
+    ctx.fillStyle = zone.platColor;
+    ctx.fillRect(bx, by, 30 + i * 7, bh);
+    // Window lights
+    ctx.fillStyle = zone.edgeColor || '#444';
+    ctx.globalAlpha = 0.15;
+    for (let wy = by + 15; wy < by + bh - 10; wy += 20) {
+      ctx.fillRect(bx + 6, wy, 4, 6);
+      ctx.fillRect(bx + 16, wy, 4, 6);
+    }
+    ctx.globalAlpha = 0.2;
+  }
+  ctx.globalAlpha = 1;
+
+  // Draw platforms
+  const platH = 40; // spacing in px between platforms
+  const startIdx = Math.max(0, Math.floor((cameraY - 100) / platH));
+  const endIdx = Math.ceil((cameraY + H + 100) / platH);
+
+  for (let i = startIdx; i <= endIdx; i++) {
+    const p = getPlatform(i);
+    const screenY = H - (i * platH - cameraY);
+    const px = p.x * W;
+    const pw = p.width * W;
+
+    // Platform glow underneath
+    ctx.fillStyle = zone.edgeColor || zone.platColor;
+    ctx.globalAlpha = 0.15;
+    ctx.fillRect(px - 2, screenY + 2, pw + 4, 12);
+    ctx.globalAlpha = 1;
+
+    // Main platform body (much thicker)
+    ctx.fillStyle = zone.platColor;
+    ctx.fillRect(px, screenY, pw, 10);
+    
+    // Platform top edge highlight (bright)
+    ctx.fillStyle = zone.edgeColor || 'rgba(200,192,184,0.3)';
+    ctx.fillRect(px, screenY, pw, 2);
+    
+    // Platform side edges
+    ctx.fillStyle = zone.edgeColor || 'rgba(200,192,184,0.2)';
+    ctx.fillRect(px, screenY, 2, 10);
+    ctx.fillRect(px + pw - 2, screenY, 2, 10);
+    
+    // Occasional decoration - taller and brighter
+    if (p.decoration > 0.8 && i > 0) {
+      ctx.fillStyle = zone.edgeColor || 'rgba(184,48,48,0.4)';
+      ctx.fillRect(px + pw * 0.3, screenY - 14, 4, 14);
+      ctx.fillRect(px + pw * 0.6, screenY - 10, 3, 10);
+    }
+    
+    // Grass/moss tufts on some platforms
+    if (p.decoration > 0.5 && p.decoration < 0.7) {
+      ctx.fillStyle = zone.edgeColor || '#4a4a4a';
+      ctx.globalAlpha = 0.5;
+      for (let t = 0; t < 3; t++) {
+        const tx = px + pw * (0.2 + t * 0.3);
+        ctx.fillRect(tx, screenY - 4, 2, 4);
+      }
+      ctx.globalAlpha = 1;
+    }
+    
+    // Zone markers — both pre-game and post-game zone boundaries
+    const zoneMarkers = [60, 150, 280, 420, 550, 700];
+    // Add post-game markers every 200 past 700
+    for (let zm = 900; zm <= i + 200; zm += 200) { if (!zoneMarkers.includes(zm)) zoneMarkers.push(zm); }
+    if (zoneMarkers.includes(i)) {
+      ctx.fillStyle = 'rgba(184,48,48,0.45)';
+      ctx.fillRect(0, screenY - 1, W, 3);
+      ctx.fillStyle = 'rgba(220,180,140,0.6)';
+      ctx.font = '11px Silkscreen';
+      const z = getZone(i);
+      ctx.fillText('— ' + z.name + ' —', 10, screenY - 8);
+    }
+  }
+
+  // Draw character on current platform
+  const currentPlat = getPlatform(Math.floor(playerY));
+  const charScreenY = H - (playerY * platH - cameraY);
+  const charX = currentPlat.x * W + currentPlat.width * W * 0.5;
+  drawCharacter(charX, charScreenY - 10, zone);
+
+  // Particles — more at higher intensity
+  const particleRate = Math.max(1, Math.floor(4 - (zone.intensity || 0) * 3));
+  const particleCap = 80 + Math.floor((zone.intensity || 0) * 120);
+  if (frameCount % particleRate === 0 && particles.length < particleCap) {
+    spawnParticle(zone);
+    // At high intensity, spawn extra particles
+    if ((zone.intensity || 0) > 0.6 && particles.length < particleCap) spawnParticle(zone);
+    if ((zone.intensity || 0) > 0.85 && particles.length < particleCap) spawnParticle(zone);
+  }
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life -= dt;
+    if (p.life <= 0 || p.y < -20 || p.y > H + 20) {
+      particles.splice(i, 1);
+      continue;
+    }
+    ctx.globalAlpha = Math.min(1, p.life / p.maxLife) * 0.85;
+    ctx.fillStyle = p.color;
+    ctx.shadowColor = p.color;
+    ctx.shadowBlur = p.size * 2;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.shadowBlur = 0;
+  ctx.globalAlpha = 1;
+
+  // Fog overlay
+  ctx.fillStyle = zone.fogColor;
+  ctx.fillRect(0, 0, W, H);
+
+  // Intensity vignette — gets more dramatic at higher zones
+  const intens = zone.intensity || 0;
+  if (intens > 0.3) {
+    const vignetteGrad = ctx.createRadialGradient(W/2, H/2, H*0.2, W/2, H/2, H*0.9);
+    vignetteGrad.addColorStop(0, 'transparent');
+    vignetteGrad.addColorStop(1, `rgba(0,0,0,${intens * 0.35})`);
+    ctx.fillStyle = vignetteGrad;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Edge glow at high intensity
+  if (intens > 0.6) {
+    const glowAlpha = (intens - 0.6) * 0.3;
+    const gc = zone.charGlow || '#f00';
+    ctx.strokeStyle = gc;
+    ctx.globalAlpha = glowAlpha * (0.5 + Math.sin(frameCount * 0.03) * 0.5);
+    ctx.lineWidth = 3;
+    ctx.strokeRect(2, 2, W - 4, H - 4);
+    ctx.globalAlpha = 1;
+  }
+
+  // Zone name display at bottom
+  ctx.fillStyle = 'rgba(200,192,184,0.3)';
+  ctx.font = '11px Silkscreen';
+  ctx.textAlign = 'right';
+  ctx.fillText(zone.name, W - 10, H - 50);
+  ctx.textAlign = 'left';
+
+  // Restore shake transform
+  if (screenShake > 0.5) ctx.restore();
+
+  requestAnimationFrame(render);
+}
+
+// ============ AUDIO ENGINE ============
+const Audio = (() => {
+  let ctx = null;
+  let masterGain = null;
+  let musicGain = null;
+  let sfxGain = null;
+  let musicPlaying = false;
+  let musicNodes = [];
+  let enabled = true;
+  let musicEnabled = true;
+  let volume = 0.5;
+
+  function init() {
+    if (ctx) return;
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = ctx.createGain();
+    masterGain.gain.value = volume;
+    masterGain.connect(ctx.destination);
+
+    musicGain = ctx.createGain();
+    musicGain.gain.value = 0.35;
+    musicGain.connect(masterGain);
+
+    sfxGain = ctx.createGain();
+    sfxGain.gain.value = 0.7;
+    sfxGain.connect(masterGain);
+  }
+
+  function setVolume(v) {
+    volume = v;
+    if (masterGain) masterGain.gain.value = v;
+  }
+
+  function setMusicEnabled(on) {
+    musicEnabled = on;
+    if (musicGain) musicGain.gain.setTargetAtTime(on ? 0.35 : 0, ctx.currentTime, 0.3);
+  }
+
+  function setSfxEnabled(on) {
+    enabled = on;
+    if (sfxGain) sfxGain.gain.setTargetAtTime(on ? 0.7 : 0, ctx.currentTime, 0.1);
+  }
+
+  // --- SFX ---
+
+  function playCorrect() {
+    if (!ctx || !enabled) return;
+    // Bright rising arpeggio
+    const now = ctx.currentTime;
+    const notes = [440, 554, 659];
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, now + i * 0.06);
+      gain.gain.linearRampToValueAtTime(0.3, now + i * 0.06 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.06 + 0.2);
+      osc.connect(gain);
+      gain.connect(sfxGain);
+      osc.start(now + i * 0.06);
+      osc.stop(now + i * 0.06 + 0.25);
+    });
+  }
+
+  function playWrong() {
+    if (!ctx || !enabled) return;
+    const now = ctx.currentTime;
+    // Dissonant falling buzz
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const distortion = ctx.createWaveShaperFunction ? null : ctx.createWaveShaper();
+
+    osc1.type = 'sawtooth';
+    osc1.frequency.setValueAtTime(220, now);
+    osc1.frequency.exponentialRampToValueAtTime(80, now + 0.4);
+
+    osc2.type = 'square';
+    osc2.frequency.setValueAtTime(233, now);
+    osc2.frequency.exponentialRampToValueAtTime(60, now + 0.4);
+
+    gain.gain.setValueAtTime(0.25, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+    osc1.connect(gain);
+    osc2.connect(gain);
+    gain.connect(sfxGain);
+    osc1.start(now);
+    osc2.start(now);
+    osc1.stop(now + 0.5);
+    osc2.stop(now + 0.5);
+  }
+
+  function playFall() {
+    if (!ctx || !enabled) return;
+    const now = ctx.currentTime;
+    // Long dramatic falling sound
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const lfo = ctx.createOscillator();
+    const lfoGain = ctx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(400, now);
+    osc.frequency.exponentialRampToValueAtTime(40, now + 1.2);
+
+    lfo.frequency.value = 8;
+    lfoGain.gain.value = 30;
+    lfo.connect(lfoGain);
+    lfoGain.connect(osc.frequency);
+
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.linearRampToValueAtTime(0.25, now + 0.1);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 1.3);
+
+    osc.connect(gain);
+    gain.connect(sfxGain);
+    lfo.start(now);
+    osc.start(now);
+    lfo.stop(now + 1.4);
+    osc.stop(now + 1.4);
+
+    // Impact thud
+    const noise = ctx.createBufferSource();
+    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.3, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.05));
+    noise.buffer = buf;
+    const nGain = ctx.createGain();
+    nGain.gain.setValueAtTime(0, now + 0.8);
+    nGain.gain.linearRampToValueAtTime(0.4, now + 0.82);
+    nGain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+    noise.connect(nGain);
+    nGain.connect(sfxGain);
+    noise.start(now + 0.8);
+  }
+
+  function playClick() {
+    if (!ctx || !enabled) return;
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 800;
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+    osc.connect(gain);
+    gain.connect(sfxGain);
+    osc.start(now);
+    osc.stop(now + 0.07);
+  }
+
+  function playStreak(streakCount) {
+    if (!ctx || !enabled) return;
+    // Higher pitch chime every 5 streak
+    if (streakCount % 5 !== 0 || streakCount === 0) return;
+    const now = ctx.currentTime;
+    const baseFreq = 523 + Math.min(streakCount, 50) * 8;
+    [0, 0.08, 0.16].forEach((t, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = baseFreq + i * 100;
+      gain.gain.setValueAtTime(0, now + t);
+      gain.gain.linearRampToValueAtTime(0.2, now + t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + t + 0.4);
+      osc.connect(gain);
+      gain.connect(sfxGain);
+      osc.start(now + t);
+      osc.stop(now + t + 0.45);
+    });
+  }
+
+  function playVictory() {
+    if (!ctx || !enabled) return;
+    const now = ctx.currentTime;
+    // Grand ascending fanfare
+    const notes = [523, 659, 784, 880, 1047, 1319, 1568];
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc2.type = 'sine';
+      osc.frequency.value = freq;
+      osc2.frequency.value = freq * 1.002; // slight detune for richness
+      const t = i * 0.12;
+      gain.gain.setValueAtTime(0, now + t);
+      gain.gain.linearRampToValueAtTime(0.2, now + t + 0.03);
+      gain.gain.setValueAtTime(0.2, now + t + 0.3);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + t + 1.0);
+      osc.connect(gain);
+      osc2.connect(gain);
+      gain.connect(sfxGain);
+      osc.start(now + t);
+      osc2.start(now + t);
+      osc.stop(now + t + 1.1);
+      osc2.stop(now + t + 1.1);
+    });
+  }
+
+  function playMenuOpen() {
+    if (!ctx || !enabled) return;
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(200, now);
+    osc.frequency.linearRampToValueAtTime(400, now + 0.12);
+    gain.gain.setValueAtTime(0.12, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+    osc.connect(gain);
+    gain.connect(sfxGain);
+    osc.start(now);
+    osc.stop(now + 0.18);
+  }
+
+  function playMenuClose() {
+    if (!ctx || !enabled) return;
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(400, now);
+    osc.frequency.linearRampToValueAtTime(200, now + 0.12);
+    gain.gain.setValueAtTime(0.12, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+    osc.connect(gain);
+    gain.connect(sfxGain);
+    osc.start(now);
+    osc.stop(now + 0.18);
+  }
+
+  function playShieldBreak() {
+    if (!ctx || !enabled) return;
+    const now = ctx.currentTime;
+    // Glass shatter — high freq noise burst + descending tone
+    const noise = ctx.createBufferSource();
+    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.25, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.04));
+    noise.buffer = buf;
+    const nFilter = ctx.createBiquadFilter();
+    nFilter.type = 'highpass';
+    nFilter.frequency.value = 3000;
+    const nGain = ctx.createGain();
+    nGain.gain.setValueAtTime(0.2, now);
+    nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+    noise.connect(nFilter);
+    nFilter.connect(nGain);
+    nGain.connect(sfxGain);
+    noise.start(now);
+    // Descending crystalline tone
+    const osc = ctx.createOscillator();
+    const oGain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(2000, now);
+    osc.frequency.exponentialRampToValueAtTime(600, now + 0.3);
+    oGain.gain.setValueAtTime(0.15, now);
+    oGain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+    osc.connect(oGain);
+    oGain.connect(sfxGain);
+    osc.start(now);
+    osc.stop(now + 0.4);
+  }
+
+  function playShieldGain() {
+    if (!ctx || !enabled) return;
+    const now = ctx.currentTime;
+    // Sparkly ascending chime
+    const osc = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc2.type = 'triangle';
+    osc.frequency.setValueAtTime(1200, now);
+    osc.frequency.linearRampToValueAtTime(2400, now + 0.15);
+    osc2.frequency.setValueAtTime(1205, now);
+    osc2.frequency.linearRampToValueAtTime(2410, now + 0.15);
+    gain.gain.setValueAtTime(0.12, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+    osc.connect(gain);
+    osc2.connect(gain);
+    gain.connect(sfxGain);
+    osc.start(now);
+    osc2.start(now);
+    osc.stop(now + 0.35);
+    osc2.stop(now + 0.35);
+  }
+
+  // --- AMBIENT MUSIC ---
+  // Dark, evolving drone with zone-reactive harmonics
+
+  function startMusic() {
+    if (!ctx || musicPlaying) return;
+    musicPlaying = true;
+
+    // Base drone
+    const drone1 = ctx.createOscillator();
+    const drone1Gain = ctx.createGain();
+    drone1.type = 'sawtooth';
+    drone1.frequency.value = 55; // Low A
+    drone1Gain.gain.value = 0.08;
+    drone1.connect(drone1Gain);
+    drone1Gain.connect(musicGain);
+    drone1.start();
+
+    const drone2 = ctx.createOscillator();
+    const drone2Gain = ctx.createGain();
+    drone2.type = 'sine';
+    drone2.frequency.value = 55.2; // Slight detune for beating
+    drone2Gain.gain.value = 0.1;
+    drone2.connect(drone2Gain);
+    drone2Gain.connect(musicGain);
+    drone2.start();
+
+    // Sub bass pulse
+    const sub = ctx.createOscillator();
+    const subGain = ctx.createGain();
+    const subLfo = ctx.createOscillator();
+    const subLfoGain = ctx.createGain();
+    sub.type = 'sine';
+    sub.frequency.value = 36.7; // Low D
+    subGain.gain.value = 0.12;
+    subLfo.frequency.value = 0.15; // Very slow pulse
+    subLfoGain.gain.value = 0.08;
+    subLfo.connect(subLfoGain);
+    subLfoGain.connect(subGain.gain);
+    sub.connect(subGain);
+    subGain.connect(musicGain);
+    sub.start();
+    subLfo.start();
+
+    // Filtered noise bed (wind)
+    const noiseNode = ctx.createBufferSource();
+    const noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 10, ctx.sampleRate);
+    const noiseData = noiseBuf.getChannelData(0);
+    for (let i = 0; i < noiseData.length; i++) noiseData[i] = Math.random() * 2 - 1;
+    noiseNode.buffer = noiseBuf;
+    noiseNode.loop = true;
+    const noiseFilter = ctx.createBiquadFilter();
+    noiseFilter.type = 'bandpass';
+    noiseFilter.frequency.value = 300;
+    noiseFilter.Q.value = 0.5;
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.value = 0.025;
+    // Slow filter sweep
+    const noiseLfo = ctx.createOscillator();
+    const noiseLfoGain = ctx.createGain();
+    noiseLfo.frequency.value = 0.05;
+    noiseLfoGain.gain.value = 200;
+    noiseLfo.connect(noiseLfoGain);
+    noiseLfoGain.connect(noiseFilter.frequency);
+    noiseNode.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(musicGain);
+    noiseNode.start();
+    noiseLfo.start();
+
+    // Eerie high harmonic pad
+    const pad1 = ctx.createOscillator();
+    const pad1Gain = ctx.createGain();
+    const padLfo = ctx.createOscillator();
+    const padLfoGain = ctx.createGain();
+    pad1.type = 'sine';
+    pad1.frequency.value = 330; // E4
+    pad1Gain.gain.value = 0.02;
+    padLfo.frequency.value = 0.08;
+    padLfoGain.gain.value = 15;
+    padLfo.connect(padLfoGain);
+    padLfoGain.connect(pad1.frequency);
+    pad1.connect(pad1Gain);
+    pad1Gain.connect(musicGain);
+    pad1.start();
+    padLfo.start();
+
+    const pad2 = ctx.createOscillator();
+    const pad2Gain = ctx.createGain();
+    pad2.type = 'sine';
+    pad2.frequency.value = 392; // G4 (minor feel with the A base)
+    pad2Gain.gain.value = 0.015;
+    pad2.connect(pad2Gain);
+    pad2Gain.connect(musicGain);
+    pad2.start();
+
+    musicNodes = [drone1, drone2, sub, subLfo, noiseNode, noiseLfo, pad1, padLfo, pad2];
+
+    // Periodic dissonant stings
+    function scheduleStings() {
+      if (!musicPlaying) return;
+      const now = ctx.currentTime;
+      const zone = getZone(S.height);
+      const intens = zone.intensity || 0;
+      // Stings get more frequent and louder at higher intensity
+      const delay = Math.max(3, (8 - intens * 5)) + Math.random() * Math.max(3, (15 - intens * 10));
+
+      const sting = ctx.createOscillator();
+      const stingGain = ctx.createGain();
+      const stingFilter = ctx.createBiquadFilter();
+      sting.type = 'sawtooth';
+      const stingFreqs = {
+        'THE ABYSS': [82, 87, 92],
+        'CRIMSON DEPTHS': [110, 117, 123],
+        'THE BONEYARD': [146, 155, 164],
+        'VOID SPIRE': [196, 207, 220],
+        'STORM REACH': [261, 277, 293],
+        'THE APEX': [349, 370, 392]
+      };
+      const freqs = stingFreqs[zone.name] || [130 + S.height * 0.3, 140 + S.height * 0.3, 155 + S.height * 0.3];
+      sting.frequency.value = freqs[Math.floor(Math.random() * freqs.length)];
+
+      stingFilter.type = 'lowpass';
+      stingFilter.frequency.value = 800 + intens * 1200;
+      stingFilter.Q.value = 5 + intens * 8;
+
+      const vol = 0.04 + intens * 0.06;
+      stingGain.gain.setValueAtTime(0, now + delay);
+      stingGain.gain.linearRampToValueAtTime(vol, now + delay + 0.5);
+      stingGain.gain.setValueAtTime(vol, now + delay + 2);
+      stingGain.gain.exponentialRampToValueAtTime(0.001, now + delay + 5);
+
+      sting.connect(stingFilter);
+      stingFilter.connect(stingGain);
+      stingGain.connect(musicGain);
+      sting.start(now + delay);
+      sting.stop(now + delay + 5.5);
+
+      // At high intensity, add a second dissonant layer
+      if (intens > 0.5) {
+        const sting2 = ctx.createOscillator();
+        const s2Gain = ctx.createGain();
+        sting2.type = 'square';
+        sting2.frequency.value = sting.frequency.value * 1.06; // Dissonant interval
+        s2Gain.gain.setValueAtTime(0, now + delay + 0.2);
+        s2Gain.gain.linearRampToValueAtTime(vol * 0.4, now + delay + 0.7);
+        s2Gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 4);
+        sting2.connect(s2Gain);
+        s2Gain.connect(musicGain);
+        sting2.start(now + delay + 0.2);
+        sting2.stop(now + delay + 4.5);
+      }
+
+      setTimeout(scheduleStings, (delay + 5) * 1000);
+    }
+    scheduleStings();
+
+    // Heartbeat-like kick at low heights
+    function scheduleHeartbeat() {
+      if (!musicPlaying) return;
+      const intensity = Math.max(0, 1 - S.height / 100); // Fades as you climb
+      if (intensity < 0.05) { setTimeout(scheduleHeartbeat, 3000); return; }
+
+      const now = ctx.currentTime;
+      [0, 0.15].forEach(offset => {
+        const kick = ctx.createOscillator();
+        const kickGain = ctx.createGain();
+        kick.type = 'sine';
+        kick.frequency.setValueAtTime(80, now + offset);
+        kick.frequency.exponentialRampToValueAtTime(30, now + offset + 0.15);
+        kickGain.gain.setValueAtTime(0.1 * intensity, now + offset);
+        kickGain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.2);
+        kick.connect(kickGain);
+        kickGain.connect(musicGain);
+        kick.start(now + offset);
+        kick.stop(now + offset + 0.25);
+      });
+
+      const bpm = 50 + S.height * 0.1;
+      setTimeout(scheduleHeartbeat, (60 / bpm) * 2000);
+    }
+    scheduleHeartbeat();
+  }
+
+  function stopMusic() {
+    musicPlaying = false;
+    musicNodes.forEach(n => { try { n.stop(); } catch(e){} });
+    musicNodes = [];
+  }
+
+  return {
+    init, setVolume, setMusicEnabled, setSfxEnabled,
+    playCorrect, playWrong, playFall, playClick, playStreak,
+    playVictory, playMenuOpen, playMenuClose, playShieldBreak, playShieldGain,
+    startMusic, stopMusic,
+    get musicEnabled() { return musicEnabled; },
+    get sfxEnabled() { return enabled; },
+    get volume() { return volume; }
+  };
+})();
+
+// ============ INTRO / START ============
+document.getElementById('start-btn').addEventListener('click', () => {
+  Audio.init();
+  Audio.startMusic();
+  Audio.playClick();
+  document.getElementById('intro-screen').style.display = 'none';
+  updateUI();
+  presentProblem();
+});
+
+// If continuing
+if (S.totalCorrect > 0) {
+  document.getElementById('intro-screen').querySelector('.tagline').textContent =
+    `You've answered ${S.totalCorrect} problems. Height: ${S.height}. The tower awaits.`;
+  document.getElementById('start-btn').textContent = 'RESUME';
+}
+
+requestAnimationFrame(render);
+</script>
+</body>
+</html>
