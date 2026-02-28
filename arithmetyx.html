@@ -345,7 +345,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
   <button class="start-btn" id="start-btn">ENTER THE VOID</button>
   <div style="position:absolute;bottom:40px;left:0;right:0;text-align:center;font-family:var(--font-body);font-size:13px;color:rgba(200,192,184,0.4);line-height:1.6">
     Made with ❤️ by Josh Mouch & Sasha Elise<br>© 2026<br>
-    <span id="version-display" style="font-family:var(--font-mono);font-size:11px;color:rgba(200,192,184,0.25)"><!-- AUTOVER -->v939ab6f · Feb 27, 2026 10:41 PM EST<!-- /AUTOVER --></span>
+    <span id="version-display" style="font-family:var(--font-mono);font-size:11px;color:rgba(200,192,184,0.25)"><!-- AUTOVER -->v54f6ea0 · Feb 27, 2026 10:45 PM EST<!-- /AUTOVER --></span>
   </div>
   <button id="nuke-btn" style="position:absolute;bottom:10px;right:10px;background:transparent;border:1px solid rgba(200,192,184,0.15);color:rgba(200,192,184,0.3);font-size:10px;padding:4px 8px;cursor:pointer;border-radius:3px;font-family:var(--font-mono)" onclick="if(confirm('Wipe ALL localStorage? This is a full factory reset.')){localStorage.clear();location.reload();}">reset</button>
 </div>
@@ -4050,6 +4050,9 @@ function render(timestamp) {
       continue;
     }
 
+    // Permanently destroyed — don't draw
+    if (chaosState.destroyedPlatforms.has(i)) continue;
+
     ctx.fillStyle = applyVividness(zone.edgeColor || zone.platColor, bsv);
     ctx.globalAlpha = 0.15;
     ctx.fillRect(px - 2, screenY + 2, pw + 4, 12);
@@ -4855,7 +4858,8 @@ const chaosState = {
   nextQuakeTime: Date.now() + (40 + Math.random() * 40) * 1000,
   quakeActive: false,
   quakeTimer: 0,
-  brokenPlatforms: {}
+  brokenPlatforms: {},
+  destroyedPlatforms: new Set()
 };
 
 const NPC_COLORS = [
@@ -4990,7 +4994,7 @@ function updateQuakes(dt) {
   const now = Date.now();
   const h = S ? S.height : 0;
   if (h < 100) return;
-  const interval = Math.max(15, 40 - h * 0.03);
+  const interval = Math.max(5, 20 - h * 0.03);
   if (now >= chaosState.nextQuakeTime) {
     chaosState.nextQuakeTime = now + (interval + Math.random() * interval) * 1000;
     chaosState.quakeActive = true;
@@ -4998,13 +5002,14 @@ function updateQuakes(dt) {
     const idx = Math.floor(Math.random() * 5) + 1;
     AudioEngine.playSfxBuffer('quake_' + idx, 0.5);
     screenShake = Math.max(screenShake, 8 + h * 0.01);
-    if (Math.random() < 0.3) {
+    const breakChance = Math.min(0.8, 0.4 + h * 0.001);
+    if (Math.random() < breakChance) {
       const platH = 40;
       const visibleStart = Math.max(0, Math.floor((cameraY - 100) / platH));
       const visibleEnd = Math.ceil((cameraY + H + 100) / platH);
       const candidates = [];
       for (let pi = visibleStart; pi <= visibleEnd; pi++) {
-        if (pi !== Math.floor(S.height) && pi > 0 && !chaosState.brokenPlatforms[pi]) {
+        if (pi !== Math.floor(S.height) && pi > 0 && !chaosState.brokenPlatforms[pi] && !chaosState.destroyedPlatforms.has(pi)) {
           candidates.push(pi);
         }
       }
@@ -5036,6 +5041,7 @@ function updateQuakes(dt) {
     bp.fallSpeed += 300 * dt;
     bp.fallOffset += bp.fallSpeed * dt;
     if (bp.fallOffset > H + 200) {
+      chaosState.destroyedPlatforms.add(Number(idx));
       delete chaosState.brokenPlatforms[idx];
     }
   }
