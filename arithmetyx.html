@@ -345,7 +345,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
   <button class="start-btn" id="start-btn">ENTER THE VOID</button>
   <div style="position:absolute;bottom:40px;left:0;right:0;text-align:center;font-family:var(--font-body);font-size:13px;color:rgba(200,192,184,0.4);line-height:1.6">
     Made with ❤️ by Josh Mouch & Sasha Elise<br>© 2026<br>
-    <span id="version-display" style="font-family:var(--font-mono);font-size:11px;color:rgba(200,192,184,0.25)"><!-- AUTOVER -->v06dcdc0 · Feb 27, 2026 09:33 PM EST<!-- /AUTOVER --></span>
+    <span id="version-display" style="font-family:var(--font-mono);font-size:11px;color:rgba(200,192,184,0.25)"><!-- AUTOVER -->vef80345 · Feb 27, 2026 10:24 PM EST<!-- /AUTOVER --></span>
   </div>
   <button id="nuke-btn" style="position:absolute;bottom:10px;right:10px;background:transparent;border:1px solid rgba(200,192,184,0.15);color:rgba(200,192,184,0.3);font-size:10px;padding:4px 8px;cursor:pointer;border-radius:3px;font-family:var(--font-mono)" onclick="if(confirm('Wipe ALL localStorage? This is a full factory reset.')){localStorage.clear();location.reload();}">reset</button>
 </div>
@@ -3544,7 +3544,19 @@ const STORY_TRIGGERS = {
   405: 'story_400',
   455: 'story_450',
   505: 'story_500',
-  555: 'story_550'
+  555: 'story_550',
+  30: 'story_30',
+  80: 'story_80',
+  130: 'story_130',
+  180: 'story_180',
+  230: 'story_230',
+  280: 'story_280',
+  330: 'story_330',
+  380: 'story_380',
+  430: 'story_430',
+  480: 'story_480',
+  530: 'story_530',
+  575: 'story_575'
 };
 
 const STORY_TEXT = {
@@ -3560,6 +3572,18 @@ const STORY_TEXT = {
   'story_450': 'The Tower shudders. Something enormous moves in the walls around you — not a creature, but a rearranging, as if the entire structure is shifting to accommodate your presence. You realize you\'re not conquering the Tower. The Tower is reshaping itself for you. You are its purpose.',
   'story_500': 'The storms are beneath you now. You\'ve climbed above the lightning, above the fire, above the screams. Up here, there is only clarity. Your mind moves like water — every problem dissolves the instant you see it. You\'ve become something you weren\'t when you started.',
   'story_550': 'The top is close. You can feel it — not see it, feel it. A warmth that has nothing to do with temperature. The Tower is almost done with you, and you are almost done with it. One last push. The numbers sing.',
+  'story_30': 'The first platform crumbles behind you the moment you step off it. The Tower doesn\'t want you to go back. It never did. Every step forward is a promise — and the Tower remembers every one.',
+  'story_80': 'The darkness here has weight. It presses against your chest like a hand, testing whether you\'re strong enough to keep breathing. Somewhere in the distance, a low rumble rolls through the stone — the Tower digesting something. Or someone.',
+  'story_130': 'Numbers are scratched into the walls here — not problems, but answers. Someone who climbed before you left a trail. But the answers are wrong. All of them. Deliberately wrong. A warning, or a trap.',
+  'story_180': 'You reach a ledge where the Tower widens into a room. On the floor, a mosaic of tiles — each one a different number. They glow faintly when you step on them. This was a place of worship once. They prayed to mathematics here.',
+  'story_230': 'The quakes are getting stronger. The whole Tower sways like a tree in a storm, and for a terrible moment you wonder if it could fall. But it can\'t. It won\'t. The Tower has stood since before time learned to count, and it will stand long after.',
+  'story_280': 'You find a door that opens onto nothing — just empty air and the howling void. On the door frame, someone carved two words: TURN BACK. You step through anyway. The door vanishes behind you. There was never really a choice.',
+  'story_330': 'Gravity stutters. For half a heartbeat you float, weightless, watching chunks of stone drift past like sleeping fish. Then it snaps back and you slam into the platform. The rules are breaking. Even the Tower can\'t hold everything together this high.',
+  'story_380': 'There are other climbers here. Not alive — frozen. Suspended in the walls like insects in amber, their faces locked in expressions of concentration. They didn\'t fail. They just... stopped. Gave up. The Tower preserved them as a warning: motion is survival.',
+  'story_430': 'The problems have changed. They\'re not just arithmetic anymore — they feel like riddles the universe asks itself. Each correct answer sends a vibration through the Tower that you feel in your teeth. You\'re not solving problems. You\'re tuning an instrument.',
+  'story_480': 'The air is thin and tastes like starlight. You can see the curvature of something — not the earth, something else. The Tower exists in a space between spaces, and you\'ve climbed high enough to see the edges of reality pulling apart like old fabric.',
+  'story_530': 'Your hands don\'t shake anymore. Your mind is quiet in a way it has never been. Every number that appears before you is already solved — you see the answer the way you see color, instantly, without thinking. The Tower made you into this. This was always the plan.',
+  'story_575': 'Twenty-five steps. That\'s all that remains between you and whatever waits at the top. The Tower has gone quiet — reverent, almost. As if it\'s holding its breath. You take the next step. And the next. And the next. Each one echoes like a heartbeat.',
   'story_ending': 'You step onto the final platform and the Tower goes silent. For the first time since you entered, there is no hum, no pulse, no whisper. Just stillness. And then — light. Not the crimson glow of the walls or the white crack of lightning, but real, golden light, pouring down from an opening that wasn\'t there a moment ago. You look up and see the sky. Stars. Thousands of them, more than you\'ve ever seen, arranged in patterns that look almost like... equations.\n\nThe Tower wasn\'t a prison. It was a school. Every fall taught you to get back up. Every wrong answer taught you to think harder. Every moment of fear taught you that courage isn\'t the absence of being afraid — it\'s climbing anyway.\n\nYou step through the opening and feel the wind on your face for the first time. Below you, the Tower begins to sink back into the earth, its purpose fulfilled. You carry its lessons in your mind like embers — small, warm, and impossible to extinguish.\n\nWhoever you were when you walked in, you are not that person anymore. You are the one who climbed the Tower. And the numbers — the beautiful, terrible, elegant numbers — they will always be yours.'
 };
 
@@ -3802,22 +3826,139 @@ function render(timestamp) {
     chaosState.lightningBolts = chaosState.lightningBolts.filter(b => b.life > 0);
   }
 
-  ctx.globalAlpha = 0.4;
+  // Grounded buildings with height-based fading and cracking
+  const buildingPlayerH = S ? S.height : 0;
+  const buildingOpacity = Math.max(0.05, 0.4 - (buildingPlayerH || 0) * 0.002);
+  ctx.globalAlpha = buildingOpacity;
   for (let i = 0; i < 8; i++) {
     const bx = (i * W / 5 + 30) % (W + 100) - 50;
     const bh = 100 + (i * 73 % 200);
+    const bw = 30 + i * 7;
     const by = H - bh + cameraY * 0.02;
     ctx.fillStyle = applyVividness(zone.platColor, bgv);
-    ctx.fillRect(bx, by, 30 + i * 7, bh);
+    ctx.fillRect(bx, by, bw, bh);
     ctx.fillStyle = applyVividness(zone.edgeColor || '#444', bgv);
-    ctx.globalAlpha = 0.3;
+    ctx.globalAlpha = Math.max(0.03, 0.3 - (buildingPlayerH || 0) * 0.0015);
     for (let wy = by + 15; wy < by + bh - 10; wy += 20) {
       ctx.fillRect(bx + 6, wy, 4, 6);
       ctx.fillRect(bx + 16, wy, 4, 6);
     }
-    ctx.globalAlpha = 0.4;
+    // Cracks at height > 60
+    if (buildingPlayerH > 60) {
+      const crackAlpha = Math.min(0.6, (buildingPlayerH - 60) * 0.003);
+      ctx.strokeStyle = 'rgba(0,0,0,' + crackAlpha + ')';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      const cs = (i * 7919 + 104729) & 0xFFFF;
+      ctx.moveTo(bx + bw * 0.3, by + bh * 0.2);
+      ctx.lineTo(bx + bw * 0.5, by + bh * 0.4);
+      ctx.lineTo(bx + bw * 0.35, by + bh * 0.6);
+      ctx.lineTo(bx + bw * 0.55, by + bh * 0.8);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(bx + bw * 0.7, by + bh * 0.1);
+      ctx.lineTo(bx + bw * 0.6, by + bh * 0.35);
+      ctx.lineTo(bx + bw * 0.75, by + bh * 0.55);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = buildingOpacity;
   }
   ctx.globalAlpha = 1;
+
+  // Floating ruins - seeded by height band
+  const ruinBandSize = 80;
+  const ruinStartHeight = 150;
+  if (S && S.height > ruinStartHeight) {
+    const playerH = S.height;
+    const visibleBands = 8;
+    for (let rb = 0; rb < visibleBands; rb++) {
+      const bandIdx = Math.floor(playerH / ruinBandSize) - 2 + rb;
+      if (bandIdx < Math.floor(ruinStartHeight / ruinBandSize)) continue;
+      const seed = (bandIdx * 2654435769) & 0xFFFFFFFF;
+      const r1 = ((seed >> 16) & 0xFFFF) / 0xFFFF;
+      const r2 = ((seed >> 8) & 0xFFFF) / 0xFFFF;
+      const r3 = (seed & 0xFF) / 255;
+      const r4 = ((seed >> 4) & 0xFF) / 255;
+      const baseY = H * 0.2 + r1 * H * 0.6;
+      const driftX = r2 * W;
+      const driftSpeed = (r3 - 0.5) * 20;
+      const ruinX = (driftX + timestamp * 0.001 * driftSpeed) % (W + 200) - 100;
+      const ruinY = baseY + Math.sin(timestamp * 0.0003 + bandIdx) * 15;
+      const ruinRotation = Math.sin(timestamp * 0.0002 + bandIdx * 2) * 0.15;
+      const ruinType = Math.floor(r4 * 5);
+      const heightFactor = Math.min(1, (playerH - ruinStartHeight) / 200);
+      ctx.globalAlpha = 0.15 + heightFactor * 0.25;
+      ctx.save();
+      ctx.translate(ruinX, ruinY);
+      ctx.rotate(ruinRotation);
+      const zoneColor = zone.platColor;
+      const edgeColor = zone.edgeColor || '#555';
+      if (ruinType === 0) {
+        ctx.fillStyle = applyVividness(zoneColor, bgv);
+        ctx.fillRect(-8, -30, 16, 60);
+        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(-3, -30); ctx.lineTo(2, -10); ctx.lineTo(-4, 5); ctx.lineTo(1, 20);
+        ctx.stroke();
+        ctx.fillStyle = applyVividness(zoneColor, bgv);
+        ctx.beginPath();
+        ctx.moveTo(-8, -30); ctx.lineTo(-2, -38); ctx.lineTo(5, -32); ctx.lineTo(8, -30);
+        ctx.fill();
+      } else if (ruinType === 1) {
+        ctx.fillStyle = applyVividness(zoneColor, bgv);
+        ctx.fillRect(-12, -20, 24, 40);
+        ctx.fillStyle = applyVividness(edgeColor, bgv);
+        for (let wy = -15; wy < 15; wy += 10) {
+          ctx.fillRect(-8, wy, 4, 5);
+          ctx.fillRect(4, wy, 4, 5);
+        }
+        ctx.fillStyle = applyVividness(zoneColor, bgv);
+        ctx.fillRect(-5, 20, 3, 8);
+        ctx.fillRect(3, 20, 2, 12);
+      } else if (ruinType === 2) {
+        ctx.strokeStyle = applyVividness(zoneColor, bgv);
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(0, 0, 20, Math.PI * 0.2, Math.PI * 0.9);
+        ctx.stroke();
+        ctx.fillStyle = applyVividness(edgeColor, bgv);
+        ctx.fillRect(-15, 10, 6, 4);
+        ctx.fillRect(8, 12, 5, 3);
+        ctx.fillRect(-3, 8, 4, 5);
+      } else if (ruinType === 3) {
+        ctx.fillStyle = applyVividness(zoneColor, bgv);
+        ctx.fillRect(-20, -3, 40, 6);
+        ctx.strokeStyle = '#8a5a2a';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(-20, 0); ctx.lineTo(-28, -8);
+        ctx.moveTo(20, -1); ctx.lineTo(26, 6);
+        ctx.moveTo(20, 1); ctx.lineTo(30, -4);
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(-10, -3); ctx.lineTo(-5, 3);
+        ctx.moveTo(8, -3); ctx.lineTo(12, 3);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = applyVividness(zoneColor, bgv);
+        for (let d = 0; d < 8; d++) {
+          const dx = Math.sin(d * 1.7 + bandIdx) * 18;
+          const dy = Math.cos(d * 2.3 + bandIdx) * 14;
+          const ds = 2 + (d % 3) * 2;
+          ctx.save();
+          ctx.translate(dx, dy);
+          ctx.rotate(d * 0.8 + timestamp * 0.0001);
+          ctx.fillRect(-ds/2, -ds/2, ds, ds);
+          ctx.restore();
+        }
+      }
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+  }
 
   const platH = 40;
   const startIdx = Math.max(0, Math.floor((cameraY - 100) / platH));
@@ -3828,6 +3969,43 @@ function render(timestamp) {
     const screenY = H - (i * platH - cameraY);
     const px = p.x * W;
     const pw = p.width * W;
+
+    // Check if platform is broken
+    if (chaosState.brokenPlatforms[i]) {
+      const bp = chaosState.brokenPlatforms[i];
+      const brokenScreenY = screenY + bp.fallOffset;
+      ctx.globalAlpha = Math.max(0, 1 - bp.fallOffset / H);
+      ctx.fillStyle = applyVividness(zone.platColor, bsv);
+      ctx.save();
+      ctx.translate(px + pw/2, brokenScreenY);
+      ctx.rotate(bp.fallOffset * 0.002);
+      ctx.fillRect(-pw/2, -5, pw * 0.45, 10);
+      ctx.fillRect(-pw/2 + pw*0.55, 2, pw * 0.4, 8);
+      ctx.restore();
+      if (bp.hasNPC && bp.npcColor) {
+        ctx.save();
+        ctx.translate(px + pw * 0.5, brokenScreenY - 10);
+        ctx.rotate(bp.fallOffset * 0.005);
+        const c = bp.npcColor;
+        const sc = 0.7;
+        ctx.fillStyle = c.shirt;
+        ctx.fillRect(-6*sc, -18*sc, 12*sc, 12*sc);
+        ctx.fillStyle = c.skin;
+        ctx.beginPath();
+        ctx.arc(0, -24*sc, 6*sc, 0, Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle = c.hair;
+        ctx.beginPath();
+        ctx.arc(0, -26*sc, 6*sc, Math.PI, Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle = c.pants;
+        ctx.fillRect(-5*sc, -6*sc, 4*sc, 8*sc);
+        ctx.fillRect(1*sc, -6*sc, 4*sc, 8*sc);
+        ctx.restore();
+      }
+      ctx.globalAlpha = 1;
+      continue;
+    }
 
     ctx.fillStyle = applyVividness(zone.edgeColor || zone.platColor, bsv);
     ctx.globalAlpha = 0.15;
@@ -3969,6 +4147,21 @@ function render(timestamp) {
       ctx.globalAlpha = 1;
       ctx.restore();
     }
+
+    // Standing NPC on platform (deterministic)
+    const npcSeed = (i * 3141592653 + 271828) & 0xFFFFFFFF;
+    const npcCheck = ((npcSeed >> 16) & 0xFFFF) % 25;
+    const playerH = S ? S.height : 0;
+    if (npcCheck < 1 && i > 0 && playerH > 150 && i !== Math.floor(playerH)) {
+      if (chaosState.brokenPlatforms[i]) {
+        chaosState.brokenPlatforms[i].hasNPC = true;
+        chaosState.brokenPlatforms[i].npcColor = NPC_COLORS[((npcSeed >> 8) & 0xFF) % NPC_COLORS.length];
+      } else {
+        const npcColor = NPC_COLORS[((npcSeed >> 8) & 0xFF) % NPC_COLORS.length];
+        const npcX = px + pw * 0.3 + ((npcSeed & 0xFF) / 255) * pw * 0.4;
+        drawStandingNPC(npcX, screenY, npcColor);
+      }
+    }
   }
 
   // Fire crackle audio — play when any fire is visible on screen
@@ -4020,6 +4213,7 @@ function render(timestamp) {
 
   // Chaos: lightning, meteors, falling NPCs & impact fires
   updateLightning();
+  updateQuakes(dt);
   updateAndDrawMeteors(dt);
   updateAndDrawFallingNPCs(dt);
   updateAndDrawImpactFires(dt);
@@ -4126,7 +4320,11 @@ const AudioEngine = (() => {
       'music_abyss','music_crimson','music_boneyard','music_void','music_storm','music_apex','music_endgame',
       'music_title','music_setup',
       'story_intro','story_50','story_100','story_150','story_200','story_250',
-      'story_300','story_350','story_400','story_450','story_500','story_550','story_ending'
+      'story_300','story_350','story_400','story_450','story_500','story_550','story_ending',
+      'story_30','story_80','story_130','story_180','story_230','story_280',
+      'story_330','story_380','story_430','story_480','story_530','story_575',
+      'quake_1','quake_2','quake_3','quake_4','quake_5',
+      'platform_break_1','platform_break_2','platform_break_3','platform_break_4','platform_break_5'
     ];
     names.forEach(preloadVoice);
   }
@@ -4610,7 +4808,11 @@ const chaosState = {
   nextLightningTime: Date.now() + (10 + Math.random() * 20) * 1000,
   lightningFlash: 0, // timer for flash effect
   lightningBolts: [], // visual bolt lines
-  impactFires: [] // residual fires from meteor impacts
+  impactFires: [], // residual fires from meteor impacts
+  nextQuakeTime: Date.now() + (40 + Math.random() * 40) * 1000,
+  quakeActive: false,
+  quakeTimer: 0,
+  brokenPlatforms: {}
 };
 
 const NPC_COLORS = [
@@ -4696,6 +4898,103 @@ function triggerLightning() {
   // Sometimes double-flash
   if (Math.random() > 0.6) {
     setTimeout(() => { chaosState.lightningFlash = 0.4 + Math.random() * 0.3; }, 100 + Math.random() * 150);
+  }
+}
+
+function drawStandingNPC(x, y, colors) {
+  ctx.save();
+  const sc = 0.7;
+  const sway = Math.sin(performance.now() * 0.002 + x) * 0.05;
+  ctx.translate(x, y);
+  ctx.rotate(sway);
+  ctx.fillStyle = colors.shirt;
+  ctx.fillRect(-6 * sc, -18 * sc, 12 * sc, 12 * sc);
+  ctx.fillStyle = colors.skin;
+  ctx.beginPath();
+  ctx.arc(0, -24 * sc, 6 * sc, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = colors.hair;
+  ctx.beginPath();
+  ctx.arc(0, -26 * sc, 6 * sc, Math.PI, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(-2 * sc, -24 * sc, 1.5 * sc, 0, Math.PI * 2);
+  ctx.arc(2 * sc, -24 * sc, 1.5 * sc, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#111';
+  ctx.beginPath();
+  ctx.arc(-2 * sc, -25 * sc, 0.8 * sc, 0, Math.PI * 2);
+  ctx.arc(2 * sc, -25 * sc, 0.8 * sc, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = colors.pants;
+  ctx.fillRect(-5 * sc, -6 * sc, 4 * sc, 8 * sc);
+  ctx.fillRect(1 * sc, -6 * sc, 4 * sc, 8 * sc);
+  ctx.fillStyle = colors.skin;
+  const armSwing = Math.sin(performance.now() * 0.003 + x) * 0.1;
+  ctx.save();
+  ctx.rotate(armSwing);
+  ctx.fillRect(-9 * sc, -16 * sc, 3 * sc, 10 * sc);
+  ctx.restore();
+  ctx.save();
+  ctx.rotate(-armSwing);
+  ctx.fillRect(6 * sc, -16 * sc, 3 * sc, 10 * sc);
+  ctx.restore();
+  ctx.restore();
+}
+
+function updateQuakes(dt) {
+  const now = Date.now();
+  const h = S ? S.height : 0;
+  if (h < 100) return;
+  const interval = Math.max(15, 40 - h * 0.03);
+  if (now >= chaosState.nextQuakeTime) {
+    chaosState.nextQuakeTime = now + (interval + Math.random() * interval) * 1000;
+    chaosState.quakeActive = true;
+    chaosState.quakeTimer = 1.0 + Math.random() * 1.0;
+    const idx = Math.floor(Math.random() * 5) + 1;
+    AudioEngine.playSfxBuffer('quake_' + idx, 0.5);
+    screenShake = Math.max(screenShake, 8 + h * 0.01);
+    if (Math.random() < 0.3) {
+      const platH = 40;
+      const visibleStart = Math.max(0, Math.floor((cameraY - 100) / platH));
+      const visibleEnd = Math.ceil((cameraY + H + 100) / platH);
+      const candidates = [];
+      for (let pi = visibleStart; pi <= visibleEnd; pi++) {
+        if (pi !== Math.floor(S.height) && pi > 0 && !chaosState.brokenPlatforms[pi]) {
+          candidates.push(pi);
+        }
+      }
+      if (candidates.length > 0) {
+        const breakIdx = candidates[Math.floor(Math.random() * candidates.length)];
+        const npcSeed2 = (breakIdx * 3141592653 + 271828) & 0xFFFFFFFF;
+        const hasNPC = ((npcSeed2 >> 16) & 0xFFFF) % 25 < 1 && breakIdx > 0 && S.height > 150;
+        chaosState.brokenPlatforms[breakIdx] = {
+          fallOffset: 0, fallSpeed: 0, broken: true,
+          hasNPC: hasNPC,
+          npcColor: hasNPC ? NPC_COLORS[((npcSeed2 >> 8) & 0xFF) % NPC_COLORS.length] : null,
+          particles: []
+        };
+        const bidx = Math.floor(Math.random() * 5) + 1;
+        AudioEngine.playSfxBuffer('platform_break_' + bidx, 0.4);
+        if (hasNPC) {
+          const screamIdx = Math.floor(Math.random() * 5) + 1;
+          AudioEngine.playSfxBuffer('npc_scream_' + screamIdx, 0.5);
+        }
+      }
+    }
+  }
+  if (chaosState.quakeActive) {
+    chaosState.quakeTimer -= dt;
+    if (chaosState.quakeTimer <= 0) chaosState.quakeActive = false;
+  }
+  for (const idx in chaosState.brokenPlatforms) {
+    const bp = chaosState.brokenPlatforms[idx];
+    bp.fallSpeed += 300 * dt;
+    bp.fallOffset += bp.fallSpeed * dt;
+    if (bp.fallOffset > H + 200) {
+      delete chaosState.brokenPlatforms[idx];
+    }
   }
 }
 
