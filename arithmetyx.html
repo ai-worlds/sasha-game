@@ -3661,6 +3661,38 @@ function render(timestamp) {
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
+  // Lightning flash behind buildings
+  if (chaosState.lightningFlash > 0) {
+    ctx.globalAlpha = chaosState.lightningFlash;
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 1;
+    chaosState.lightningFlash -= dt * 4; // fade out over ~0.25s
+    // Draw lightning bolts
+    for (const bolt of chaosState.lightningBolts) {
+      bolt.life -= dt;
+      if (bolt.life <= 0) continue;
+      ctx.globalAlpha = Math.min(1, bolt.life * 4);
+      ctx.strokeStyle = '#fff';
+      ctx.shadowColor = '#aaf';
+      ctx.shadowBlur = 15;
+      ctx.lineWidth = bolt.width;
+      ctx.beginPath();
+      ctx.moveTo(bolt.points[0].x, bolt.points[0].y);
+      for (let p = 1; p < bolt.points.length; p++) {
+        ctx.lineTo(bolt.points[p].x, bolt.points[p].y);
+      }
+      ctx.stroke();
+      // Thinner bright core
+      ctx.lineWidth = bolt.width * 0.3;
+      ctx.strokeStyle = '#eef';
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+    ctx.globalAlpha = 1;
+    chaosState.lightningBolts = chaosState.lightningBolts.filter(b => b.life > 0);
+  }
+
   ctx.globalAlpha = 0.2;
   for (let i = 0; i < 8; i++) {
     const bx = (i * W / 5 + 30) % (W + 100) - 50;
@@ -3762,7 +3794,8 @@ function render(timestamp) {
   ctx.shadowBlur = 0;
   ctx.globalAlpha = 1;
 
-  // Chaos: meteors & falling NPCs
+  // Chaos: lightning, meteors & falling NPCs
+  updateLightning();
   updateAndDrawMeteors(dt);
   updateAndDrawFallingNPCs(dt);
 
@@ -3860,7 +3893,8 @@ const AudioEngine = (() => {
       'wrong_9','wrong_10','wrong_11','wrong_12','wrong_13','wrong_14','wrong_15','wrong_16',
       'meteor_fly_1','meteor_fly_2','meteor_fly_3','meteor_fly_4','meteor_fly_5',
       'meteor_crash_1','meteor_crash_2','meteor_crash_3','meteor_crash_4','meteor_crash_5',
-      'npc_scream_1','npc_scream_2','npc_scream_3','npc_scream_4','npc_scream_5'
+      'npc_scream_1','npc_scream_2','npc_scream_3','npc_scream_4','npc_scream_5',
+      'lightning_1','lightning_2','lightning_3','lightning_4','lightning_5'
     ];
     names.forEach(preloadVoice);
   }
@@ -4346,7 +4380,10 @@ const chaosState = {
   meteors: [],
   fallingNPCs: [],
   nextMeteorTime: Date.now() + (30 + Math.random() * 30) * 1000,
-  nextNPCTime: Date.now() + (120 + Math.random() * 120) * 1000
+  nextNPCTime: Date.now() + (120 + Math.random() * 120) * 1000,
+  nextLightningTime: Date.now() + (30 + Math.random() * 210) * 1000,
+  lightningFlash: 0, // timer for flash effect
+  lightningBolts: [] // visual bolt lines
 };
 
 const NPC_COLORS = [
@@ -4397,6 +4434,43 @@ function spawnFallingNPC() {
     alpha: 0
   };
   chaosState.fallingNPCs.push(npc);
+}
+
+function triggerLightning() {
+  chaosState.lightningFlash = 0.7 + Math.random() * 0.3;
+  const idx = Math.floor(Math.random() * 5) + 1;
+  AudioEngine.playSfxBuffer('lightning_' + idx, 0.6);
+  // Generate 1-3 bolt shapes
+  const numBolts = 1 + Math.floor(Math.random() * 3);
+  chaosState.lightningBolts = [];
+  for (let b = 0; b < numBolts; b++) {
+    const points = [{ x: Math.random() * W, y: 0 }];
+    let cx = points[0].x, cy = 0;
+    const segments = 6 + Math.floor(Math.random() * 8);
+    const targetY = H * (0.4 + Math.random() * 0.5);
+    for (let s = 1; s <= segments; s++) {
+      cx += (Math.random() - 0.5) * 60;
+      cy += targetY / segments;
+      points.push({ x: cx, y: cy });
+    }
+    chaosState.lightningBolts.push({
+      points,
+      width: 1.5 + Math.random() * 2.5,
+      life: 0.15 + Math.random() * 0.15
+    });
+  }
+  // Sometimes double-flash
+  if (Math.random() > 0.6) {
+    setTimeout(() => { chaosState.lightningFlash = 0.4 + Math.random() * 0.3; }, 100 + Math.random() * 150);
+  }
+}
+
+function updateLightning() {
+  const now = Date.now();
+  if (now >= chaosState.nextLightningTime && !menuOpen && !parentOpen) {
+    triggerLightning();
+    chaosState.nextLightningTime = now + (30 + Math.random() * 210) * 1000;
+  }
 }
 
 function updateAndDrawMeteors(dt) {
