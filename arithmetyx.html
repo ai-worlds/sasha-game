@@ -4361,7 +4361,6 @@ updateVividnessCSS();
 // Title screen
 document.getElementById('start-btn').addEventListener('click', () => {
   AudioEngine.init();
-  AudioEngine.playMusicTrack('music_title');
   AudioEngine.playClick();
   AudioEngine.playVoice('title_intro');
   
@@ -5012,6 +5011,13 @@ function updateAndDrawImpactFires(dt) {
     ctx.globalAlpha = 1;
   }
 }
+
+// Start title music on first interaction (browser autoplay policy)
+document.addEventListener('click', function titleMusicInit() {
+  AudioEngine.init();
+  AudioEngine.playMusicTrack('music_title');
+  document.removeEventListener('click', titleMusicInit);
+}, { once: true });
 
 requestAnimationFrame(render);
 </script>
