@@ -345,7 +345,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
   <button class="start-btn" id="start-btn">ENTER THE VOID</button>
   <div style="position:absolute;bottom:40px;left:0;right:0;text-align:center;font-family:var(--font-body);font-size:13px;color:rgba(200,192,184,0.4);line-height:1.6">
     Made with ❤️ by Josh Mouch & Sasha Elise<br>© 2026<br>
-    <span id="version-display" style="font-family:var(--font-mono);font-size:11px;color:rgba(200,192,184,0.25)"><!-- AUTOVER -->v9b80243 · Feb 27, 2026 09:26 PM EST<!-- /AUTOVER --></span>
+    <span id="version-display" style="font-family:var(--font-mono);font-size:11px;color:rgba(200,192,184,0.25)"><!-- AUTOVER -->v06dcdc0 · Feb 27, 2026 09:33 PM EST<!-- /AUTOVER --></span>
   </div>
   <button id="nuke-btn" style="position:absolute;bottom:10px;right:10px;background:transparent;border:1px solid rgba(200,192,184,0.15);color:rgba(200,192,184,0.3);font-size:10px;padding:4px 8px;cursor:pointer;border-radius:3px;font-family:var(--font-mono)" onclick="if(confirm('Wipe ALL localStorage? This is a full factory reset.')){localStorage.clear();location.reload();}">reset</button>
 </div>
@@ -3533,18 +3533,18 @@ function renderKarmaUI() {
 // ============ VICTORY ============
 // ============ STORY SYSTEM ============
 const STORY_TRIGGERS = {
-  1: 'story_intro',
-  50: 'story_50',
-  100: 'story_100',
-  150: 'story_150',
-  200: 'story_200',
-  250: 'story_250',
-  300: 'story_300',
-  350: 'story_350',
-  400: 'story_400',
-  450: 'story_450',
-  500: 'story_500',
-  550: 'story_550'
+  5: 'story_intro',
+  55: 'story_50',
+  105: 'story_100',
+  155: 'story_150',
+  205: 'story_200',
+  255: 'story_250',
+  305: 'story_300',
+  355: 'story_350',
+  405: 'story_400',
+  455: 'story_450',
+  505: 'story_500',
+  555: 'story_550'
 };
 
 const STORY_TEXT = {
