@@ -345,7 +345,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
   <button class="start-btn" id="start-btn">ENTER THE VOID</button>
   <div style="position:absolute;bottom:40px;left:0;right:0;text-align:center;font-family:var(--font-body);font-size:13px;color:rgba(200,192,184,0.4);line-height:1.6">
     Made with ❤️ by Josh Mouch & Sasha Elise<br>© 2026<br>
-    <span id="version-display" style="font-family:var(--font-mono);font-size:11px;color:rgba(200,192,184,0.25)"><!-- AUTOVER -->v25ae183 · Feb 27, 2026 10:38 PM EST<!-- /AUTOVER --></span>
+    <span id="version-display" style="font-family:var(--font-mono);font-size:11px;color:rgba(200,192,184,0.25)"><!-- AUTOVER -->v939ab6f · Feb 27, 2026 10:41 PM EST<!-- /AUTOVER --></span>
   </div>
   <button id="nuke-btn" style="position:absolute;bottom:10px;right:10px;background:transparent;border:1px solid rgba(200,192,184,0.15);color:rgba(200,192,184,0.3);font-size:10px;padding:4px 8px;cursor:pointer;border-radius:3px;font-family:var(--font-mono)" onclick="if(confirm('Wipe ALL localStorage? This is a full factory reset.')){localStorage.clear();location.reload();}">reset</button>
 </div>
@@ -678,6 +678,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 
     <h2>📊 REPORT CARD</h2>
     <div id="report-card"></div>
+
+    <div id="story-journal"></div>
 
     <h2>ACTIONS</h2>
     <button class="menu-btn-big btn-close" id="back-to-title-btn-menu">BACK TO TITLE</button>
@@ -2797,6 +2799,7 @@ function openMenu() {
   renderMenu();
   renderHardList();
   renderReportCard();
+  renderStoryJournal();
   renderCharacterMenu();
   updateCharPreview();
 }
@@ -3215,6 +3218,33 @@ function renderReportCard() {
       <div><span class="rpt-label">Slot Total:</span> <span class="rpt-money">${formatMoney(S.slotEarnings||0)}</span></div>
     </div>
   `;
+}
+
+function renderStoryJournal() {
+  const el = document.getElementById('story-journal');
+  if (!el || !S) { if (el) el.innerHTML = ''; return; }
+  const played = S.storyPlayed || {};
+  // Collect unlocked stories sorted by trigger height
+  const entries = [];
+  for (const [h, key] of Object.entries(STORY_TRIGGERS)) {
+    if (played[key] && STORY_TEXT[key]) entries.push({ height: Number(h), key });
+  }
+  if (entries.length === 0) { el.innerHTML = ''; return; }
+  entries.sort((a, b) => a.height - b.height);
+  let html = '<h2>📜 STORY JOURNAL</h2>';
+  for (const e of entries) {
+    const label = e.key === 'story_intro' ? 'THE TOWER AWAITS' :
+                  e.key === 'story_ending' ? 'THE ASCENT IS COMPLETE' :
+                  'HEIGHT ' + e.key.replace('story_', '');
+    html += `<button class="menu-btn-big" style="margin:4px 0;font-size:12px;text-align:left;padding:8px 12px" data-story="${e.key}">${label}</button>`;
+  }
+  el.innerHTML = html;
+  el.querySelectorAll('[data-story]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      closeMenu();
+      showStoryOverlay(btn.dataset.story);
+    });
+  });
 }
 
 // Old slots overlay removed - now using slot-select-screen
