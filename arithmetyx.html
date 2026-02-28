@@ -345,7 +345,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
   <button class="start-btn" id="start-btn">ENTER THE VOID</button>
   <div style="position:absolute;bottom:40px;left:0;right:0;text-align:center;font-family:var(--font-body);font-size:13px;color:rgba(200,192,184,0.4);line-height:1.6">
     Made with ❤️ by Josh Mouch & Sasha Elise<br>© 2026<br>
-    <span id="version-display" style="font-family:var(--font-mono);font-size:11px;color:rgba(200,192,184,0.25)"><!-- AUTOVER -->vef80345 · Feb 27, 2026 10:24 PM EST<!-- /AUTOVER --></span>
+    <span id="version-display" style="font-family:var(--font-mono);font-size:11px;color:rgba(200,192,184,0.25)"><!-- AUTOVER -->ve11c0af · Feb 27, 2026 10:37 PM EST<!-- /AUTOVER --></span>
   </div>
   <button id="nuke-btn" style="position:absolute;bottom:10px;right:10px;background:transparent;border:1px solid rgba(200,192,184,0.15);color:rgba(200,192,184,0.3);font-size:10px;padding:4px 8px;cursor:pointer;border-radius:3px;font-family:var(--font-mono)" onclick="if(confirm('Wipe ALL localStorage? This is a full factory reset.')){localStorage.clear();location.reload();}">reset</button>
 </div>
@@ -3601,12 +3601,9 @@ function showStoryOverlay(storyKey) {
   const text = STORY_TEXT[storyKey] || '';
   const isEnding = storyKey === 'story_ending';
 
-  // Dim the music
-  AudioEngine.playSfxBuffer(storyKey, 1.0);
-
   const overlay = document.createElement('div');
   overlay.id = 'story-overlay';
-  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:500;background:rgba(0,0,0,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;animation:storyFadeIn 1s ease-in;cursor:pointer;overflow-y:auto';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:500;background:rgba(0,0,0,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;animation:storyFadeIn 1s ease-in;overflow-y:auto';
   
   const heightLabel = storyKey === 'story_intro' ? 'THE TOWER AWAITS' :
                       storyKey === 'story_ending' ? 'THE ASCENT IS COMPLETE' :
@@ -3615,17 +3612,34 @@ function showStoryOverlay(storyKey) {
   overlay.innerHTML = `
     <div style="font-family:var(--font-display);font-size:12px;color:var(--accent2);letter-spacing:4px;margin-bottom:20px;text-transform:uppercase;text-shadow:0 0 20px rgba(184,48,48,0.6)">${heightLabel}</div>
     <div style="font-family:var(--font-body);font-size:clamp(16px,3.5vw,22px);color:var(--fg);max-width:600px;line-height:1.8;white-space:pre-line;text-shadow:0 0 10px rgba(200,192,184,0.15)">${text}</div>
-    <div style="font-family:var(--font-mono);font-size:12px;color:rgba(200,192,184,0.3);margin-top:30px;letter-spacing:2px">${isEnding ? 'TAP TO CONTINUE' : 'TAP TO CONTINUE CLIMBING'}</div>
+    <div style="font-family:var(--font-mono);font-size:12px;color:rgba(200,192,184,0.3);margin-top:30px;letter-spacing:2px">${isEnding ? 'TAP TO CONTINUE' : '...'}</div>
   `;
 
-  overlay.addEventListener('click', () => {
+  function dismissOverlay() {
     overlay.style.opacity = '0';
     overlay.style.transition = 'opacity 0.5s';
     setTimeout(() => {
       overlay.remove();
       if (isEnding) showVictory();
     }, 500);
-  });
+  }
+
+  // Auto-dismiss when audio finishes (or after fallback timeout)
+  const result = AudioEngine.playSfxBuffer(storyKey, 1.0);
+  // Remove the early play call — we moved it here
+  if (result && result.source) {
+    result.source.onended = dismissOverlay;
+  } else {
+    // No audio available — fallback: dismiss after text read time
+    setTimeout(dismissOverlay, Math.max(4000, text.length * 50));
+  }
+
+  if (isEnding) {
+    // Ending story still needs a tap to continue
+    overlay.style.cursor = 'pointer';
+    overlay.querySelector('div:last-child').textContent = 'TAP TO CONTINUE';
+    overlay.addEventListener('click', dismissOverlay);
+  }
 
   document.body.appendChild(overlay);
 }
