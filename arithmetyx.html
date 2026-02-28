@@ -1170,14 +1170,12 @@ function goToKidSelect() {
   closeParent();
   showScreen('kid-select-screen');
   renderKidSelection();
-  AudioEngine.playMusicTrack('music_setup');
   AudioEngine.playVoice('kid_select');
 }
 
 function goToKidCreate() {
   showScreen('kid-create-screen');
   initKidCreation();
-  AudioEngine.playMusicTrack('music_setup');
   AudioEngine.playVoice('kid_create');
 }
 
@@ -1191,14 +1189,12 @@ function goToSlotSelect() {
     goToSlotCreate();
     return;
   }
-  AudioEngine.playMusicTrack('music_setup');
   AudioEngine.playVoice('slot_select');
 }
 
 function goToSlotCreate() {
   showScreen('slot-create-screen');
   initSlotCreation();
-  AudioEngine.playMusicTrack('music_setup');
   AudioEngine.playVoice('slot_create');
 }
 
@@ -5025,6 +5021,60 @@ function updateAndDrawImpactFires(dt) {
     ctx.globalAlpha = 1;
   }
 }
+
+// Menu lightning — flashes on title/setup screens
+let menuLightningDiv = null;
+function initMenuLightning() {
+  menuLightningDiv = document.createElement('div');
+  menuLightningDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:199;pointer-events:none;opacity:0;background:#fff;transition:opacity 0.05s';
+  document.body.appendChild(menuLightningDiv);
+}
+initMenuLightning();
+
+function triggerMenuLightning() {
+  if (!menuLightningDiv) return;
+  const idx = Math.floor(Math.random() * 5) + 1;
+  AudioEngine.playSfxBuffer('lightning_' + idx, 0.5);
+  menuLightningDiv.style.opacity = '0.3';
+  setTimeout(() => { menuLightningDiv.style.opacity = '0'; }, 80);
+  // Double flash chance
+  if (Math.random() > 0.5) {
+    setTimeout(() => {
+      menuLightningDiv.style.opacity = '0.2';
+      setTimeout(() => { menuLightningDiv.style.opacity = '0'; }, 60);
+    }, 120 + Math.random() * 100);
+  }
+}
+
+let menuLightningInterval = null;
+function startMenuLightning() {
+  if (menuLightningInterval) return;
+  menuLightningInterval = setInterval(() => {
+    // Only flash when on a menu screen (not in-game)
+    const screens = ['intro-screen','kid-select-screen','kid-create-screen','slot-select-screen','slot-create-screen'];
+    const onMenu = screens.some(id => {
+      const el = document.getElementById(id);
+      return el && (el.style.display === 'flex' || el.style.display === 'block');
+    });
+    if (onMenu) triggerMenuLightning();
+  }, 8000 + Math.random() * 15000);
+}
+
+// Restart interval with random timing after each flash
+function scheduleMenuLightning() {
+  if (menuLightningInterval) clearInterval(menuLightningInterval);
+  const delay = (8 + Math.random() * 20) * 1000;
+  menuLightningInterval = setTimeout(() => {
+    const screens = ['intro-screen','kid-select-screen','kid-create-screen','slot-select-screen','slot-create-screen'];
+    const onMenu = screens.some(id => {
+      const el = document.getElementById(id);
+      return el && (el.style.display === 'flex' || el.style.display === 'block');
+    });
+    if (onMenu) triggerMenuLightning();
+    scheduleMenuLightning();
+  }, delay);
+}
+scheduleMenuLightning();
 
 // Start title music on first interaction (browser autoplay policy)
 document.addEventListener('click', function titleMusicInit() {
