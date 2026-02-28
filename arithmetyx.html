@@ -3762,6 +3762,10 @@ function render(timestamp) {
   ctx.shadowBlur = 0;
   ctx.globalAlpha = 1;
 
+  // Chaos: meteors & falling NPCs
+  updateAndDrawMeteors(dt);
+  updateAndDrawFallingNPCs(dt);
+
   ctx.fillStyle = zone.fogColor;
   ctx.fillRect(0, 0, W, H);
 
@@ -3853,7 +3857,10 @@ const AudioEngine = (() => {
       'correct_1','correct_2','correct_3','correct_4','correct_5','correct_6','correct_7',
       'correct_8','correct_9','correct_10','correct_11','correct_12','correct_13','correct_14',
       'wrong_1','wrong_2','wrong_3','wrong_4','wrong_5','wrong_6','wrong_7','wrong_8',
-      'wrong_9','wrong_10','wrong_11','wrong_12','wrong_13','wrong_14','wrong_15','wrong_16'
+      'wrong_9','wrong_10','wrong_11','wrong_12','wrong_13','wrong_14','wrong_15','wrong_16',
+      'meteor_fly_1','meteor_fly_2','meteor_fly_3','meteor_fly_4','meteor_fly_5',
+      'meteor_crash_1','meteor_crash_2','meteor_crash_3','meteor_crash_4','meteor_crash_5',
+      'npc_scream_1','npc_scream_2','npc_scream_3','npc_scream_4','npc_scream_5'
     ];
     names.forEach(preloadVoice);
   }
@@ -3884,6 +3891,18 @@ const AudioEngine = (() => {
   function playRandomFromList(names, cooldownMs) {
     const name = names[Math.floor(Math.random() * names.length)];
     playVoice(name, cooldownMs || 3000);
+  }
+
+  function playSfxBuffer(name, vol = 1.0) {
+    if (!actx || !enabled || !voiceBuffers[name]) return null;
+    const src = actx.createBufferSource();
+    const gain = actx.createGain();
+    src.buffer = voiceBuffers[name];
+    gain.gain.value = vol;
+    src.connect(gain);
+    gain.connect(sfxGain);
+    src.start();
+    return { source: src, gain: gain };
   }
 
   function setVolume(v) { volume = v; if (masterGain) masterGain.gain.value = v; }
@@ -4165,7 +4184,7 @@ const AudioEngine = (() => {
     init, setVolume, setMusicEnabled, setSfxEnabled,
     playCorrect, playWrong, playFall, playClick, playStreak,
     playVictory, playMenuOpen, playMenuClose, playShieldBreak, playShieldGain,
-    startMusic, stopMusic, playVoice, playRandomVoice, playVoiceWithCooldown, playRandomFromList,
+    startMusic, stopMusic, playVoice, playRandomVoice, playVoiceWithCooldown, playRandomFromList, playSfxBuffer,
     get musicEnabled() { return musicEnabled; },
     get sfxEnabled() { return enabled; },
     get volume() { return volume; }
@@ -4320,6 +4339,283 @@ if (!localStorage.getItem('arithmetyx_parent_password')) {
       return null;
     });
   }, 300);
+}
+
+// ============ CHAOS ENGINE: METEORS & FALLING NPCs ============
+const chaosState = {
+  meteors: [],
+  fallingNPCs: [],
+  nextMeteorTime: Date.now() + (30 + Math.random() * 30) * 1000,
+  nextNPCTime: Date.now() + (120 + Math.random() * 120) * 1000
+};
+
+const NPC_COLORS = [
+  { skin: '#e8b89a', hair: '#4a3728', shirt: '#d44', pants: '#447' },
+  { skin: '#c68e6a', hair: '#222', shirt: '#4a8', pants: '#555' },
+  { skin: '#f5d0b0', hair: '#d4a030', shirt: '#66c', pants: '#833' },
+  { skin: '#8d6e4c', hair: '#111', shirt: '#c84', pants: '#363' },
+  { skin: '#f0c8a8', hair: '#a44', shirt: '#888', pants: '#448' }
+];
+
+function spawnMeteor() {
+  const startX = Math.random() * W * 0.8 + W * 0.1;
+  const angle = (Math.random() * 0.4 - 0.2); // slight angle variation
+  const flyIdx = Math.floor(Math.random() * 5) + 1;
+  const crashIdx = Math.floor(Math.random() * 5) + 1;
+  const meteor = {
+    x: startX,
+    y: -40,
+    vx: angle * 100,
+    vy: 250 + Math.random() * 150,
+    size: 8 + Math.random() * 12,
+    rotation: Math.random() * Math.PI * 2,
+    rotSpeed: (Math.random() - 0.5) * 8,
+    trail: [],
+    phase: 'falling', // 'falling' | 'exploding' | 'done'
+    explodeTimer: 0,
+    flySound: AudioEngine.playSfxBuffer('meteor_fly_' + flyIdx, 0.5),
+    crashSoundName: 'meteor_crash_' + crashIdx,
+    particles: []
+  };
+  chaosState.meteors.push(meteor);
+}
+
+function spawnFallingNPC() {
+  const npcColor = NPC_COLORS[Math.floor(Math.random() * NPC_COLORS.length)];
+  const screamIdx = Math.floor(Math.random() * 5) + 1;
+  const npc = {
+    x: Math.random() * (W - 60) + 30,
+    y: -50,
+    vy: 200 + Math.random() * 200,
+    rotation: 0,
+    rotSpeed: (Math.random() > 0.5 ? 1 : -1) * (3 + Math.random() * 8),
+    colors: npcColor,
+    screamSound: null,
+    screamName: 'npc_scream_' + screamIdx,
+    screamStarted: false,
+    phase: 'falling', // 'falling' | 'done'
+    alpha: 0
+  };
+  chaosState.fallingNPCs.push(npc);
+}
+
+function updateAndDrawMeteors(dt) {
+  const now = Date.now();
+  if (now >= chaosState.nextMeteorTime && !menuOpen && !parentOpen) {
+    spawnMeteor();
+    chaosState.nextMeteorTime = now + (30 + Math.random() * 30) * 1000;
+  }
+
+  for (let i = chaosState.meteors.length - 1; i >= 0; i--) {
+    const m = chaosState.meteors[i];
+
+    if (m.phase === 'falling') {
+      m.x += m.vx * dt;
+      m.y += m.vy * dt;
+      m.rotation += m.rotSpeed * dt;
+      m.vy += 200 * dt; // gravity
+
+      // Trail
+      m.trail.push({ x: m.x, y: m.y, life: 0.5 });
+
+      // Draw trail
+      for (let t = m.trail.length - 1; t >= 0; t--) {
+        m.trail[t].life -= dt;
+        if (m.trail[t].life <= 0) { m.trail.splice(t, 1); continue; }
+        const a = m.trail[t].life / 0.5;
+        ctx.globalAlpha = a * 0.6;
+        ctx.fillStyle = `rgb(${255}, ${Math.floor(120 + 80 * a)}, ${Math.floor(30 * a)})`;
+        ctx.beginPath();
+        ctx.arc(m.trail[t].x, m.trail[t].y, m.size * 0.5 * a, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Draw meteor
+      ctx.globalAlpha = 1;
+      ctx.save();
+      ctx.translate(m.x, m.y);
+      ctx.rotate(m.rotation);
+      ctx.fillStyle = '#888';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, m.size, m.size * 0.7, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#666';
+      ctx.beginPath();
+      ctx.arc(-m.size * 0.3, -m.size * 0.1, m.size * 0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(m.size * 0.2, m.size * 0.15, m.size * 0.15, 0, Math.PI * 2);
+      ctx.fill();
+      // Glow
+      ctx.shadowColor = '#f84';
+      ctx.shadowBlur = m.size * 2;
+      ctx.fillStyle = 'rgba(255, 140, 40, 0.5)';
+      ctx.beginPath();
+      ctx.arc(0, 0, m.size * 0.8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.restore();
+
+      // Hit bottom
+      if (m.y >= H - 20) {
+        m.phase = 'exploding';
+        m.explodeTimer = 0.8;
+        if (m.flySound && m.flySound.source) try { m.flySound.source.stop(); } catch(e){}
+        AudioEngine.playSfxBuffer(m.crashSoundName, 0.7);
+        screenShake = Math.max(screenShake, 12);
+        // Spawn explosion particles
+        for (let p = 0; p < 30; p++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 50 + Math.random() * 200;
+          m.particles.push({
+            x: m.x, y: H - 10,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - 100,
+            life: 0.3 + Math.random() * 0.5,
+            size: 2 + Math.random() * 4,
+            color: ['#f84', '#fa4', '#ff4', '#f44', '#888'][Math.floor(Math.random() * 5)]
+          });
+        }
+      }
+    } else if (m.phase === 'exploding') {
+      m.explodeTimer -= dt;
+      // Draw explosion particles
+      for (let p = m.particles.length - 1; p >= 0; p--) {
+        const ep = m.particles[p];
+        ep.x += ep.vx * dt;
+        ep.y += ep.vy * dt;
+        ep.vy += 300 * dt;
+        ep.life -= dt;
+        if (ep.life <= 0) { m.particles.splice(p, 1); continue; }
+        ctx.globalAlpha = ep.life;
+        ctx.fillStyle = ep.color;
+        ctx.shadowColor = ep.color;
+        ctx.shadowBlur = ep.size;
+        ctx.beginPath();
+        ctx.arc(ep.x, ep.y, ep.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
+      if (m.explodeTimer <= 0 && m.particles.length === 0) m.phase = 'done';
+    }
+    if (m.phase === 'done') chaosState.meteors.splice(i, 1);
+  }
+}
+
+function updateAndDrawFallingNPCs(dt) {
+  const now = Date.now();
+  if (now >= chaosState.nextNPCTime && !menuOpen && !parentOpen) {
+    spawnFallingNPC();
+    chaosState.nextNPCTime = now + (120 + Math.random() * 120) * 1000;
+  }
+
+  for (let i = chaosState.fallingNPCs.length - 1; i >= 0; i--) {
+    const npc = chaosState.fallingNPCs[i];
+
+    if (npc.phase === 'falling') {
+      npc.y += npc.vy * dt;
+      npc.rotation += npc.rotSpeed * dt;
+
+      // Volume fade: in for top third, full middle, out for bottom third
+      const progress = npc.y / H;
+      if (progress < 0.25) {
+        npc.alpha = progress / 0.25;
+      } else if (progress > 0.75) {
+        npc.alpha = Math.max(0, (1 - progress) / 0.25);
+      } else {
+        npc.alpha = 1;
+      }
+
+      // Start scream when entering screen
+      if (!npc.screamStarted && npc.y > 0) {
+        npc.screamSound = AudioEngine.playSfxBuffer(npc.screamName, 0.01);
+        npc.screamStarted = true;
+      }
+
+      // Update scream volume
+      if (npc.screamSound && npc.screamSound.gain) {
+        npc.screamSound.gain.gain.value = npc.alpha * 0.8;
+      }
+
+      // Draw NPC
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, npc.alpha + 0.2);
+      ctx.translate(npc.x, npc.y);
+      ctx.rotate(npc.rotation);
+
+      const c = npc.colors;
+      const sc = 0.8; // scale
+
+      // Body
+      ctx.fillStyle = c.shirt;
+      ctx.fillRect(-8 * sc, -5 * sc, 16 * sc, 16 * sc);
+
+      // Head
+      ctx.fillStyle = c.skin;
+      ctx.beginPath();
+      ctx.arc(0, -12 * sc, 8 * sc, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Hair
+      ctx.fillStyle = c.hair;
+      ctx.beginPath();
+      ctx.arc(0, -14 * sc, 8 * sc, Math.PI, Math.PI * 2);
+      ctx.fill();
+
+      // Eyes (wide open, scared)
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(-3 * sc, -12 * sc, 2.5 * sc, 0, Math.PI * 2);
+      ctx.arc(3 * sc, -12 * sc, 2.5 * sc, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#111';
+      ctx.beginPath();
+      ctx.arc(-3 * sc, -11.5 * sc, 1.2 * sc, 0, Math.PI * 2);
+      ctx.arc(3 * sc, -11.5 * sc, 1.2 * sc, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Open mouth (screaming)
+      ctx.fillStyle = '#300';
+      ctx.beginPath();
+      ctx.ellipse(0, -7 * sc, 3 * sc, 4 * sc, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Legs (flailing)
+      ctx.fillStyle = c.pants;
+      const legAngle = Math.sin(npc.rotation * 2) * 0.5;
+      ctx.save();
+      ctx.rotate(legAngle);
+      ctx.fillRect(-7 * sc, 11 * sc, 5 * sc, 12 * sc);
+      ctx.restore();
+      ctx.save();
+      ctx.rotate(-legAngle);
+      ctx.fillRect(2 * sc, 11 * sc, 5 * sc, 12 * sc);
+      ctx.restore();
+
+      // Arms (flailing)
+      ctx.fillStyle = c.skin;
+      const armAngle = Math.sin(npc.rotation * 3) * 0.8;
+      ctx.save();
+      ctx.rotate(armAngle + 0.5);
+      ctx.fillRect(-12 * sc, -4 * sc, 5 * sc, 12 * sc);
+      ctx.restore();
+      ctx.save();
+      ctx.rotate(-armAngle - 0.5);
+      ctx.fillRect(7 * sc, -4 * sc, 5 * sc, 12 * sc);
+      ctx.restore();
+
+      ctx.restore();
+      ctx.globalAlpha = 1;
+
+      // Off bottom
+      if (npc.y > H + 60) {
+        npc.phase = 'done';
+        if (npc.screamSound && npc.screamSound.source) try { npc.screamSound.source.stop(); } catch(e){}
+      }
+    }
+    if (npc.phase === 'done') chaosState.fallingNPCs.splice(i, 1);
+  }
 }
 
 requestAnimationFrame(render);
