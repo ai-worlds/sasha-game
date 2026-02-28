@@ -511,6 +511,12 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
     <button class="menu-btn-big btn-close" id="apply-karma-btn">APPLY KARMA</button>
     <div id="karma-log" style="margin-top:10px;max-height:150px;overflow-y:auto"></div>
 
+    <h2>CHAOS EFFECTS</h2>
+    <div class="menu-row"><label>☄️ Meteors</label><div class="toggle on" id="chaos-meteors"></div></div>
+    <div class="menu-row"><label>😱 Falling NPCs</label><div class="toggle on" id="chaos-fallingNPCs"></div></div>
+    <div class="menu-row"><label>⚡ Lightning</label><div class="toggle on" id="chaos-lightning"></div></div>
+    <div class="menu-row"><label>🔥 Fire Objects</label><div class="toggle on" id="chaos-fireObjects"></div></div>
+
     <h2>ACTIONS</h2>
     <button class="menu-btn-big btn-danger" id="delete-player-btn" style="background:rgba(138,26,26,0.4);border-color:var(--red-bright)">DELETE THIS PLAYER</button>
     <button class="menu-btn-big" id="change-password-btn" style="margin-top:10px">🔑 CHANGE PASSWORD</button>
@@ -716,7 +722,8 @@ const DEFAULT_KID_PROFILE = {
   volume: 0.5,
   currentSlotKey: null,
   character: JSON.parse(JSON.stringify(DEFAULT_CHARACTER)),
-  vividness: { background: 100, base: 100, info: 100, foreground: 100 }
+  vividness: { background: 100, base: 100, info: 100, foreground: 100 },
+  chaosEffects: { meteors: true, fallingNPCs: true, lightning: true, fireObjects: true }
 };
 
 const DEFAULT_SLOT = {
@@ -3319,6 +3326,13 @@ function renderParentMenu() {
 
   renderMultLog();
   renderKarmaUI();
+
+  // Chaos effect toggles
+  if (!CFG.chaosEffects) CFG.chaosEffects = { meteors: true, fallingNPCs: true, lightning: true, fireObjects: true };
+  ['meteors', 'fallingNPCs', 'lightning', 'fireObjects'].forEach(key => {
+    const el = document.getElementById('chaos-' + key);
+    if (el) el.classList.toggle('on', CFG.chaosEffects[key] !== false);
+  });
 }
 
 function renderMultLog() {
@@ -3765,7 +3779,7 @@ function render(timestamp) {
     // Fire objects on every 10-20 platforms (deterministic via seed)
     const fireSeed = (i * 1664525 + 1013904223) & 0xFFFFFFFF;
     const fireCheck = ((fireSeed >> 16) & 0xFFFF) % 20;
-    if (fireCheck < 1 && i > 5) {
+    if (fireCheck < 1 && i > 5 && CFG && (!CFG.chaosEffects || CFG.chaosEffects.fireObjects !== false)) {
       const fireR1 = ((fireSeed >> 8) & 0xFF) / 255;
       const fireR2 = (fireSeed & 0xFF) / 255;
       const fireX = px + pw * (0.2 + fireR1 * 0.6);
@@ -3863,7 +3877,7 @@ function render(timestamp) {
   }
 
   // Fire crackle audio — play when a fire is near the player
-  if (S && frameCount % 120 === 0) {
+  if (S && frameCount % 120 === 0 && CFG && (!CFG.chaosEffects || CFG.chaosEffects.fireObjects !== false)) {
     const playerPlat = Math.floor(playerY);
     for (let fi = playerPlat - 3; fi <= playerPlat + 3; fi++) {
       const fs = (fi * 1664525 + 1013904223) & 0xFFFFFFFF;
@@ -3906,10 +3920,11 @@ function render(timestamp) {
   ctx.shadowBlur = 0;
   ctx.globalAlpha = 1;
 
-  // Chaos: lightning, meteors & falling NPCs
+  // Chaos: lightning, meteors, falling NPCs & impact fires
   updateLightning();
   updateAndDrawMeteors(dt);
   updateAndDrawFallingNPCs(dt);
+  updateAndDrawImpactFires(dt);
 
   ctx.fillStyle = zone.fogColor;
   ctx.fillRect(0, 0, W, H);
@@ -4007,7 +4022,8 @@ const AudioEngine = (() => {
       'meteor_crash_1','meteor_crash_2','meteor_crash_3','meteor_crash_4','meteor_crash_5',
       'npc_scream_1','npc_scream_2','npc_scream_3','npc_scream_4','npc_scream_5',
       'lightning_1','lightning_2','lightning_3','lightning_4','lightning_5',
-      'fire_crackle_1','fire_crackle_2','fire_crackle_3','fire_crackle_4','fire_crackle_5'
+      'fire_crackle_1','fire_crackle_2','fire_crackle_3','fire_crackle_4','fire_crackle_5',
+      'fire_sizzle_1','fire_sizzle_2','fire_sizzle_3','fire_sizzle_4','fire_sizzle_5'
     ];
     names.forEach(preloadVoice);
   }
@@ -4392,6 +4408,17 @@ document.getElementById('back-to-title-btn-menu').addEventListener('click', () =
 });
 
 // Test hack detection
+// Chaos effect toggles
+['meteors', 'fallingNPCs', 'lightning', 'fireObjects'].forEach(key => {
+  document.getElementById('chaos-' + key).addEventListener('click', () => {
+    if (!CFG) return;
+    if (!CFG.chaosEffects) CFG.chaosEffects = { meteors: true, fallingNPCs: true, lightning: true, fireObjects: true };
+    CFG.chaosEffects[key] = !CFG.chaosEffects[key];
+    document.getElementById('chaos-' + key).classList.toggle('on', CFG.chaosEffects[key]);
+    saveKid();
+  });
+});
+
 document.getElementById('change-password-btn').addEventListener('click', () => {
   showPasswordModal('SET NEW PASSWORD', 'New password', (val) => {
     if (!val || val.length < 1) return 'Enter a password';
@@ -4496,7 +4523,8 @@ const chaosState = {
   nextNPCTime: Date.now() + (120 + Math.random() * 120) * 1000,
   nextLightningTime: Date.now() + (30 + Math.random() * 210) * 1000,
   lightningFlash: 0, // timer for flash effect
-  lightningBolts: [] // visual bolt lines
+  lightningBolts: [], // visual bolt lines
+  impactFires: [] // residual fires from meteor impacts
 };
 
 const NPC_COLORS = [
@@ -4580,7 +4608,7 @@ function triggerLightning() {
 
 function updateLightning() {
   const now = Date.now();
-  if (now >= chaosState.nextLightningTime && !menuOpen && !parentOpen) {
+  if (now >= chaosState.nextLightningTime && !menuOpen && !parentOpen && CFG && CFG.chaosEffects && CFG.chaosEffects.lightning !== false) {
     triggerLightning();
     chaosState.nextLightningTime = now + (30 + Math.random() * 210) * 1000;
   }
@@ -4588,7 +4616,7 @@ function updateLightning() {
 
 function updateAndDrawMeteors(dt) {
   const now = Date.now();
-  if (now >= chaosState.nextMeteorTime && !menuOpen && !parentOpen) {
+  if (now >= chaosState.nextMeteorTime && !menuOpen && !parentOpen && CFG && CFG.chaosEffects && CFG.chaosEffects.meteors !== false) {
     spawnMeteor();
     chaosState.nextMeteorTime = now + (30 + Math.random() * 30) * 1000;
   }
@@ -4643,26 +4671,47 @@ function updateAndDrawMeteors(dt) {
       ctx.shadowBlur = 0;
       ctx.restore();
 
-      // Hit bottom
-      if (m.y >= H - 20) {
-        m.phase = 'exploding';
-        m.explodeTimer = 0.8;
-        if (m.flySound && m.flySound.source) try { m.flySound.source.stop(); } catch(e){}
-        AudioEngine.playSfxBuffer(m.crashSoundName, 0.7);
-        screenShake = Math.max(screenShake, 12);
-        // Spawn explosion particles
-        for (let p = 0; p < 30; p++) {
-          const angle = Math.random() * Math.PI * 2;
-          const speed = 50 + Math.random() * 200;
-          m.particles.push({
-            x: m.x, y: H - 10,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed - 100,
-            life: 0.3 + Math.random() * 0.5,
-            size: 2 + Math.random() * 4,
-            color: ['#f84', '#fa4', '#ff4', '#f44', '#888'][Math.floor(Math.random() * 5)]
+      // Check collision with buildings
+      let hitBuilding = false;
+      for (let bi = 0; bi < 8; bi++) {
+        const bx = (bi * W / 5 + 30) % (W + 100) - 50;
+        const bw = 30 + bi * 7;
+        const bh = 100 + (bi * 73 % 200);
+        const by = H - bh + cameraY * 0.1;
+        if (m.x >= bx && m.x <= bx + bw && m.y >= by) {
+          hitBuilding = true;
+          m.phase = 'exploding';
+          m.explodeTimer = 0.8;
+          if (m.flySound && m.flySound.source) try { m.flySound.source.stop(); } catch(e){}
+          AudioEngine.playSfxBuffer(m.crashSoundName, 0.7);
+          screenShake = Math.max(screenShake, 12);
+          // Spawn explosion particles
+          for (let p = 0; p < 30; p++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 50 + Math.random() * 200;
+            m.particles.push({
+              x: m.x, y: by,
+              vx: Math.cos(angle) * speed,
+              vy: Math.sin(angle) * speed - 100,
+              life: 0.3 + Math.random() * 0.5,
+              size: 2 + Math.random() * 4,
+              color: ['#f84', '#fa4', '#ff4', '#f44', '#888'][Math.floor(Math.random() * 5)]
+            });
+          }
+          // Leave residual fire
+          const sizzleIdx = Math.floor(Math.random() * 5) + 1;
+          chaosState.impactFires.push({
+            x: m.x, y: by, life: 3 + Math.random() * 3,
+            maxLife: 3 + Math.random() * 3,
+            sizzlePlayed: false, sizzleName: 'fire_sizzle_' + sizzleIdx
           });
+          break;
         }
+      }
+      // Fallback: hit bottom if no building hit
+      if (!hitBuilding && m.y >= H + 20) {
+        m.phase = 'done';
+        if (m.flySound && m.flySound.source) try { m.flySound.source.stop(); } catch(e){}
       }
     } else if (m.phase === 'exploding') {
       m.explodeTimer -= dt;
@@ -4692,7 +4741,7 @@ function updateAndDrawMeteors(dt) {
 
 function updateAndDrawFallingNPCs(dt) {
   const now = Date.now();
-  if (now >= chaosState.nextNPCTime && !menuOpen && !parentOpen) {
+  if (now >= chaosState.nextNPCTime && !menuOpen && !parentOpen && CFG && CFG.chaosEffects && CFG.chaosEffects.fallingNPCs !== false) {
     spawnFallingNPC();
     chaosState.nextNPCTime = now + (120 + Math.random() * 120) * 1000;
   }
@@ -4802,6 +4851,50 @@ function updateAndDrawFallingNPCs(dt) {
       }
     }
     if (npc.phase === 'done') chaosState.fallingNPCs.splice(i, 1);
+  }
+}
+
+function updateAndDrawImpactFires(dt) {
+  const t = performance.now() * 0.003;
+  for (let i = chaosState.impactFires.length - 1; i >= 0; i--) {
+    const f = chaosState.impactFires[i];
+    f.life -= dt;
+    if (f.life <= 0) { chaosState.impactFires.splice(i, 1); continue; }
+
+    // Play sizzle when fire starts dying (below 60% life)
+    if (!f.sizzlePlayed && f.life < f.maxLife * 0.6) {
+      AudioEngine.playSfxBuffer(f.sizzleName, 0.25);
+      f.sizzlePlayed = true;
+    }
+
+    const intensity = f.life / f.maxLife;
+    const numFlames = Math.max(1, Math.floor(4 * intensity));
+
+    for (let fl = 0; fl < numFlames; fl++) {
+      const fx = f.x + (Math.sin(t + fl * 1.5) * 4 * intensity);
+      const fy = f.y - fl * 2 - Math.abs(Math.sin(t * 1.8 + fl * 0.9)) * 6 * intensity;
+      const fs = (2.5 - fl * 0.4) * intensity;
+      ctx.globalAlpha = intensity * 0.7 * (1 - fl / numFlames);
+      ctx.fillStyle = fl < 1 ? '#ff4' : fl < 2 ? '#f84' : '#f44';
+      ctx.shadowColor = ctx.fillStyle;
+      ctx.shadowBlur = fs * 3;
+      ctx.beginPath();
+      ctx.ellipse(fx, fy, fs, fs * 1.3, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Smoke wisps as fire dies
+    if (intensity < 0.4) {
+      const smokeAlpha = (0.4 - intensity) * 1.5;
+      ctx.globalAlpha = smokeAlpha * 0.3;
+      ctx.fillStyle = '#888';
+      ctx.shadowBlur = 0;
+      const sy = f.y - 10 - (0.4 - intensity) * 30;
+      ctx.beginPath();
+      ctx.arc(f.x + Math.sin(t * 0.7) * 3, sy, 3 + (0.4 - intensity) * 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
   }
 }
 
