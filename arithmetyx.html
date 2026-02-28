@@ -51,6 +51,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
   border-radius:4px;text-align:center;min-width:280px;letter-spacing:2px;
   animation:pulse-glow 3s ease-in-out infinite}
 @keyframes pulse-glow{0%,100%{box-shadow:0 0 15px rgba(184,48,48,0.15)}50%{box-shadow:0 0 25px rgba(184,48,48,0.3)}}
+@keyframes storyFadeIn{from{opacity:0}to{opacity:1}}
 
 #feedback{position:fixed;top:0;left:0;right:0;bottom:0;z-index:50;pointer-events:none;
   display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s}
@@ -344,7 +345,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
   <button class="start-btn" id="start-btn">ENTER THE VOID</button>
   <div style="position:absolute;bottom:40px;left:0;right:0;text-align:center;font-family:var(--font-body);font-size:13px;color:rgba(200,192,184,0.4);line-height:1.6">
     Made with ❤️ by Josh Mouch & Sasha Elise<br>© 2026<br>
-    <span id="version-display" style="font-family:var(--font-mono);font-size:11px;color:rgba(200,192,184,0.25)"><!-- AUTOVER -->v6f8f1f1 · Feb 27, 2026 09:17 PM EST<!-- /AUTOVER --></span>
+    <span id="version-display" style="font-family:var(--font-mono);font-size:11px;color:rgba(200,192,184,0.25)"><!-- AUTOVER -->v9b80243 · Feb 27, 2026 09:26 PM EST<!-- /AUTOVER --></span>
   </div>
   <button id="nuke-btn" style="position:absolute;bottom:10px;right:10px;background:transparent;border:1px solid rgba(200,192,184,0.15);color:rgba(200,192,184,0.3);font-size:10px;padding:4px 8px;cursor:pointer;border-radius:3px;font-family:var(--font-mono)" onclick="if(confirm('Wipe ALL localStorage? This is a full factory reset.')){localStorage.clear();location.reload();}">reset</button>
 </div>
@@ -759,6 +760,7 @@ const DEFAULT_SLOT = {
   deathSpiralMax: 0,
   deathSpiralCurrent: 0,
   wrongStreak: 0,
+  storyPlayed: {},
   sortAnswers: false
 };
 
@@ -2589,6 +2591,9 @@ function handleAnswer(val, btn) {
       const zoneAfter = getZone(S.height).name;
       if (zoneBefore !== zoneAfter) AudioEngine.playRandomFromList(['zone_advance','zone_advance_2','zone_advance_3']);
       
+      // Story narration triggers
+      checkStoryTrigger(S.height);
+      
       // Start jump animation for height increase
       const oldPlat = getPlatform(oldHeight);
       const newPlat = getPlatform(S.height);
@@ -2614,7 +2619,17 @@ function handleAnswer(val, btn) {
       saveSlot();
       AudioEngine.playVictory();
       AudioEngine.playRandomFromList(['victory','victory_2']);
-      setTimeout(showVictory, 600);
+      // Play ending story after victory fanfare
+      setTimeout(() => {
+        if (!S.storyPlayed) S.storyPlayed = {};
+        if (!S.storyPlayed['ending']) {
+          S.storyPlayed['ending'] = true;
+          saveSlot();
+          showStoryOverlay('story_ending');
+        } else {
+          showVictory();
+        }
+      }, 600);
       return;
     }
 
@@ -3516,6 +3531,81 @@ function renderKarmaUI() {
 }
 
 // ============ VICTORY ============
+// ============ STORY SYSTEM ============
+const STORY_TRIGGERS = {
+  1: 'story_intro',
+  50: 'story_50',
+  100: 'story_100',
+  150: 'story_150',
+  200: 'story_200',
+  250: 'story_250',
+  300: 'story_300',
+  350: 'story_350',
+  400: 'story_400',
+  450: 'story_450',
+  500: 'story_500',
+  550: 'story_550'
+};
+
+const STORY_TEXT = {
+  'story_intro': 'They said the Tower appeared overnight — erupting from the earth like a broken bone through skin. No one remembers who built it, or why. They only know that it reaches into a sky that no longer has stars. You stand at its base now, the last one foolish enough to try. The others are gone — fallen, forgotten, swallowed by the dark. The rules are carved into the stone at your feet: solve what the Tower asks, and climb. Fail, and fall. There is no door behind you anymore. There is only up.',
+  'story_50': 'The walls are slick with something that isn\'t water. You press your hand against them and feel a pulse — slow, deep, ancient. The Tower is alive. It\'s been waiting for someone, and now that you\'re here, it won\'t let go easily.',
+  'story_100': 'You find scratches in the stone — tally marks, hundreds of them, carved by fingers that bled. Someone else made it this far. You search for more signs of them, but there\'s only silence and the faint smell of ash.',
+  'story_150': 'The light changes here. It doesn\'t come from above or below — it comes from inside the walls themselves, a deep crimson pulse like the Tower\'s heartbeat made visible. The problems it gives you are getting harder. It\'s learning what you know.',
+  'story_200': 'You hear something below you. Footsteps? No — falling. Someone screaming, very far away, getting quieter. You don\'t look down. You can\'t afford to look down.',
+  'story_250': 'There are bones here, built into the walls. Not decoration — structure. The Tower used them. Whoever fell before you became part of this place, and somehow that makes you climb faster.',
+  'story_300': 'The air tastes like metal and electricity. Lightning arcs between the walls, and for a moment you see the Tower\'s true shape — it doesn\'t just go up. It goes everywhere, branching into dimensions you can\'t name. You are climbing something that shouldn\'t exist.',
+  'story_350': 'You pass a window — the first one. Outside, there is nothing. Not darkness. Not sky. Nothing. The absence of everything. And then, just before you look away, you see another tower in the distance. And a figure climbing it. And the figure looks exactly like you.',
+  'story_400': 'The numbers are speaking now. Not as problems to solve, but as whispers. They tell you that mathematics is the only language the universe truly understands. Every answer you give isn\'t just correct — it\'s a word in a conversation with something vast and incomprehensible.',
+  'story_450': 'The Tower shudders. Something enormous moves in the walls around you — not a creature, but a rearranging, as if the entire structure is shifting to accommodate your presence. You realize you\'re not conquering the Tower. The Tower is reshaping itself for you. You are its purpose.',
+  'story_500': 'The storms are beneath you now. You\'ve climbed above the lightning, above the fire, above the screams. Up here, there is only clarity. Your mind moves like water — every problem dissolves the instant you see it. You\'ve become something you weren\'t when you started.',
+  'story_550': 'The top is close. You can feel it — not see it, feel it. A warmth that has nothing to do with temperature. The Tower is almost done with you, and you are almost done with it. One last push. The numbers sing.',
+  'story_ending': 'You step onto the final platform and the Tower goes silent. For the first time since you entered, there is no hum, no pulse, no whisper. Just stillness. And then — light. Not the crimson glow of the walls or the white crack of lightning, but real, golden light, pouring down from an opening that wasn\'t there a moment ago. You look up and see the sky. Stars. Thousands of them, more than you\'ve ever seen, arranged in patterns that look almost like... equations.\n\nThe Tower wasn\'t a prison. It was a school. Every fall taught you to get back up. Every wrong answer taught you to think harder. Every moment of fear taught you that courage isn\'t the absence of being afraid — it\'s climbing anyway.\n\nYou step through the opening and feel the wind on your face for the first time. Below you, the Tower begins to sink back into the earth, its purpose fulfilled. You carry its lessons in your mind like embers — small, warm, and impossible to extinguish.\n\nWhoever you were when you walked in, you are not that person anymore. You are the one who climbed the Tower. And the numbers — the beautiful, terrible, elegant numbers — they will always be yours.'
+};
+
+function checkStoryTrigger(height) {
+  if (!S || !STORY_TRIGGERS[height]) return;
+  if (!S.storyPlayed) S.storyPlayed = {};
+  const storyKey = STORY_TRIGGERS[height];
+  if (S.storyPlayed[storyKey]) return;
+  S.storyPlayed[storyKey] = true;
+  saveSlot();
+  showStoryOverlay(storyKey);
+}
+
+function showStoryOverlay(storyKey) {
+  const text = STORY_TEXT[storyKey] || '';
+  const isEnding = storyKey === 'story_ending';
+
+  // Dim the music
+  AudioEngine.playSfxBuffer(storyKey, 1.0);
+
+  const overlay = document.createElement('div');
+  overlay.id = 'story-overlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:500;background:rgba(0,0,0,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;animation:storyFadeIn 1s ease-in;cursor:pointer;overflow-y:auto';
+  
+  const heightLabel = storyKey === 'story_intro' ? 'THE TOWER AWAITS' :
+                      storyKey === 'story_ending' ? 'THE ASCENT IS COMPLETE' :
+                      `HEIGHT ${storyKey.replace('story_', '')}`;
+
+  overlay.innerHTML = `
+    <div style="font-family:var(--font-display);font-size:12px;color:var(--accent2);letter-spacing:4px;margin-bottom:20px;text-transform:uppercase;text-shadow:0 0 20px rgba(184,48,48,0.6)">${heightLabel}</div>
+    <div style="font-family:var(--font-body);font-size:clamp(16px,3.5vw,22px);color:var(--fg);max-width:600px;line-height:1.8;white-space:pre-line;text-shadow:0 0 10px rgba(200,192,184,0.15)">${text}</div>
+    <div style="font-family:var(--font-mono);font-size:12px;color:rgba(200,192,184,0.3);margin-top:30px;letter-spacing:2px">${isEnding ? 'TAP TO CONTINUE' : 'TAP TO CONTINUE CLIMBING'}</div>
+  `;
+
+  overlay.addEventListener('click', () => {
+    overlay.style.opacity = '0';
+    overlay.style.transition = 'opacity 0.5s';
+    setTimeout(() => {
+      overlay.remove();
+      if (isEnding) showVictory();
+    }, 500);
+  });
+
+  document.body.appendChild(overlay);
+}
+
 function showVictory() {
   const complete = checkCompletionRequirements();
   const title = document.getElementById('victory-title');
@@ -4034,7 +4124,9 @@ const AudioEngine = (() => {
       'fire_sizzle_1','fire_sizzle_2','fire_sizzle_3','fire_sizzle_4','fire_sizzle_5',
       'screen_hit',
       'music_abyss','music_crimson','music_boneyard','music_void','music_storm','music_apex','music_endgame',
-      'music_title','music_setup'
+      'music_title','music_setup',
+      'story_intro','story_50','story_100','story_150','story_200','story_250',
+      'story_300','story_350','story_400','story_450','story_500','story_550','story_ending'
     ];
     names.forEach(preloadVoice);
   }
@@ -4278,14 +4370,16 @@ const AudioEngine = (() => {
       }, 200);
       return;
     }
-    const fadeDuration = 1.5;
     const now = actx.currentTime;
     if (currentMusicGainNode) {
       const oldGain = currentMusicGainNode;
       const oldSource = currentMusicSource;
+      oldGain.gain.cancelScheduledValues(now);
       oldGain.gain.setValueAtTime(oldGain.gain.value, now);
-      oldGain.gain.linearRampToValueAtTime(0, now + fadeDuration);
-      setTimeout(() => { try { oldSource.stop(); } catch(e){} }, fadeDuration * 1000 + 100);
+      oldGain.gain.linearRampToValueAtTime(0, now + 1.0);
+      setTimeout(() => { try { oldSource.stop(); } catch(e){} }, 1200);
+      currentMusicGainNode = null;
+      currentMusicSource = null;
     }
     if (voiceBuffers[track]) {
       const src = actx.createBufferSource();
@@ -4294,8 +4388,8 @@ const AudioEngine = (() => {
       src.loop = true;
       src.loopStart = 0;
       src.loopEnd = voiceBuffers[track].duration;
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(1, now + fadeDuration);
+      gain.gain.setValueAtTime(0.01, now);
+      gain.gain.exponentialRampToValueAtTime(1, now + 1.5);
       src.connect(gain);
       gain.connect(musicGain);
       src.start(0, 0);
