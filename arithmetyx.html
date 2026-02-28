@@ -344,7 +344,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
   <button class="start-btn" id="start-btn">ENTER THE VOID</button>
   <div style="position:absolute;bottom:40px;left:0;right:0;text-align:center;font-family:var(--font-body);font-size:13px;color:rgba(200,192,184,0.4);line-height:1.6">
     Made with ❤️ by Josh Mouch & Sasha Elise<br>© 2026<br>
-    <span id="version-display" style="font-family:var(--font-mono);font-size:11px;color:rgba(200,192,184,0.25)"></span>
+    <span id="version-display" style="font-family:var(--font-mono);font-size:11px;color:rgba(200,192,184,0.25)"><!-- AUTOVER -->ve827381 · Feb 27, 2026 09:09 PM EST<!-- /AUTOVER --></span>
   </div>
   <button id="nuke-btn" style="position:absolute;bottom:10px;right:10px;background:transparent;border:1px solid rgba(200,192,184,0.15);color:rgba(200,192,184,0.3);font-size:10px;padding:4px 8px;cursor:pointer;border-radius:3px;font-family:var(--font-mono)" onclick="if(confirm('Wipe ALL localStorage? This is a full factory reset.')){localStorage.clear();location.reload();}">reset</button>
 </div>
@@ -5077,21 +5077,6 @@ function scheduleMenuLightning() {
   }, delay);
 }
 scheduleMenuLightning();
-
-// Fetch version from GitHub commit history
-fetch('https://api.github.com/repos/ai-worlds/sasha-game/commits?per_page=1&path=arithmetyx.html')
-  .then(r => r.json())
-  .then(commits => {
-    if (commits && commits[0]) {
-      const sha = commits[0].sha.substring(0, 7);
-      const date = new Date(commits[0].commit.committer.date);
-      const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-      const timeStr = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-      const el = document.getElementById('version-display');
-      if (el) el.textContent = `v${sha} · ${dateStr} ${timeStr}`;
-    }
-  })
-  .catch(() => {});
 
 // Start title music on first interaction (browser autoplay policy)
 document.addEventListener('click', function titleMusicInit() {
