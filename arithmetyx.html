@@ -1170,12 +1170,14 @@ function goToKidSelect() {
   closeParent();
   showScreen('kid-select-screen');
   renderKidSelection();
+  AudioEngine.playMusicTrack('music_setup');
   AudioEngine.playVoice('kid_select');
 }
 
 function goToKidCreate() {
   showScreen('kid-create-screen');
   initKidCreation();
+  AudioEngine.playMusicTrack('music_setup');
   AudioEngine.playVoice('kid_create');
 }
 
@@ -1189,12 +1191,14 @@ function goToSlotSelect() {
     goToSlotCreate();
     return;
   }
+  AudioEngine.playMusicTrack('music_setup');
   AudioEngine.playVoice('slot_select');
 }
 
 function goToSlotCreate() {
   showScreen('slot-create-screen');
   initSlotCreation();
+  AudioEngine.playMusicTrack('music_setup');
   AudioEngine.playVoice('slot_create');
 }
 
@@ -1204,6 +1208,7 @@ function goToGame() {
     goToKidSelect();
     return;
   }
+  AudioEngine.startMusic(); // switches to zone-based music
   AudioEngine.playVoice('game_start');
   updateUI();
   presentProblem();
@@ -4028,7 +4033,8 @@ const AudioEngine = (() => {
       'fire_crackle_1','fire_crackle_2','fire_crackle_3','fire_crackle_4','fire_crackle_5',
       'fire_sizzle_1','fire_sizzle_2','fire_sizzle_3','fire_sizzle_4','fire_sizzle_5',
       'screen_hit',
-      'music_abyss','music_crimson','music_boneyard','music_void','music_storm','music_apex','music_endgame'
+      'music_abyss','music_crimson','music_boneyard','music_void','music_storm','music_apex','music_endgame',
+      'music_title','music_setup'
     ];
     names.forEach(preloadVoice);
   }
@@ -4281,18 +4287,49 @@ const AudioEngine = (() => {
     }
   }
 
+  function playMusicTrack(track) {
+    if (!actx) return;
+    if (!musicEnabled) return;
+    musicPlaying = true;
+    if (track === currentMusicTrack) return;
+    const fadeDuration = 1.5;
+    const now = actx.currentTime;
+    if (currentMusicGainNode) {
+      const oldGain = currentMusicGainNode;
+      const oldSource = currentMusicSource;
+      oldGain.gain.setValueAtTime(oldGain.gain.value, now);
+      oldGain.gain.linearRampToValueAtTime(0, now + fadeDuration);
+      setTimeout(() => { try { oldSource.stop(); } catch(e){} }, fadeDuration * 1000 + 100);
+    }
+    if (voiceBuffers[track]) {
+      const src = actx.createBufferSource();
+      const gain = actx.createGain();
+      src.buffer = voiceBuffers[track];
+      src.loop = true;
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(1, now + fadeDuration);
+      src.connect(gain);
+      gain.connect(musicGain);
+      src.start();
+      currentMusicSource = src;
+      currentMusicGainNode = gain;
+      currentMusicTrack = track;
+    }
+  }
+
+  let zoneCheckInterval = null;
+
   function startMusic() {
     if (!actx || musicPlaying) return;
     musicPlaying = true;
     updateZoneMusic();
     // Check for zone changes every 2 seconds
     musicNodes = [];
-    function checkZone() {
-      if (!musicPlaying) return;
+    if (zoneCheckInterval) clearInterval(zoneCheckInterval);
+    zoneCheckInterval = setInterval(() => {
+      if (!musicPlaying) { clearInterval(zoneCheckInterval); return; }
       updateZoneMusic();
-      setTimeout(checkZone, 2000);
-    }
-    checkZone();
+    }, 2000);
   }
 
   function stopMusic() {
@@ -4309,7 +4346,7 @@ const AudioEngine = (() => {
     init, setVolume, setMusicEnabled, setSfxEnabled,
     playCorrect, playWrong, playFall, playClick, playStreak,
     playVictory, playMenuOpen, playMenuClose, playShieldBreak, playShieldGain,
-    startMusic, stopMusic, playVoice, playRandomVoice, playVoiceWithCooldown, playRandomFromList, playSfxBuffer,
+    startMusic, stopMusic, playMusicTrack, playVoice, playRandomVoice, playVoiceWithCooldown, playRandomFromList, playSfxBuffer,
     get musicEnabled() { return musicEnabled; },
     get sfxEnabled() { return enabled; },
     get volume() { return volume; }
@@ -4324,7 +4361,7 @@ updateVividnessCSS();
 // Title screen
 document.getElementById('start-btn').addEventListener('click', () => {
   AudioEngine.init();
-  AudioEngine.startMusic();
+  AudioEngine.playMusicTrack('music_title');
   AudioEngine.playClick();
   AudioEngine.playVoice('title_intro');
   
