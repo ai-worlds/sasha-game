@@ -337,6 +337,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 
 <!-- Intro -->
 <div id="intro-screen">
+  <img src="logo.png" alt="Arithmetyx" style="width:clamp(150px,40vw,280px);height:auto;margin-bottom:10px;filter:drop-shadow(0 0 30px rgba(184,48,48,0.6))">
   <h1>ARITHMETYX</h1>
   <div class="sub">The Descent</div>
   <div class="tagline">In a world where numbers are all that remain, climb the infinite tower. Every wrong answer sends you plummeting. There is no mercy — only arithmetic.</div>
@@ -5026,7 +5027,7 @@ function updateAndDrawImpactFires(dt) {
 let menuLightningDiv = null;
 function initMenuLightning() {
   menuLightningDiv = document.createElement('div');
-  menuLightningDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:199;pointer-events:none;opacity:0;background:#fff;transition:opacity 0.05s';
+  menuLightningDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:250;pointer-events:none;opacity:0;background:#fff;transition:opacity 0.05s';
   document.body.appendChild(menuLightningDiv);
 }
 initMenuLightning();
