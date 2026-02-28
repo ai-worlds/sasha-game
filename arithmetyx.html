@@ -4287,11 +4287,25 @@ const AudioEngine = (() => {
     }
   }
 
+  let pendingMusicTrack = null;
+
   function playMusicTrack(track) {
     if (!actx) return;
     if (!musicEnabled) return;
     musicPlaying = true;
+    pendingMusicTrack = track;
     if (track === currentMusicTrack) return;
+    if (!voiceBuffers[track]) {
+      // Buffer not loaded yet — retry every 200ms until available
+      const retryId = setInterval(() => {
+        if (pendingMusicTrack !== track) { clearInterval(retryId); return; }
+        if (voiceBuffers[track]) {
+          clearInterval(retryId);
+          playMusicTrack(track);
+        }
+      }, 200);
+      return;
+    }
     const fadeDuration = 1.5;
     const now = actx.currentTime;
     if (currentMusicGainNode) {
