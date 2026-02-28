@@ -1017,18 +1017,35 @@ function loadSlot(key, kidId = null) {
       for (const k in DEFAULT_SLOT) { if (!(k in S)) S[k] = typeof DEFAULT_SLOT[k]==='object'? JSON.parse(JSON.stringify(DEFAULT_SLOT[k])) : DEFAULT_SLOT[k]; }
     } else {
       S = JSON.parse(JSON.stringify(DEFAULT_SLOT));
+      // Parse key: ops_range_mode_choices[_sorted]
+      // e.g. add_sub_10_a_c4 or add_sub_mul_div_0-10_q_c6_sorted
       const parts = key.split('_');
-      const rangePart = parts[parts.length - 1];
-      const opNames = parts.slice(0, -1);
-      S.ops = { add: false, sub: false, mul: false, div: false };
-      for (const n of opNames) S.ops[n] = true;
-      if (rangePart.includes('-')) {
-        const [mn, mx] = rangePart.split('-').map(Number);
-        S.minNum = mn;
-        S.maxNum = mx;
-      } else {
-        S.minNum = 0;
-        S.maxNum = parseInt(rangePart);
+      // Find the range part (contains digits, possibly with dash)
+      let rangeIdx = -1;
+      for (let pi = 0; pi < parts.length; pi++) {
+        if (/^\d+(-\d+)?$/.test(parts[pi])) { rangeIdx = pi; break; }
+      }
+      if (rangeIdx >= 0) {
+        const opNames = parts.slice(0, rangeIdx);
+        const rangePart = parts[rangeIdx];
+        S.ops = { add: false, sub: false, mul: false, div: false };
+        for (const n of opNames) if (n in S.ops) S.ops[n] = true;
+        if (rangePart.includes('-')) {
+          const [mn, mx] = rangePart.split('-').map(Number);
+          S.minNum = mn;
+          S.maxNum = mx;
+        } else {
+          S.minNum = 0;
+          S.maxNum = parseInt(rangePart);
+        }
+        // Parse remaining parts after range
+        const rest = parts.slice(rangeIdx + 1);
+        for (const r of rest) {
+          if (r === 'q') S.mode = 'question';
+          else if (r === 'a') S.mode = 'answer';
+          else if (r.startsWith('c') && /^\d+$/.test(r.slice(1))) S.numChoices = parseInt(r.slice(1));
+          else if (r === 'sorted') S.sortAnswers = true;
+        }
       }
     }
     if (CFG) CFG.currentSlotKey = key;
@@ -1449,6 +1466,14 @@ function switchSlot(ops, minNum, maxNum, mode, numChoices, sortAnswers) {
   const key = getSlotKey(ops, minNum, maxNum, mode, numChoices, sortAnswers);
   const isNew = !localStorage.getItem('arithmetyx_kid_' + currentKidId + '_slot_' + key);
   loadSlot(key);
+  // Ensure slot has correct values (don't rely on key parsing)
+  S.ops = JSON.parse(JSON.stringify(ops));
+  S.minNum = minNum;
+  S.maxNum = maxNum;
+  S.mode = mode || 'answer';
+  S.numChoices = numChoices || 4;
+  S.sortAnswers = sortAnswers || false;
+  saveSlot();
   showSlotNote(isNew ? 'Created new slot: ' + key : 'Switched to slot: ' + key);
 }
 
