@@ -3876,14 +3876,17 @@ function render(timestamp) {
     }
   }
 
-  // Fire crackle audio — play when a fire is near the player
+  // Fire crackle audio — play when any fire is visible on screen
   if (S && frameCount % 120 === 0 && CFG && (!CFG.chaosEffects || CFG.chaosEffects.fireObjects !== false)) {
-    const playerPlat = Math.floor(playerY);
-    for (let fi = playerPlat - 3; fi <= playerPlat + 3; fi++) {
+    for (let fi = startIdx; fi <= endIdx; fi++) {
       const fs = (fi * 1664525 + 1013904223) & 0xFFFFFFFF;
       if (((fs >> 16) & 0xFFFF) % 20 < 1 && fi > 5) {
+        const fireScreenY = H - (fi * platH - cameraY);
+        // Volume based on screen position: full at center, lower at edges
+        const screenPos = fireScreenY / H; // 0=top, 1=bottom
+        const vol = Math.max(0.1, 0.5 - Math.abs(screenPos - 0.5) * 0.6);
         const idx = Math.floor(Math.random() * 5) + 1;
-        AudioEngine.playSfxBuffer('fire_crackle_' + idx, 0.3);
+        AudioEngine.playSfxBuffer('fire_crackle_' + idx, vol);
         break;
       }
     }
