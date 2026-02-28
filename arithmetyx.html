@@ -31,7 +31,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
   pointer-events:none}
 
 #top-bar{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;
-  padding:8px 12px;background:rgba(18,18,26,0.9);border-bottom:1px solid rgba(210,64,64,0.35);min-height:48px}
+  padding:8px 12px;background:rgba(18,18,26,0.9);border-bottom:1px solid rgba(210,64,64,0.35);min-height:48px;flex-wrap:wrap;gap:4px}
 #top-bar .title{font-family:var(--font-display);font-size:14px;color:var(--vivid-accent2);letter-spacing:2px}
 #top-bar .stats{display:flex;gap:12px;font-size:18px;color:var(--vivid-fg)}
 #top-bar .stats span{display:flex;align-items:center;gap:3px}
@@ -212,8 +212,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
 #rate-popup.show{display:block}
 
 /* Shield popup */
-#shield-popup{position:fixed;bottom:52px;left:320px;z-index:90;background:rgba(12,12,18,0.96);
-  border:1px solid rgba(74,212,212,0.4);padding:14px;display:none;min-width:240px;max-width:340px;
+#shield-popup{position:fixed;bottom:52px;left:50%;transform:translateX(-50%);z-index:90;background:rgba(12,12,18,0.96);
+  border:1px solid rgba(74,212,212,0.4);padding:14px;display:none;min-width:200px;max-width:min(340px,calc(100vw - 20px));width:max-content;
   border-radius:4px;font-family:var(--font-body);font-size:16px;color:var(--fg)}
 #shield-popup.show{display:block}
 #shield-popup .sp-title{font-family:var(--font-display);font-size:12px;color:var(--cyan);
