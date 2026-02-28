@@ -345,7 +345,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
   <button class="start-btn" id="start-btn">ENTER THE VOID</button>
   <div style="position:absolute;bottom:40px;left:0;right:0;text-align:center;font-family:var(--font-body);font-size:13px;color:rgba(200,192,184,0.4);line-height:1.6">
     Made with ❤️ by Josh Mouch & Sasha Elise<br>© 2026<br>
-    <span id="version-display" style="font-family:var(--font-mono);font-size:11px;color:rgba(200,192,184,0.25)"><!-- AUTOVER -->v938e84f · Feb 27, 2026 10:48 PM EST<!-- /AUTOVER --></span>
+    <span id="version-display" style="font-family:var(--font-mono);font-size:11px;color:rgba(200,192,184,0.25)"><!-- AUTOVER -->v6080646 · Feb 27, 2026 10:51 PM EST<!-- /AUTOVER --></span>
   </div>
   <button id="nuke-btn" style="position:absolute;bottom:10px;right:10px;background:transparent;border:1px solid rgba(200,192,184,0.15);color:rgba(200,192,184,0.3);font-size:10px;padding:4px 8px;cursor:pointer;border-radius:3px;font-family:var(--font-mono)" onclick="if(confirm('Wipe ALL localStorage? This is a full factory reset.')){localStorage.clear();location.reload();}">reset</button>
 </div>
@@ -4204,8 +4204,9 @@ function render(timestamp) {
         chaosState.brokenPlatforms[i].npcColor = NPC_COLORS[((npcSeed >> 8) & 0xFF) % NPC_COLORS.length];
       } else {
         const npcColor = NPC_COLORS[((npcSeed >> 8) & 0xFF) % NPC_COLORS.length];
-        const npcX = px + pw * 0.3 + ((npcSeed & 0xFF) / 255) * pw * 0.4;
-        drawStandingNPC(npcX, screenY, npcColor);
+        const npcCenterX = px + pw * 0.3 + ((npcSeed & 0xFF) / 255) * pw * 0.4;
+        const paceMargin = pw * 0.12;
+        drawStandingNPC(npcCenterX, screenY, npcColor, npcSeed, px + paceMargin, px + pw - paceMargin);
       }
     }
   }
@@ -4334,7 +4335,7 @@ const AudioEngine = (() => {
 
   function preloadVoice(name) {
     if (voiceBuffers[name]) return;
-    fetch('audio/' + name + '.mp3')
+    fetch('audio/' + name + '.mp3?v=20260227b')
       .then(r => r.arrayBuffer())
       .then(buf => actx.decodeAudioData(buf))
       .then(decoded => { voiceBuffers[name] = decoded; })
@@ -4867,7 +4868,17 @@ const NPC_COLORS = [
   { skin: '#c68e6a', hair: '#222', shirt: '#4a8', pants: '#555' },
   { skin: '#f5d0b0', hair: '#d4a030', shirt: '#66c', pants: '#833' },
   { skin: '#8d6e4c', hair: '#111', shirt: '#c84', pants: '#363' },
-  { skin: '#f0c8a8', hair: '#a44', shirt: '#888', pants: '#448' }
+  { skin: '#f0c8a8', hair: '#a44', shirt: '#888', pants: '#448' },
+  { skin: '#d4a373', hair: '#1a1a2e', shirt: '#e67e22', pants: '#2c3e50' },
+  { skin: '#f5cba7', hair: '#c0392b', shirt: '#2ecc71', pants: '#34495e' },
+  { skin: '#a0522d', hair: '#0d0d0d', shirt: '#9b59b6', pants: '#1a1a1a' },
+  { skin: '#ffe0bd', hair: '#f39c12', shirt: '#1abc9c', pants: '#7f8c8d' },
+  { skin: '#c19a6b', hair: '#2c1810', shirt: '#e74c3c', pants: '#27ae60' },
+  { skin: '#ffdbac', hair: '#555', shirt: '#3498db', pants: '#c0392b' },
+  { skin: '#8d5524', hair: '#080808', shirt: '#f1c40f', pants: '#2c3e50' },
+  { skin: '#e0ac69', hair: '#6b3a2a', shirt: '#e84393', pants: '#0c2461' },
+  { skin: '#f1c27d', hair: '#dfe6e9', shirt: '#6c5ce7', pants: '#636e72' },
+  { skin: '#6f4e37', hair: '#0a0a0a', shirt: '#fd79a8', pants: '#2d3436' }
 ];
 
 function spawnMeteor() {
@@ -4948,22 +4959,94 @@ function triggerLightning() {
   }
 }
 
-function drawStandingNPC(x, y, colors) {
+function drawStandingNPC(x, y, colors, seed, paceLeft, paceRight) {
+  const now = performance.now();
+  // Pacing: NPC walks back and forth on platform
+  let paceX = 0;
+  let facingLeft = false;
+  if (paceLeft !== undefined && paceRight !== undefined) {
+    const paceSpeed = 0.0004 + (seed & 0xFF) / 255 * 0.0006; // vary speed per NPC
+    const pacePhase = (seed >> 4 & 0xFF) / 255 * Math.PI * 2;
+    const t = Math.sin(now * paceSpeed + pacePhase);
+    paceX = t * (paceRight - paceLeft) / 2;
+    facingLeft = Math.cos(now * paceSpeed + pacePhase) > 0;
+  }
+
   ctx.save();
-  const sc = 0.7;
-  const sway = Math.sin(performance.now() * 0.002 + x) * 0.05;
-  ctx.translate(x, y);
+  // Size variation: 0.5 to 0.9
+  const sc = 0.5 + ((seed >> 12) & 0xFF) / 255 * 0.4;
+  const sway = Math.sin(now * 0.002 + x) * 0.03;
+  ctx.translate(x + paceX, y);
+  ctx.scale(facingLeft ? -1 : 1, 1);
   ctx.rotate(sway);
+
+  // Leg walk animation when pacing
+  const walkCycle = Math.sin(now * 0.008 + (seed & 0xFFF));
+  const legSpread = Math.abs(paceX) > 0.5 ? walkCycle * 2 : 0;
+
+  // Legs
+  ctx.fillStyle = colors.pants;
+  ctx.fillRect(-5 * sc, -6 * sc, 4 * sc, 8 * sc + Math.max(0, legSpread) * sc);
+  ctx.fillRect(1 * sc, -6 * sc, 4 * sc, 8 * sc + Math.max(0, -legSpread) * sc);
+
+  // Body
   ctx.fillStyle = colors.shirt;
   ctx.fillRect(-6 * sc, -18 * sc, 12 * sc, 12 * sc);
+
+  // Body detail: some have stripes or a belt
+  const detail = (seed >> 20) & 3;
+  if (detail === 0) {
+    // Horizontal stripe
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.fillRect(-6 * sc, -12 * sc, 12 * sc, 2 * sc);
+  } else if (detail === 1) {
+    // Belt
+    ctx.fillStyle = '#333';
+    ctx.fillRect(-6 * sc, -7 * sc, 12 * sc, 1.5 * sc);
+  }
+
+  // Head
   ctx.fillStyle = colors.skin;
   ctx.beginPath();
   ctx.arc(0, -24 * sc, 6 * sc, 0, Math.PI * 2);
   ctx.fill();
+
+  // Hair — varied styles
+  const hairStyle = (seed >> 16) & 3;
   ctx.fillStyle = colors.hair;
-  ctx.beginPath();
-  ctx.arc(0, -26 * sc, 6 * sc, Math.PI, Math.PI * 2);
-  ctx.fill();
+  if (hairStyle === 0) {
+    // Full top
+    ctx.beginPath();
+    ctx.arc(0, -26 * sc, 6 * sc, Math.PI, Math.PI * 2);
+    ctx.fill();
+  } else if (hairStyle === 1) {
+    // Long hair
+    ctx.beginPath();
+    ctx.arc(0, -26 * sc, 6.5 * sc, Math.PI * 0.8, Math.PI * 2.2);
+    ctx.fill();
+    ctx.fillRect(-6 * sc, -24 * sc, 2.5 * sc, 12 * sc);
+    ctx.fillRect(3.5 * sc, -24 * sc, 2.5 * sc, 10 * sc);
+  } else if (hairStyle === 2) {
+    // Mohawk / tall hair
+    ctx.fillRect(-2 * sc, -34 * sc, 4 * sc, 10 * sc);
+    ctx.beginPath();
+    ctx.arc(0, -26 * sc, 6 * sc, Math.PI * 1.1, Math.PI * 1.9);
+    ctx.fill();
+  } else {
+    // Bald — no hair drawn
+  }
+
+  // Hat (some NPCs)
+  const hasHat = ((seed >> 24) & 7) < 2; // ~25%
+  if (hasHat) {
+    const hatColor = colors.shirt === '#888' ? '#333' : colors.shirt;
+    ctx.fillStyle = hatColor;
+    ctx.fillRect(-7 * sc, -32 * sc, 14 * sc, 3 * sc); // brim
+    ctx.fillRect(-4 * sc, -38 * sc, 8 * sc, 6 * sc);  // crown
+  }
+
+  // Eyes — looking around nervously
+  const eyeShift = Math.sin(now * 0.004 + seed) * 0.8 * sc;
   ctx.fillStyle = '#fff';
   ctx.beginPath();
   ctx.arc(-2 * sc, -24 * sc, 1.5 * sc, 0, Math.PI * 2);
@@ -4971,14 +5054,13 @@ function drawStandingNPC(x, y, colors) {
   ctx.fill();
   ctx.fillStyle = '#111';
   ctx.beginPath();
-  ctx.arc(-2 * sc, -25 * sc, 0.8 * sc, 0, Math.PI * 2);
-  ctx.arc(2 * sc, -25 * sc, 0.8 * sc, 0, Math.PI * 2);
+  ctx.arc(-2 * sc + eyeShift, -24.5 * sc, 0.8 * sc, 0, Math.PI * 2);
+  ctx.arc(2 * sc + eyeShift, -24.5 * sc, 0.8 * sc, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = colors.pants;
-  ctx.fillRect(-5 * sc, -6 * sc, 4 * sc, 8 * sc);
-  ctx.fillRect(1 * sc, -6 * sc, 4 * sc, 8 * sc);
+
+  // Arms swing with walk
   ctx.fillStyle = colors.skin;
-  const armSwing = Math.sin(performance.now() * 0.003 + x) * 0.1;
+  const armSwing = Math.abs(paceX) > 0.5 ? walkCycle * 0.3 : Math.sin(now * 0.003 + x) * 0.1;
   ctx.save();
   ctx.rotate(armSwing);
   ctx.fillRect(-9 * sc, -16 * sc, 3 * sc, 10 * sc);
@@ -4987,6 +5069,7 @@ function drawStandingNPC(x, y, colors) {
   ctx.rotate(-armSwing);
   ctx.fillRect(6 * sc, -16 * sc, 3 * sc, 10 * sc);
   ctx.restore();
+
   ctx.restore();
 }
 
