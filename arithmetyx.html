@@ -4483,7 +4483,7 @@ const chaosState = {
   fallingNPCs: [],
   nextMeteorTime: Date.now() + (15 + Math.random() * 15) * 1000,
   nextNPCTime: Date.now() + (60 + Math.random() * 60) * 1000,
-  nextLightningTime: Date.now() + (15 + Math.random() * 105) * 1000,
+  nextLightningTime: Date.now() + (10 + Math.random() * 20) * 1000,
   lightningFlash: 0, // timer for flash effect
   lightningBolts: [], // visual bolt lines
   impactFires: [] // residual fires from meteor impacts
@@ -4579,7 +4579,7 @@ function updateLightning() {
   const now = Date.now();
   if (now >= chaosState.nextLightningTime && !menuOpen && !parentOpen && CFG && CFG.chaosEffects && CFG.chaosEffects.lightning !== false) {
     triggerLightning();
-    chaosState.nextLightningTime = now + (15 + Math.random() * 105) * 1000;
+    chaosState.nextLightningTime = now + (10 + Math.random() * 20) * 1000;
   }
 }
 
