@@ -3707,20 +3707,20 @@ function render(timestamp) {
     chaosState.lightningBolts = chaosState.lightningBolts.filter(b => b.life > 0);
   }
 
-  ctx.globalAlpha = 0.2;
+  ctx.globalAlpha = 0.4;
   for (let i = 0; i < 8; i++) {
     const bx = (i * W / 5 + 30) % (W + 100) - 50;
     const bh = 100 + (i * 73 % 200);
-    const by = H - bh + cameraY * 0.1;
+    const by = H - bh + cameraY * 0.02;
     ctx.fillStyle = applyVividness(zone.platColor, bgv);
     ctx.fillRect(bx, by, 30 + i * 7, bh);
     ctx.fillStyle = applyVividness(zone.edgeColor || '#444', bgv);
-    ctx.globalAlpha = 0.15;
+    ctx.globalAlpha = 0.3;
     for (let wy = by + 15; wy < by + bh - 10; wy += 20) {
       ctx.fillRect(bx + 6, wy, 4, 6);
       ctx.fillRect(bx + 16, wy, 4, 6);
     }
-    ctx.globalAlpha = 0.2;
+    ctx.globalAlpha = 0.4;
   }
   ctx.globalAlpha = 1;
 
@@ -3835,13 +3835,13 @@ function render(timestamp) {
         ctx.fill();
       }
 
-      // Animated fire flames
+      // Animated fire flames (2x size & brightness)
       const t = timestamp * 0.003;
-      for (let f = 0; f < 6; f++) {
-        const fx = fireX + (Math.sin(t + f * 1.3) * 5);
-        const fy = objY - 14 - f * 3 - Math.abs(Math.sin(t * 1.5 + f * 0.7)) * 8;
-        const fs = 4 - f * 0.4;
-        const alpha = (1 - f / 6) * 0.8;
+      for (let f = 0; f < 8; f++) {
+        const fx = fireX + (Math.sin(t + f * 1.3) * 7);
+        const fy = objY - 16 - f * 4 - Math.abs(Math.sin(t * 1.5 + f * 0.7)) * 12;
+        const fs = 7 - f * 0.6;
+        const alpha = Math.min(1, (1 - f / 8) * 1.6);
         ctx.globalAlpha = alpha;
         if (f < 2) {
           ctx.fillStyle = '#ff4';
@@ -3853,21 +3853,21 @@ function render(timestamp) {
           ctx.fillStyle = '#f44';
           ctx.shadowColor = '#f44';
         }
-        ctx.shadowBlur = fs * 3;
+        ctx.shadowBlur = fs * 4;
         ctx.beginPath();
         ctx.ellipse(fx, fy, fs, fs * 1.5, 0, 0, Math.PI * 2);
         ctx.fill();
       }
-      // Embers
-      for (let e = 0; e < 3; e++) {
-        const ex = fireX + Math.sin(t * 2 + e * 2.5) * 8;
-        const ey = objY - 20 - Math.abs(Math.sin(t * 1.2 + e * 1.7)) * 20 - e * 5;
-        ctx.globalAlpha = 0.6 * (1 - e / 3);
+      // Embers (more, bigger)
+      for (let e = 0; e < 5; e++) {
+        const ex = fireX + Math.sin(t * 2 + e * 2.5) * 12;
+        const ey = objY - 24 - Math.abs(Math.sin(t * 1.2 + e * 1.7)) * 28 - e * 6;
+        ctx.globalAlpha = 0.8 * (1 - e / 5);
         ctx.fillStyle = '#fa4';
         ctx.shadowColor = '#fa4';
-        ctx.shadowBlur = 3;
+        ctx.shadowBlur = 5;
         ctx.beginPath();
-        ctx.arc(ex, ey, 1.2, 0, Math.PI * 2);
+        ctx.arc(ex, ey, 2, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.shadowBlur = 0;
@@ -4519,9 +4519,9 @@ if (!localStorage.getItem('arithmetyx_parent_password')) {
 const chaosState = {
   meteors: [],
   fallingNPCs: [],
-  nextMeteorTime: Date.now() + (30 + Math.random() * 30) * 1000,
-  nextNPCTime: Date.now() + (120 + Math.random() * 120) * 1000,
-  nextLightningTime: Date.now() + (30 + Math.random() * 210) * 1000,
+  nextMeteorTime: Date.now() + (15 + Math.random() * 15) * 1000,
+  nextNPCTime: Date.now() + (60 + Math.random() * 60) * 1000,
+  nextLightningTime: Date.now() + (15 + Math.random() * 105) * 1000,
   lightningFlash: 0, // timer for flash effect
   lightningBolts: [], // visual bolt lines
   impactFires: [] // residual fires from meteor impacts
@@ -4610,7 +4610,7 @@ function updateLightning() {
   const now = Date.now();
   if (now >= chaosState.nextLightningTime && !menuOpen && !parentOpen && CFG && CFG.chaosEffects && CFG.chaosEffects.lightning !== false) {
     triggerLightning();
-    chaosState.nextLightningTime = now + (30 + Math.random() * 210) * 1000;
+    chaosState.nextLightningTime = now + (15 + Math.random() * 105) * 1000;
   }
 }
 
@@ -4618,7 +4618,7 @@ function updateAndDrawMeteors(dt) {
   const now = Date.now();
   if (now >= chaosState.nextMeteorTime && !menuOpen && !parentOpen && CFG && CFG.chaosEffects && CFG.chaosEffects.meteors !== false) {
     spawnMeteor();
-    chaosState.nextMeteorTime = now + (30 + Math.random() * 30) * 1000;
+    chaosState.nextMeteorTime = now + (15 + Math.random() * 15) * 1000;
   }
 
   for (let i = chaosState.meteors.length - 1; i >= 0; i--) {
@@ -4677,7 +4677,7 @@ function updateAndDrawMeteors(dt) {
         const bx = (bi * W / 5 + 30) % (W + 100) - 50;
         const bw = 30 + bi * 7;
         const bh = 100 + (bi * 73 % 200);
-        const by = H - bh + cameraY * 0.1;
+        const by = H - bh + cameraY * 0.02;
         if (m.x >= bx && m.x <= bx + bw && m.y >= by) {
           hitBuilding = true;
           m.phase = 'exploding';
@@ -4743,7 +4743,7 @@ function updateAndDrawFallingNPCs(dt) {
   const now = Date.now();
   if (now >= chaosState.nextNPCTime && !menuOpen && !parentOpen && CFG && CFG.chaosEffects && CFG.chaosEffects.fallingNPCs !== false) {
     spawnFallingNPC();
-    chaosState.nextNPCTime = now + (120 + Math.random() * 120) * 1000;
+    chaosState.nextNPCTime = now + (60 + Math.random() * 60) * 1000;
   }
 
   for (let i = chaosState.fallingNPCs.length - 1; i >= 0; i--) {
