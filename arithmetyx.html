@@ -4026,7 +4026,9 @@ const AudioEngine = (() => {
       'npc_scream_1','npc_scream_2','npc_scream_3','npc_scream_4','npc_scream_5',
       'lightning_1','lightning_2','lightning_3','lightning_4','lightning_5',
       'fire_crackle_1','fire_crackle_2','fire_crackle_3','fire_crackle_4','fire_crackle_5',
-      'fire_sizzle_1','fire_sizzle_2','fire_sizzle_3','fire_sizzle_4','fire_sizzle_5'
+      'fire_sizzle_1','fire_sizzle_2','fire_sizzle_3','fire_sizzle_4','fire_sizzle_5',
+      'screen_hit',
+      'music_abyss','music_crimson','music_boneyard','music_void','music_storm','music_apex','music_endgame'
     ];
     names.forEach(preloadVoice);
   }
@@ -4223,125 +4225,82 @@ const AudioEngine = (() => {
     osc.start(now); osc2.start(now); osc.stop(now + 0.35); osc2.stop(now + 0.35);
   }
 
+  // Zone-based music system
+  let currentMusicTrack = null;
+  let currentMusicSource = null;
+  let currentMusicGainNode = null;
+  let lastMusicZone = null;
+
+  const ZONE_MUSIC = {
+    'THE ABYSS': 'music_abyss',
+    'CRIMSON DEPTHS': 'music_crimson',
+    'THE BONEYARD': 'music_boneyard',
+    'VOID SPIRE': 'music_void',
+    'STORM REACH': 'music_storm',
+    'THE APEX': 'music_apex'
+  };
+
+  function getZoneMusicTrack(zoneName) {
+    if (ZONE_MUSIC[zoneName]) return ZONE_MUSIC[zoneName];
+    return 'music_endgame'; // post-700 zones
+  }
+
+  function updateZoneMusic() {
+    if (!actx || !musicPlaying || !musicEnabled) return;
+    const zone = getZone(S ? S.height : 0);
+    const track = getZoneMusicTrack(zone.name);
+    if (track === currentMusicTrack) return;
+
+    // Crossfade to new track
+    const fadeDuration = 2.0;
+    const now = actx.currentTime;
+
+    // Fade out old
+    if (currentMusicGainNode) {
+      const oldGain = currentMusicGainNode;
+      const oldSource = currentMusicSource;
+      oldGain.gain.setValueAtTime(oldGain.gain.value, now);
+      oldGain.gain.linearRampToValueAtTime(0, now + fadeDuration);
+      setTimeout(() => { try { oldSource.stop(); } catch(e){} }, fadeDuration * 1000 + 100);
+    }
+
+    // Fade in new
+    if (voiceBuffers[track]) {
+      const src = actx.createBufferSource();
+      const gain = actx.createGain();
+      src.buffer = voiceBuffers[track];
+      src.loop = true;
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(1, now + fadeDuration);
+      src.connect(gain);
+      gain.connect(musicGain);
+      src.start();
+      currentMusicSource = src;
+      currentMusicGainNode = gain;
+      currentMusicTrack = track;
+    }
+  }
+
   function startMusic() {
     if (!actx || musicPlaying) return;
     musicPlaying = true;
-
-    const drone1 = actx.createOscillator();
-    const drone1Gain = actx.createGain();
-    drone1.type = 'sawtooth'; drone1.frequency.value = 55; drone1Gain.gain.value = 0.08;
-    drone1.connect(drone1Gain); drone1Gain.connect(musicGain); drone1.start();
-
-    const drone2 = actx.createOscillator();
-    const drone2Gain = actx.createGain();
-    drone2.type = 'sine'; drone2.frequency.value = 55.2; drone2Gain.gain.value = 0.1;
-    drone2.connect(drone2Gain); drone2Gain.connect(musicGain); drone2.start();
-
-    const sub = actx.createOscillator();
-    const subGain = actx.createGain();
-    const subLfo = actx.createOscillator();
-    const subLfoGain = actx.createGain();
-    sub.type = 'sine'; sub.frequency.value = 36.7; subGain.gain.value = 0.12;
-    subLfo.frequency.value = 0.15; subLfoGain.gain.value = 0.08;
-    subLfo.connect(subLfoGain); subLfoGain.connect(subGain.gain);
-    sub.connect(subGain); subGain.connect(musicGain); sub.start(); subLfo.start();
-
-    const noiseNode = actx.createBufferSource();
-    const noiseBuf = actx.createBuffer(1, actx.sampleRate * 10, actx.sampleRate);
-    const noiseData = noiseBuf.getChannelData(0);
-    for (let i = 0; i < noiseData.length; i++) noiseData[i] = Math.random() * 2 - 1;
-    noiseNode.buffer = noiseBuf; noiseNode.loop = true;
-    const noiseFilter = actx.createBiquadFilter();
-    noiseFilter.type = 'bandpass'; noiseFilter.frequency.value = 300; noiseFilter.Q.value = 0.5;
-    const noiseGain = actx.createGain(); noiseGain.gain.value = 0.025;
-    const noiseLfo = actx.createOscillator();
-    const noiseLfoGain = actx.createGain();
-    noiseLfo.frequency.value = 0.05; noiseLfoGain.gain.value = 200;
-    noiseLfo.connect(noiseLfoGain); noiseLfoGain.connect(noiseFilter.frequency);
-    noiseNode.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(musicGain);
-    noiseNode.start(); noiseLfo.start();
-
-    const pad1 = actx.createOscillator();
-    const pad1Gain = actx.createGain();
-    const padLfo = actx.createOscillator();
-    const padLfoGain = actx.createGain();
-    pad1.type = 'sine'; pad1.frequency.value = 330; pad1Gain.gain.value = 0.02;
-    padLfo.frequency.value = 0.08; padLfoGain.gain.value = 15;
-    padLfo.connect(padLfoGain); padLfoGain.connect(pad1.frequency);
-    pad1.connect(pad1Gain); pad1Gain.connect(musicGain); pad1.start(); padLfo.start();
-
-    const pad2 = actx.createOscillator();
-    const pad2Gain = actx.createGain();
-    pad2.type = 'sine'; pad2.frequency.value = 392; pad2Gain.gain.value = 0.015;
-    pad2.connect(pad2Gain); pad2Gain.connect(musicGain); pad2.start();
-
-    musicNodes = [drone1, drone2, sub, subLfo, noiseNode, noiseLfo, pad1, padLfo, pad2];
-
-    function scheduleStings() {
+    updateZoneMusic();
+    // Check for zone changes every 2 seconds
+    musicNodes = [];
+    function checkZone() {
       if (!musicPlaying) return;
-      const now = actx.currentTime;
-      const zone = getZone(S ? S.height : 0);
-      const intens = zone.intensity || 0;
-      const delay = Math.max(3, (8 - intens * 5)) + Math.random() * Math.max(3, (15 - intens * 10));
-      const sting = actx.createOscillator();
-      const stingGain = actx.createGain();
-      const stingFilter = actx.createBiquadFilter();
-      sting.type = 'sawtooth';
-      const stingFreqs = {
-        'THE ABYSS': [82, 87, 92], 'CRIMSON DEPTHS': [110, 117, 123],
-        'THE BONEYARD': [146, 155, 164], 'VOID SPIRE': [196, 207, 220],
-        'STORM REACH': [261, 277, 293], 'THE APEX': [349, 370, 392]
-      };
-      const h = S ? S.height : 0;
-      const freqs = stingFreqs[zone.name] || [130 + h * 0.3, 140 + h * 0.3, 155 + h * 0.3];
-      sting.frequency.value = freqs[Math.floor(Math.random() * freqs.length)];
-      stingFilter.type = 'lowpass'; stingFilter.frequency.value = 800 + intens * 1200; stingFilter.Q.value = 5 + intens * 8;
-      const vol = 0.04 + intens * 0.06;
-      stingGain.gain.setValueAtTime(0, now + delay);
-      stingGain.gain.linearRampToValueAtTime(vol, now + delay + 0.5);
-      stingGain.gain.setValueAtTime(vol, now + delay + 2);
-      stingGain.gain.exponentialRampToValueAtTime(0.001, now + delay + 5);
-      sting.connect(stingFilter); stingFilter.connect(stingGain); stingGain.connect(musicGain);
-      sting.start(now + delay); sting.stop(now + delay + 5.5);
-
-      if (intens > 0.5) {
-        const sting2 = actx.createOscillator();
-        const s2Gain = actx.createGain();
-        sting2.type = 'square'; sting2.frequency.value = sting.frequency.value * 1.06;
-        s2Gain.gain.setValueAtTime(0, now + delay + 0.2);
-        s2Gain.gain.linearRampToValueAtTime(vol * 0.4, now + delay + 0.7);
-        s2Gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 4);
-        sting2.connect(s2Gain); s2Gain.connect(musicGain);
-        sting2.start(now + delay + 0.2); sting2.stop(now + delay + 4.5);
-      }
-      setTimeout(scheduleStings, (delay + 5) * 1000);
+      updateZoneMusic();
+      setTimeout(checkZone, 2000);
     }
-    scheduleStings();
-
-    function scheduleHeartbeat() {
-      if (!musicPlaying) return;
-      const hh = S ? S.height : 0;
-      const intensity = Math.max(0, 1 - hh / 100);
-      if (intensity < 0.05) { setTimeout(scheduleHeartbeat, 3000); return; }
-      const now = actx.currentTime;
-      [0, 0.15].forEach(offset => {
-        const kick = actx.createOscillator();
-        const kickGain = actx.createGain();
-        kick.type = 'sine'; kick.frequency.setValueAtTime(80, now + offset);
-        kick.frequency.exponentialRampToValueAtTime(30, now + offset + 0.15);
-        kickGain.gain.setValueAtTime(0.1 * intensity, now + offset);
-        kickGain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.2);
-        kick.connect(kickGain); kickGain.connect(musicGain);
-        kick.start(now + offset); kick.stop(now + offset + 0.25);
-      });
-      const bpm = 50 + hh * 0.1;
-      setTimeout(scheduleHeartbeat, (60 / bpm) * 2000);
-    }
-    scheduleHeartbeat();
+    checkZone();
   }
 
   function stopMusic() {
     musicPlaying = false;
+    if (currentMusicSource) try { currentMusicSource.stop(); } catch(e){}
+    currentMusicSource = null;
+    currentMusicGainNode = null;
+    currentMusicTrack = null;
     musicNodes.forEach(n => { try { n.stop(); } catch(e){} });
     musicNodes = [];
   }
@@ -4540,23 +4499,30 @@ const NPC_COLORS = [
 
 function spawnMeteor() {
   const startX = Math.random() * W * 0.8 + W * 0.1;
-  const angle = (Math.random() * 0.4 - 0.2); // slight angle variation
+  const angle = (Math.random() * 0.4 - 0.2);
   const flyIdx = Math.floor(Math.random() * 5) + 1;
   const crashIdx = Math.floor(Math.random() * 5) + 1;
+  // 10% screen hit, 25% platform hit, 65% building hit
+  const roll = Math.random();
+  let meteorType = 'building';
+  if (roll < 0.10) meteorType = 'screen';
+  else if (roll < 0.35) meteorType = 'platform';
   const meteor = {
     x: startX,
     y: -40,
     vx: angle * 100,
-    vy: 250 + Math.random() * 150,
-    size: 8 + Math.random() * 12,
+    vy: meteorType === 'screen' ? 400 + Math.random() * 200 : 250 + Math.random() * 150,
+    size: meteorType === 'screen' ? 6 : meteorType === 'platform' ? 14 + Math.random() * 10 : 8 + Math.random() * 12,
     rotation: Math.random() * Math.PI * 2,
     rotSpeed: (Math.random() - 0.5) * 8,
     trail: [],
-    phase: 'falling', // 'falling' | 'exploding' | 'done'
+    phase: 'falling',
     explodeTimer: 0,
     flySound: AudioEngine.playSfxBuffer('meteor_fly_' + flyIdx, 0.5),
-    crashSoundName: 'meteor_crash_' + crashIdx,
-    particles: []
+    crashSoundName: meteorType === 'screen' ? 'screen_hit' : 'meteor_crash_' + crashIdx,
+    particles: [],
+    meteorType: meteorType,
+    growRate: meteorType === 'screen' ? 30 + Math.random() * 20 : 0 // px/sec growth for screen hits
   };
   chaosState.meteors.push(meteor);
 }
@@ -4632,6 +4598,7 @@ function updateAndDrawMeteors(dt) {
       m.y += m.vy * dt;
       m.rotation += m.rotSpeed * dt;
       m.vy += 200 * dt; // gravity
+      if (m.growRate) m.size += m.growRate * dt; // screen-hit meteors grow
 
       // Trail
       m.trail.push({ x: m.x, y: m.y, life: 0.5 });
@@ -4674,45 +4641,115 @@ function updateAndDrawMeteors(dt) {
       ctx.shadowBlur = 0;
       ctx.restore();
 
-      // Check collision with buildings
-      let hitBuilding = false;
-      for (let bi = 0; bi < 8; bi++) {
-        const bx = (bi * W / 5 + 30) % (W + 100) - 50;
-        const bw = 30 + bi * 7;
-        const bh = 100 + (bi * 73 % 200);
-        const by = H - bh + cameraY * 0.02;
-        if (m.x >= bx && m.x <= bx + bw && m.y >= by) {
-          hitBuilding = true;
-          m.phase = 'exploding';
-          m.explodeTimer = 0.8;
+      // --- Collision based on meteor type ---
+      let impacted = false;
+
+      if (m.meteorType === 'screen') {
+        // Screen hit: when meteor reaches ~60% down screen, "hit the screen"
+        if (m.y >= H * 0.55) {
+          impacted = true;
+          m.phase = 'screen_hit';
+          m.explodeTimer = 1.5;
+          m.screenCrackX = m.x;
+          m.screenCrackY = m.y;
           if (m.flySound && m.flySound.source) try { m.flySound.source.stop(); } catch(e){}
-          AudioEngine.playSfxBuffer(m.crashSoundName, 0.7);
-          screenShake = Math.max(screenShake, 12);
-          // Spawn explosion particles
-          for (let p = 0; p < 30; p++) {
-            const angle = Math.random() * Math.PI * 2;
-            const speed = 50 + Math.random() * 200;
-            m.particles.push({
-              x: m.x, y: by,
-              vx: Math.cos(angle) * speed,
-              vy: Math.sin(angle) * speed - 100,
-              life: 0.3 + Math.random() * 0.5,
-              size: 2 + Math.random() * 4,
-              color: ['#f84', '#fa4', '#ff4', '#f44', '#888'][Math.floor(Math.random() * 5)]
-            });
+          AudioEngine.playSfxBuffer(m.crashSoundName, 1.0);
+          screenShake = Math.max(screenShake, 25);
+          // Radial crack lines
+          m.cracks = [];
+          const numCracks = 6 + Math.floor(Math.random() * 6);
+          for (let c = 0; c < numCracks; c++) {
+            const ang = (Math.PI * 2 / numCracks) * c + (Math.random() - 0.5) * 0.3;
+            const len = 40 + Math.random() * 120;
+            const segs = [{x: m.screenCrackX, y: m.screenCrackY}];
+            let cx = m.screenCrackX, cy = m.screenCrackY;
+            const segCount = 3 + Math.floor(Math.random() * 4);
+            for (let s = 1; s <= segCount; s++) {
+              cx += Math.cos(ang + (Math.random() - 0.5) * 0.5) * (len / segCount);
+              cy += Math.sin(ang + (Math.random() - 0.5) * 0.5) * (len / segCount);
+              segs.push({x: cx, y: cy});
+            }
+            m.cracks.push(segs);
           }
-          // Leave residual fire
-          const sizzleIdx = Math.floor(Math.random() * 5) + 1;
-          chaosState.impactFires.push({
-            x: m.x, y: by, life: 3 + Math.random() * 3,
-            maxLife: 3 + Math.random() * 3,
-            sizzlePlayed: false, sizzleName: 'fire_sizzle_' + sizzleIdx
-          });
-          break;
+        }
+      } else if (m.meteorType === 'platform') {
+        // Platform hit: check visible platforms
+        const platH = 40;
+        const si = Math.max(0, Math.floor((cameraY - 100) / platH));
+        const ei = Math.ceil((cameraY + H + 100) / platH);
+        for (let pi = si; pi <= ei; pi++) {
+          const p = getPlatform(pi);
+          const platScreenY = H - (pi * platH - cameraY);
+          const px = p.x * W;
+          const pw = p.width * W;
+          if (m.x >= px && m.x <= px + pw && m.y >= platScreenY - 5 && m.y <= platScreenY + 15) {
+            impacted = true;
+            m.phase = 'exploding';
+            m.explodeTimer = 1.0;
+            if (m.flySound && m.flySound.source) try { m.flySound.source.stop(); } catch(e){}
+            AudioEngine.playSfxBuffer(m.crashSoundName, 0.8);
+            screenShake = Math.max(screenShake, 18);
+            for (let pp = 0; pp < 40; pp++) {
+              const angle = Math.random() * Math.PI * 2;
+              const speed = 60 + Math.random() * 250;
+              m.particles.push({
+                x: m.x, y: platScreenY,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed - 120,
+                life: 0.4 + Math.random() * 0.6,
+                size: 3 + Math.random() * 5,
+                color: ['#f84', '#fa4', '#ff4', '#f44', '#888', '#654'][Math.floor(Math.random() * 6)]
+              });
+            }
+            const sizzleIdx = Math.floor(Math.random() * 5) + 1;
+            chaosState.impactFires.push({
+              x: m.x, y: platScreenY, life: 4 + Math.random() * 4,
+              maxLife: 4 + Math.random() * 4,
+              sizzlePlayed: false, sizzleName: 'fire_sizzle_' + sizzleIdx
+            });
+            break;
+          }
         }
       }
-      // Fallback: hit bottom if no building hit
-      if (!hitBuilding && m.y >= H + 20) {
+
+      // Building hit (default for 'building' type, fallback for others)
+      if (!impacted && m.meteorType !== 'screen') {
+        for (let bi = 0; bi < 8; bi++) {
+          const bx = (bi * W / 5 + 30) % (W + 100) - 50;
+          const bw = 30 + bi * 7;
+          const bh = 100 + (bi * 73 % 200);
+          const by = H - bh + cameraY * 0.02;
+          if (m.x >= bx && m.x <= bx + bw && m.y >= by) {
+            impacted = true;
+            m.phase = 'exploding';
+            m.explodeTimer = 0.8;
+            if (m.flySound && m.flySound.source) try { m.flySound.source.stop(); } catch(e){}
+            AudioEngine.playSfxBuffer(m.crashSoundName, 0.7);
+            screenShake = Math.max(screenShake, 12);
+            for (let pp = 0; pp < 30; pp++) {
+              const angle = Math.random() * Math.PI * 2;
+              const speed = 50 + Math.random() * 200;
+              m.particles.push({
+                x: m.x, y: by,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed - 100,
+                life: 0.3 + Math.random() * 0.5,
+                size: 2 + Math.random() * 4,
+                color: ['#f84', '#fa4', '#ff4', '#f44', '#888'][Math.floor(Math.random() * 5)]
+              });
+            }
+            const sizzleIdx = Math.floor(Math.random() * 5) + 1;
+            chaosState.impactFires.push({
+              x: m.x, y: by, life: 3 + Math.random() * 3,
+              maxLife: 3 + Math.random() * 3,
+              sizzlePlayed: false, sizzleName: 'fire_sizzle_' + sizzleIdx
+            });
+            break;
+          }
+        }
+      }
+      // Off screen fallback
+      if (!impacted && m.y >= H + 40) {
         m.phase = 'done';
         if (m.flySound && m.flySound.source) try { m.flySound.source.stop(); } catch(e){}
       }
@@ -4737,6 +4774,44 @@ function updateAndDrawMeteors(dt) {
       ctx.shadowBlur = 0;
       ctx.globalAlpha = 1;
       if (m.explodeTimer <= 0 && m.particles.length === 0) m.phase = 'done';
+    } else if (m.phase === 'screen_hit') {
+      m.explodeTimer -= dt;
+      const alpha = Math.min(1, m.explodeTimer / 1.0);
+      // White flash at impact point
+      if (m.explodeTimer > 1.2) {
+        ctx.globalAlpha = (m.explodeTimer - 1.2) * 3;
+        ctx.fillStyle = '#fff';
+        const flashR = (1.5 - m.explodeTimer) * 300;
+        ctx.beginPath();
+        ctx.arc(m.screenCrackX, m.screenCrackY, flashR, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // Draw crack lines
+      if (m.cracks) {
+        ctx.globalAlpha = alpha * 0.9;
+        ctx.strokeStyle = '#fff';
+        ctx.shadowColor = '#fff';
+        ctx.shadowBlur = 4;
+        ctx.lineWidth = 2.5 * alpha;
+        for (const crack of m.cracks) {
+          ctx.beginPath();
+          ctx.moveTo(crack[0].x, crack[0].y);
+          for (let ci = 1; ci < crack.length; ci++) ctx.lineTo(crack[ci].x, crack[ci].y);
+          ctx.stroke();
+        }
+        // Inner glow lines
+        ctx.strokeStyle = 'rgba(200,220,255,0.6)';
+        ctx.lineWidth = 1;
+        for (const crack of m.cracks) {
+          ctx.beginPath();
+          ctx.moveTo(crack[0].x, crack[0].y);
+          for (let ci = 1; ci < crack.length; ci++) ctx.lineTo(crack[ci].x, crack[ci].y);
+          ctx.stroke();
+        }
+        ctx.shadowBlur = 0;
+      }
+      ctx.globalAlpha = 1;
+      if (m.explodeTimer <= 0) m.phase = 'done';
     }
     if (m.phase === 'done') chaosState.meteors.splice(i, 1);
   }
