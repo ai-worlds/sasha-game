@@ -344,7 +344,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-
   <button class="start-btn" id="start-btn">ENTER THE VOID</button>
   <div style="position:absolute;bottom:40px;left:0;right:0;text-align:center;font-family:var(--font-body);font-size:13px;color:rgba(200,192,184,0.4);line-height:1.6">
     Made with ❤️ by Josh Mouch & Sasha Elise<br>© 2026<br>
-    <span id="version-display" style="font-family:var(--font-mono);font-size:11px;color:rgba(200,192,184,0.25)"><!-- AUTOVER -->v78d44c4 · Feb 27, 2026 09:16 PM EST<!-- /AUTOVER --></span>
+    <span id="version-display" style="font-family:var(--font-mono);font-size:11px;color:rgba(200,192,184,0.25)"><!-- AUTOVER -->v6f8f1f1 · Feb 27, 2026 09:17 PM EST<!-- /AUTOVER --></span>
   </div>
   <button id="nuke-btn" style="position:absolute;bottom:10px;right:10px;background:transparent;border:1px solid rgba(200,192,184,0.15);color:rgba(200,192,184,0.3);font-size:10px;padding:4px 8px;cursor:pointer;border-radius:3px;font-family:var(--font-mono)" onclick="if(confirm('Wipe ALL localStorage? This is a full factory reset.')){localStorage.clear();location.reload();}">reset</button>
 </div>
@@ -4292,11 +4292,19 @@ const AudioEngine = (() => {
       const gain = actx.createGain();
       src.buffer = voiceBuffers[track];
       src.loop = true;
+      src.loopStart = 0;
+      src.loopEnd = voiceBuffers[track].duration;
       gain.gain.setValueAtTime(0, now);
       gain.gain.linearRampToValueAtTime(1, now + fadeDuration);
       src.connect(gain);
       gain.connect(musicGain);
-      src.start();
+      src.start(0, 0);
+      // Fallback: if loop fails, restart on ended
+      src.onended = () => {
+        if (currentMusicTrack === track && musicPlaying) {
+          playMusicTrack(track);
+        }
+      };
       currentMusicSource = src;
       currentMusicGainNode = gain;
       currentMusicTrack = track;
