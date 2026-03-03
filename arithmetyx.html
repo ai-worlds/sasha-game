@@ -4316,8 +4316,17 @@ const AudioEngine = (() => {
   let currentVoiceSource = null;
 
   function init() {
-    if (actx) return;
+    if (actx) {
+      // iOS Safari often keeps context suspended until a user gesture resumes it
+      if (actx.state === 'suspended') {
+        actx.resume().catch(() => {});
+      }
+      return;
+    }
     actx = new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === 'suspended') {
+      actx.resume().catch(() => {});
+    }
     masterGain = actx.createGain();
     masterGain.gain.value = volume;
     masterGain.connect(actx.destination);
@@ -4378,6 +4387,7 @@ const AudioEngine = (() => {
 
   function playVoice(name, cooldownMs) {
     if (!actx || !enabled || !voiceBuffers[name]) return;
+    ensureAudioReady();
     if (cooldownMs && Date.now() - lastVoiceTime < cooldownMs) return;
     if (currentVoiceSource) { try { currentVoiceSource.stop(); } catch(e){} }
     const src = actx.createBufferSource();
@@ -4406,6 +4416,7 @@ const AudioEngine = (() => {
 
   function playSfxBuffer(name, vol = 1.0) {
     if (!actx || !enabled || !voiceBuffers[name]) return null;
+    ensureAudioReady();
     const src = actx.createBufferSource();
     const gain = actx.createGain();
     src.buffer = voiceBuffers[name];
@@ -4416,12 +4427,20 @@ const AudioEngine = (() => {
     return { source: src, gain: gain };
   }
 
+  function ensureAudioReady() {
+    if (!actx) return;
+    if (actx.state === 'suspended') {
+      actx.resume().catch(() => {});
+    }
+  }
+
   function setVolume(v) { volume = v; if (masterGain) masterGain.gain.value = v; }
   function setMusicEnabled(on) { musicEnabled = on; if (musicGain) musicGain.gain.setTargetAtTime(on ? 0.35 : 0, actx.currentTime, 0.3); }
   function setSfxEnabled(on) { enabled = on; if (sfxGain) sfxGain.gain.setTargetAtTime(on ? 0.7 : 0, actx.currentTime, 0.1); }
 
   function playCorrect() {
     if (!actx || !enabled) return;
+    ensureAudioReady();
     const now = actx.currentTime;
     const notes = [440, 554, 659];
     notes.forEach((freq, i) => {
@@ -4438,6 +4457,7 @@ const AudioEngine = (() => {
 
   function playWrong() {
     if (!actx || !enabled) return;
+    ensureAudioReady();
     const now = actx.currentTime;
     const osc1 = actx.createOscillator();
     const osc2 = actx.createOscillator();
@@ -4451,6 +4471,7 @@ const AudioEngine = (() => {
 
   function playFall() {
     if (!actx || !enabled) return;
+    ensureAudioReady();
     const now = actx.currentTime;
     const osc = actx.createOscillator();
     const gain = actx.createGain();
@@ -4473,6 +4494,7 @@ const AudioEngine = (() => {
 
   function playClick() {
     if (!actx || !enabled) return;
+    ensureAudioReady();
     const now = actx.currentTime;
     const osc = actx.createOscillator();
     const gain = actx.createGain();
@@ -4483,6 +4505,7 @@ const AudioEngine = (() => {
 
   function playStreak(streakCount) {
     if (!actx || !enabled) return;
+    ensureAudioReady();
     if (streakCount % 5 !== 0 || streakCount === 0) return;
     const now = actx.currentTime;
     const baseFreq = 523 + Math.min(streakCount, 50) * 8;
@@ -4498,6 +4521,7 @@ const AudioEngine = (() => {
 
   function playVictory() {
     if (!actx || !enabled) return;
+    ensureAudioReady();
     const now = actx.currentTime;
     const notes = [523, 659, 784, 880, 1047, 1319, 1568];
     notes.forEach((freq, i) => {
@@ -4516,6 +4540,7 @@ const AudioEngine = (() => {
 
   function playMenuOpen() {
     if (!actx || !enabled) return;
+    ensureAudioReady();
     const now = actx.currentTime;
     const osc = actx.createOscillator();
     const gain = actx.createGain();
@@ -4526,6 +4551,7 @@ const AudioEngine = (() => {
 
   function playMenuClose() {
     if (!actx || !enabled) return;
+    ensureAudioReady();
     const now = actx.currentTime;
     const osc = actx.createOscillator();
     const gain = actx.createGain();
@@ -4536,6 +4562,7 @@ const AudioEngine = (() => {
 
   function playShieldBreak() {
     if (!actx || !enabled) return;
+    ensureAudioReady();
     const now = actx.currentTime;
     const noise = actx.createBufferSource();
     const buf = actx.createBuffer(1, actx.sampleRate * 0.25, actx.sampleRate);
@@ -4556,6 +4583,7 @@ const AudioEngine = (() => {
 
   function playShieldGain() {
     if (!actx || !enabled) return;
+    ensureAudioReady();
     const now = actx.currentTime;
     const osc = actx.createOscillator();
     const osc2 = actx.createOscillator();
@@ -4601,6 +4629,7 @@ const AudioEngine = (() => {
   function playMusicTrack(track) {
     if (!actx) return;
     if (!musicEnabled) return;
+    ensureAudioReady();
     musicPlaying = true;
     pendingMusicTrack = track;
     if (track === currentMusicTrack) return;
@@ -4654,6 +4683,7 @@ const AudioEngine = (() => {
 
   function startMusic() {
     if (!actx) return;
+    ensureAudioReady();
     musicPlaying = true;
     updateZoneMusic();
     // Check for zone changes every 2 seconds
@@ -5585,12 +5615,17 @@ function scheduleMenuLightning() {
 }
 scheduleMenuLightning();
 
-// Start title music on first interaction (browser autoplay policy)
-document.addEventListener('click', function titleMusicInit() {
+// Start title music on first interaction (browser autoplay policy; include iPad touch)
+const startAudioOnce = () => {
   AudioEngine.init();
   AudioEngine.playMusicTrack('music_title');
-  document.removeEventListener('click', titleMusicInit);
-}, { once: true });
+  ['click', 'touchstart', 'pointerdown', 'keydown'].forEach(evt => {
+    document.removeEventListener(evt, startAudioOnce);
+  });
+};
+['click', 'touchstart', 'pointerdown', 'keydown'].forEach(evt => {
+  document.addEventListener(evt, startAudioOnce, { once: true, passive: true });
+});
 
 requestAnimationFrame(render);
 </script>
