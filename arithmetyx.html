@@ -2388,13 +2388,46 @@ function presentProblem() {
   container.className = S.numChoices >= 7 ? 'cols-4' : S.numChoices >= 5 ? 'cols-3' : '';
   if (S.numChoices <= 4) container.className = '';
 
-  choices.forEach(val => {
+  choices.forEach((val, idx) => {
     const btn = document.createElement('button');
     btn.className = 'answer-btn';
     btn.textContent = val;
+    btn.id = 'answer-' + idx;
+    btn.dataset.value = val;
+    btn.dataset.index = idx;
+    btn.title = 'Press ' + (idx + 1) + ' for ' + val;
     btn.addEventListener('click', () => handleAnswer(val, btn));
     btn.addEventListener('touchstart', (e) => { e.preventDefault(); handleAnswer(val, btn); }, { passive: false });
     container.appendChild(btn);
+  });
+
+  // Update agent-state element for lightweight polling
+  _updateAgentState();
+}
+
+function _updateAgentState() {
+  let el = document.getElementById('agent-state');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'agent-state';
+    el.style.cssText = 'display:none;position:absolute;left:-9999px';
+    document.body.appendChild(el);
+  }
+  const choices = Array.from(document.querySelectorAll('.answer-btn')).map((b, i) => ({
+    index: i, value: Number(b.dataset.value), id: b.id, key: String(i + 1)
+  }));
+  const problem = document.getElementById('problem-display')?.textContent || '';
+  el.dataset.state = JSON.stringify({
+    problem,
+    choices,
+    height: S?.height || 0,
+    heightTarget: S?.heightTarget || 600,
+    shields: S?.shields || 0,
+    correct: S?.correct || 0,
+    wrong: S?.wrong || 0,
+    karma: S?.karma || 0,
+    earnings: S?.earnings || 0,
+    agentMode: window._agentMode || false
   });
 }
 
@@ -5628,6 +5661,56 @@ const startAudioOnce = () => {
 });
 
 requestAnimationFrame(render);
+
+// ── AGENT-FRIENDLY FEATURES ──────────────────────────────────────────────────
+
+// Keyboard shortcuts: 1-4 select answer choices
+document.addEventListener('keydown', (e) => {
+  const idx = parseInt(e.key) - 1;
+  if (idx >= 0 && idx <= 7) {
+    const btn = document.getElementById('answer-' + idx);
+    if (btn && !btn.disabled) btn.click();
+  }
+  // Space/Enter dismisses story overlay
+  if (e.key === ' ' || e.key === 'Enter') {
+    const overlay = document.getElementById('story-overlay');
+    if (overlay) overlay.click();
+  }
+});
+
+// Agent mode: set window._agentMode = true to auto-dismiss story overlays fast
+// Expose a simple API for agents to read game state without snapshotting
+window.agentAPI = {
+  getState: () => {
+    const el = document.getElementById('agent-state');
+    if (!el) return null;
+    try { return JSON.parse(el.dataset.state); } catch(e) { return null; }
+  },
+  setAgentMode: (on) => {
+    window._agentMode = on;
+    if (on) {
+      // Auto-dismiss story overlays after 300ms
+      const observer = new MutationObserver(() => {
+        const overlay = document.getElementById('story-overlay');
+        if (overlay) setTimeout(() => overlay.click(), 300);
+      });
+      observer.observe(document.body, { childList: true });
+      window._agentObserver = observer;
+    } else {
+      if (window._agentObserver) { window._agentObserver.disconnect(); window._agentObserver = null; }
+    }
+  },
+  answerByValue: (val) => {
+    const btn = Array.from(document.querySelectorAll('.answer-btn')).find(b => Number(b.dataset.value) === val);
+    if (btn) { btn.click(); return true; }
+    return false;
+  },
+  answerByIndex: (idx) => {
+    const btn = document.getElementById('answer-' + idx);
+    if (btn) { btn.click(); return true; }
+    return false;
+  }
+};
 </script>
 </body>
 </html>
